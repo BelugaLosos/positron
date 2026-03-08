@@ -25,7 +25,7 @@ func (p *PingHandler) GetType() byte {
 }
 
 func (p *PingHandler) PassHandle(packet []byte) {
-	p.transport.SendToPeer([]byte{0x0}, eventtypes.PONG, p.uuid)
+	p.transport.SendToPeer([]byte{0x0}, eventtypes.PONG, p.uuid, true)
 }
 
 func (p *PingHandler) SetRoom(room *room.Room) {}

@@ -5,6 +5,7 @@ import (
 	"positron/game/room"
 	"positron/internal"
 	"sync"
+	"time"
 )
 
 type GameServer struct {
@@ -49,11 +50,11 @@ func (g *GameServer) GetRoom(roomUuid string) *room.Room {
 	return g.rooms[roomUuid]
 }
 
-func (g *GameServer) CreateRoom(maxSlots int) string {
+func (g *GameServer) CreateRoom(maxSlots int, ttl time.Duration) string {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	room := room.NewRoom(maxSlots)
+	room := room.NewRoom(maxSlots, ttl)
 	g.rooms[room.GetUuid()] = room
 
 	return room.GetUuid()

@@ -3,6 +3,7 @@ package room
 import (
 	"errors"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -11,21 +12,25 @@ type Room struct {
 	mutex *sync.RWMutex
 
 	uuid           string
-	connectedPeers map[int]string // internal room ID to transport uuid
-	lastClientId   int
+	connectedPeers map[uint32]string // internal room ID to transport uuid
+	lastClientId   uint32
 
 	currentConnectedClients int
 	maxClientsSlots         int
+
+	creationTime time.Time
+	ttl          time.Duration
 }
 
-func NewRoom(maxSlots int) *Room {
+func NewRoom(maxSlots int, ttl time.Duration) *Room {
 	return &Room{
 		mutex:                   &sync.RWMutex{},
 		uuid:                    uuid.New().String(),
-		connectedPeers:          make(map[int]string),
+		connectedPeers:          make(map[uint32]string),
 		lastClientId:            0,
 		currentConnectedClients: 0,
 		maxClientsSlots:         maxSlots,
+		ttl:                     ttl,
 	}
 }
 
@@ -47,7 +52,7 @@ func (r *Room) AddPeer(uuid string) error {
 	return nil
 }
 
-func (r *Room) GetTransportIdOfPeer(peer int) (string, error) {
+func (r *Room) GetTransportIdOfPeer(peer uint32) (string, error) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 

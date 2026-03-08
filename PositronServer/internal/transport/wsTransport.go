@@ -30,6 +30,12 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		return make([]byte, 4096)
+	},
+}
+
 func NewWsTransport() *WsTransport {
 	return &WsTransport{
 		shutdown:    make(chan struct{}),
@@ -76,7 +82,7 @@ func (t *WsTransport) Stop() error {
 	return t.server.Close()
 }
 
-func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string) error {
+func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, reliable bool) error {
 	t.mutex.RLock()
 	peer, ok := t.connections[peerUuid]
 	t.mutex.RUnlock()
@@ -85,14 +91,20 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string) e
 		return errors.New("peer not found")
 	}
 
-	buf := make([]byte, len(data)+1)
+	totalLen := len(data) + 1
+
+	buf := bufferPool.Get().([]byte)
 	buf[0] = eventType
 	copy(buf[1:], data)
+
+	buf = buf[:totalLen]
 
 	select {
 	case peer.send <- buf:
 		return nil
 	default:
+		buf = buf[:cap(buf)]
+		bufferPool.Put(buf)
 		return errors.New("peer buffer full, packet dropped")
 	}
 }
@@ -108,10 +120,11 @@ func (t *WsTransport) GetPeerHandlers(peerUuid string) []internal.Handler {
 func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	peer := &wsPeer{
-		mutex:    &sync.Mutex{},
-		send:     make(chan []byte, 1024),
-		wsConn:   conn,
-		isClosed: false,
+		mutex:            &sync.Mutex{},
+		send:             make(chan []byte, 1024),
+		accumulationBuff: make([]byte, 4096),
+		wsConn:           conn,
+		isClosed:         false,
 	}
 
 	if err != nil {
@@ -161,7 +174,7 @@ func (t *WsTransport) handleIncoming(id string, wsConn *wsPeer, handlers []inter
 				return
 			}
 
-			if len(message) >= 2 {
+			if len(message) >= 3 {
 				t.handlePacket(handlers, message)
 			} else {
 				wsConn.ClosePeer()
@@ -179,10 +192,11 @@ func (t *WsTransport) handlePacket(handlers []internal.Handler, packet []byte) {
 }
 
 type wsPeer struct {
-	mutex    *sync.Mutex
-	send     chan []byte
-	wsConn   *websocket.Conn
-	isClosed bool
+	mutex            *sync.Mutex
+	send             chan []byte
+	accumulationBuff []byte
+	wsConn           *websocket.Conn
+	isClosed         bool
 }
 
 func (p *wsPeer) sendPump() {
@@ -196,6 +210,9 @@ func (p *wsPeer) sendPump() {
 		}
 
 		err := p.wsConn.WriteMessage(websocket.BinaryMessage, data)
+
+		data = data[:cap(data)]
+		bufferPool.Put(data)
 
 		if err != nil {
 			log.Println(err)
