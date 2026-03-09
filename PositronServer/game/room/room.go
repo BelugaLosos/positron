@@ -11,6 +11,7 @@ import (
 type Room struct {
 	mutex *sync.RWMutex
 
+	name           string
 	uuid           string
 	connectedPeers map[uint32]string // internal room ID to transport uuid
 	lastClientId   uint32
@@ -22,9 +23,10 @@ type Room struct {
 	ttl          time.Duration
 }
 
-func NewRoom(maxSlots int, ttl time.Duration) *Room {
+func NewRoom(name string, maxSlots int, ttl time.Duration) *Room {
 	return &Room{
 		mutex:                   &sync.RWMutex{},
+		name:                    name,
 		uuid:                    uuid.New().String(),
 		connectedPeers:          make(map[uint32]string),
 		lastClientId:            0,

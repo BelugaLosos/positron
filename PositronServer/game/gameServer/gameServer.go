@@ -50,11 +50,11 @@ func (g *GameServer) GetRoom(roomUuid string) *room.Room {
 	return g.rooms[roomUuid]
 }
 
-func (g *GameServer) CreateRoom(maxSlots int, ttl time.Duration) string {
+func (g *GameServer) CreateRoom(name string, maxSlots int, ttl time.Duration) string {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	room := room.NewRoom(maxSlots, ttl)
+	room := room.NewRoom(name, maxSlots, ttl)
 	g.rooms[room.GetUuid()] = room
 
 	return room.GetUuid()

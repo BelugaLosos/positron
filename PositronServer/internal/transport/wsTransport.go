@@ -120,11 +120,10 @@ func (t *WsTransport) GetPeerHandlers(peerUuid string) []internal.Handler {
 func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	peer := &wsPeer{
-		mutex:            &sync.Mutex{},
-		send:             make(chan []byte, 1024),
-		accumulationBuff: make([]byte, 4096),
-		wsConn:           conn,
-		isClosed:         false,
+		mutex:    &sync.Mutex{},
+		send:     make(chan []byte, 1024),
+		wsConn:   conn,
+		isClosed: false,
 	}
 
 	if err != nil {
@@ -192,11 +191,10 @@ func (t *WsTransport) handlePacket(handlers []internal.Handler, packet []byte) {
 }
 
 type wsPeer struct {
-	mutex            *sync.Mutex
-	send             chan []byte
-	accumulationBuff []byte
-	wsConn           *websocket.Conn
-	isClosed         bool
+	mutex    *sync.Mutex
+	send     chan []byte
+	wsConn   *websocket.Conn
+	isClosed bool
 }
 
 func (p *wsPeer) sendPump() {
