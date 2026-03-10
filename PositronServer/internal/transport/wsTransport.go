@@ -192,7 +192,7 @@ func (t *WsTransport) handleIncoming(id string, wsConn *wsPeer, handlers []inter
 		case <-t.shutdown:
 			return
 		default:
-			_, message, err := wsConn.wsConn.ReadMessage()
+			_, reader, err := wsConn.wsConn.NextReader()
 
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
@@ -201,11 +201,26 @@ func (t *WsTransport) handleIncoming(id string, wsConn *wsPeer, handlers []inter
 				return
 			}
 
-			if len(message) >= 3 {
-				t.handlePacket(handlers, message)
+			readBuffer := bufferPool.Get().([]byte)
+			readBuffer = readBuffer[:cap(readBuffer)]
+
+			readedAmount, readErr := reader.Read(readBuffer)
+
+			readBuffer = readBuffer[:readedAmount]
+
+			if readErr != nil {
+				log.Println(readErr)
+				bufferPool.Put(readBuffer)
+				return
+			}
+
+			if len(readBuffer) >= 3 {
+				t.handlePacket(handlers, readBuffer)
 			} else {
 				wsConn.ClosePeer()
 			}
+
+			bufferPool.Put(readBuffer)
 		}
 	}
 }
