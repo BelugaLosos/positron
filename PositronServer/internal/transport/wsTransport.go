@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
+	"github.com/pierrec/lz4/v4"
 )
 
 type WsTransport struct {
@@ -91,13 +92,40 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 		return errors.New("peer not found")
 	}
 
-	totalLen := len(data) + 1
+	var targetData []byte
+	var compressionBuffer []byte
+	compressionFlag := 0
+
+	if len(data) > 1000 {
+		compressionBuffer = bufferPool.Get().([]byte)
+		compressionBuffer = compressionBuffer[:cap(compressionBuffer)]
+		compressedSize, compressionErr := lz4.CompressBlock(data, compressionBuffer, nil)
+		compressionBuffer = compressionBuffer[:compressedSize]
+
+		if compressionErr != nil {
+			log.Println(compressionErr)
+			targetData = data
+		} else {
+			targetData = compressionBuffer
+		}
+
+		compressionFlag = 1
+	} else {
+		targetData = data
+	}
+
+	totalLen := len(targetData) + 2
 
 	buf := bufferPool.Get().([]byte)
 	buf[0] = eventType
-	copy(buf[1:], data)
+	buf[1] = byte(compressionFlag)
+	copy(buf[2:], targetData)
 
 	buf = buf[:totalLen]
+
+	if compressionFlag == 1 {
+		bufferPool.Put(compressionBuffer)
+	}
 
 	select {
 	case peer.send <- buf:
@@ -183,9 +211,31 @@ func (t *WsTransport) handleIncoming(id string, wsConn *wsPeer, handlers []inter
 }
 
 func (t *WsTransport) handlePacket(handlers []internal.Handler, packet []byte) {
+	usedCompression := false
+
+	if packet[1] == 1 {
+		usedCompression = true
+	}
+
 	for i := range handlers {
 		if handlers[i].GetType() == packet[0] {
-			handlers[i].PassHandle(packet[1:])
+			if usedCompression {
+				decpmpress := bufferPool.Get().([]byte)
+				decpmpress = decpmpress[:cap(decpmpress)]
+				decompressedLen, err := lz4.UncompressBlock(packet[2:], decpmpress)
+				decpmpress = decpmpress[:decompressedLen]
+
+				if err != nil {
+					bufferPool.Put(decpmpress)
+					log.Println(err)
+					continue
+				}
+
+				handlers[i].PassHandle(decpmpress)
+				bufferPool.Put(decpmpress)
+			} else {
+				handlers[i].PassHandle(packet[2:])
+			}
 		}
 	}
 }
