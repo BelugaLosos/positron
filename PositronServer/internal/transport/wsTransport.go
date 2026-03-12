@@ -95,9 +95,12 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 	var targetData []byte
 	var compressionBuffer []byte
 	compressionFlag := 0
+	gotPool := false
 
 	if len(data) > 1000 {
 		compressionBuffer = bufferPool.Get().([]byte)
+		gotPool = true
+
 		compressionBuffer = compressionBuffer[:cap(compressionBuffer)]
 		compressedSize, compressionErr := lz4.CompressBlock(data, compressionBuffer, nil)
 		compressionBuffer = compressionBuffer[:compressedSize]
@@ -107,9 +110,8 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 			targetData = data
 		} else {
 			targetData = compressionBuffer
+			compressionFlag = 1
 		}
-
-		compressionFlag = 1
 	} else {
 		targetData = data
 	}
@@ -123,7 +125,7 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 
 	buf = buf[:totalLen]
 
-	if compressionFlag == 1 {
+	if gotPool {
 		bufferPool.Put(compressionBuffer)
 	}
 
@@ -164,7 +166,7 @@ func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	t.mutex.Lock()
 
 	t.connections[id] = peer
-	t.handlers[peer] = t.handlersFactory.Create(id)
+	t.handlers[peer] = t.handlersFactory.Create()
 	handlers := t.handlers[peer]
 
 	for i := range handlers {

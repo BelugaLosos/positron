@@ -1,6 +1,8 @@
 package datatransferobjects
 
 type CreateRoomPacket struct {
+	_msgpack struct{} `msgpack:",as_array"`
+
 	name      string
 	playerCap int32
 }

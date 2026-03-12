@@ -1,6 +1,8 @@
 package gameentities
 
 type NetValue struct {
+	_msgpack struct{} `msgpack:",as_array"`
+
 	creationId     uint64
 	parentObjectId uint32
 	subObjectId    uint16

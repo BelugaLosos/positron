@@ -21,6 +21,7 @@ type GameServer struct {
 
 func NewGameServer(addr string, transport internal.PositronTransportServer, marshaller internal.MarshalService) *GameServer {
 	server := &GameServer{
+		mutex:           &sync.RWMutex{},
 		addr:            addr,
 		transport:       transport,
 		handlersFactory: nil,
@@ -48,6 +49,19 @@ func (g *GameServer) GetRoom(roomUuid string) *room.Room {
 	defer g.mutex.RUnlock()
 
 	return g.rooms[roomUuid]
+}
+
+func (g *GameServer) GetAllRooms() []*room.Room {
+	g.mutex.RLock()
+	defer g.mutex.RUnlock()
+
+	rooms := make([]*room.Room, 0)
+
+	for _, room := range g.rooms {
+		rooms = append(rooms, room)
+	}
+
+	return rooms
 }
 
 func (g *GameServer) CreateRoom(name string, maxSlots int, ttl time.Duration) string {

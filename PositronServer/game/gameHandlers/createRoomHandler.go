@@ -13,6 +13,7 @@ type CreateRoomHandler struct {
 	transport internal.PositronTransportServer
 	uuid      string
 	gameSaver internal.GameServerAdaper
+	inRoom    bool
 }
 
 func NewCreateRoomHandler() *CreateRoomHandler {
@@ -30,6 +31,10 @@ func (c *CreateRoomHandler) GetType() byte {
 }
 
 func (c *CreateRoomHandler) PassHandle(packet []byte) {
+	if c.inRoom {
+		return
+	}
+
 	var data datatransferobjects.CreateRoomPacket
 	err := c.gameSaver.GetMarshaller().Unmarshal(packet, data)
 
@@ -41,7 +46,7 @@ func (c *CreateRoomHandler) PassHandle(packet []byte) {
 	uuid := c.gameSaver.CreateRoom(data.GetName(), int(data.GetPlayerCap()), 10*time.Second)
 
 	response := datatransferobjects.NewRoomCreationResponsePacket(uuid)
-	binResponse := c.gameSaver.GetMarshaller().Marshal(response)
+	binResponse, _ := c.gameSaver.GetMarshaller().Marshal(response)
 
 	err = c.transport.SendToPeer(binResponse, eventtypes.ROOM_CREATED, c.uuid, true)
 
@@ -50,4 +55,10 @@ func (c *CreateRoomHandler) PassHandle(packet []byte) {
 	}
 }
 
-func (c *CreateRoomHandler) SetRoom(room *room.Room) {}
+func (c *CreateRoomHandler) SetRoom(room *room.Room) {
+	if room != nil {
+		c.inRoom = true
+	} else {
+		c.inRoom = false
+	}
+}

@@ -1,6 +1,8 @@
 package gameentities
 
 type RpcCall struct {
+	_msgpack struct{} `msgpack:",as_array"`
+
 	objectId     uint32
 	targetClient uint32
 	subObjectId  uint16

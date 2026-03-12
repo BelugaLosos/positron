@@ -14,15 +14,25 @@ func NewMessagePackMarshaller() *MessagePackMarshaller {
 	return &MessagePackMarshaller{}
 }
 
-func (m *MessagePackMarshaller) Marshal(obj any) []byte {
+func (m *MessagePackMarshaller) Marshal(obj any) ([]byte, error) {
 	data, err := msgpack.Marshal(obj)
 
 	if err != nil {
 		log.Println(err)
-		return []byte{}
+		return nil, err
 	}
 
-	return data
+	return data, nil
+}
+
+func (m *MessagePackMarshaller) MarshalNonAlloc(buf *bytes.Buffer, obj any) error {
+	buf.Reset()
+
+	enc := msgpack.GetEncoder()
+	defer msgpack.PutEncoder(enc)
+
+	enc.Reset(buf)
+	return enc.Encode(obj)
 }
 
 func (m *MessagePackMarshaller) Unmarshal(data []byte, obj any) error {

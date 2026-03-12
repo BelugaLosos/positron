@@ -3,6 +3,8 @@ package datatransferobjects
 import gameentities "positron/game/gameEntities"
 
 type GameTickPacket struct {
+	_msgpack struct{} `msgpack:",as_array"`
+
 	newObjects     []gameentities.GameObject
 	removedObjects []uint32
 	valueMod       []gameentities.NetValue

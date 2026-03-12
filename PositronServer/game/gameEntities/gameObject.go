@@ -1,6 +1,8 @@
 package gameentities
 
 type GameObject struct {
+	_msgpack struct{} `msgpack:",as_array"`
+
 	assetIndex uint64
 	creationId uint64
 	id         uint32

@@ -36,8 +36,20 @@ func NewRoom(name string, maxSlots int, ttl time.Duration) *Room {
 	}
 }
 
+func (r *Room) GetName() string {
+	return r.name
+}
+
 func (r *Room) GetUuid() string {
 	return r.uuid
+}
+
+func (r *Room) GetCurrentConnectedPeersCount() int32 {
+	return int32(len(r.connectedPeers))
+}
+
+func (r *Room) GetMaxPlayersCount() int32 {
+	return int32(r.maxClientsSlots)
 }
 
 func (r *Room) AddPeer(uuid string) error {
