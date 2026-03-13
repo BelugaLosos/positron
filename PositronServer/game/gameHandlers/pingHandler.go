@@ -7,12 +7,15 @@ import (
 )
 
 type PingHandler struct {
-	transport internal.PositronTransportServer
-	uuid      string
+	transport      internal.PositronTransportServer
+	uuid           string
+	cachedResponse []byte
 }
 
 func NewPingHanler() *PingHandler {
-	return &PingHandler{}
+	return &PingHandler{
+		cachedResponse: []byte{0xFF},
+	}
 }
 
 func (p *PingHandler) Init(transport internal.PositronTransportServer, gServer internal.GameServerAdaper, connectionUuid string) {
@@ -25,7 +28,7 @@ func (p *PingHandler) GetType() byte {
 }
 
 func (p *PingHandler) PassHandle(packet []byte) {
-	p.transport.SendToPeer([]byte{0xFF}, eventtypes.PONG, p.uuid, true)
+	p.transport.SendToPeer(p.cachedResponse, eventtypes.PONG, p.uuid, true)
 }
 
 func (p *PingHandler) SetRoom(room *room.Room) {}
