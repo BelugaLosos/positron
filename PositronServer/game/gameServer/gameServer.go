@@ -9,7 +9,8 @@ import (
 )
 
 type GameServer struct {
-	mutex *sync.RWMutex
+	mutex       *sync.RWMutex
+	termination chan interface{}
 
 	addr            string
 	transport       internal.PositronTransportServer
@@ -22,6 +23,7 @@ type GameServer struct {
 func NewGameServer(addr string, transport internal.PositronTransportServer, marshaller internal.MarshalService) *GameServer {
 	server := &GameServer{
 		mutex:           &sync.RWMutex{},
+		termination:     make(chan interface{}),
 		addr:            addr,
 		transport:       transport,
 		handlersFactory: nil,
@@ -37,10 +39,12 @@ func NewGameServer(addr string, transport internal.PositronTransportServer, mars
 func (g *GameServer) Start(wg *sync.WaitGroup) error {
 	log.Println("Positron started succesfully !")
 
+	go g.filterEmptyRooms()
 	return g.transport.Start(g.addr, g.handlersFactory, g, wg)
 }
 
 func (g *GameServer) Stop() error {
+	close(g.termination)
 	return g.transport.Stop()
 }
 
@@ -76,4 +80,21 @@ func (g *GameServer) CreateRoom(name string, maxSlots int, ttl time.Duration) st
 
 func (g *GameServer) GetMarshaller() internal.MarshalService {
 	return g.marhaller
+}
+
+func (g *GameServer) filterEmptyRooms() {
+	for {
+		select {
+		case <-g.termination:
+			return
+		default:
+			for roomUuid, room := range g.rooms {
+				if room.GetCurrentConnectedPeersCount() == 0 && room.IsTimeFromLastLeaveOverTTL() {
+					delete(g.rooms, roomUuid)
+				}
+			}
+		}
+
+		time.Sleep(10 * time.Second)
+	}
 }

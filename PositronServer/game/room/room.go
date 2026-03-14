@@ -19,8 +19,8 @@ type Room struct {
 	currentConnectedClients int
 	maxClientsSlots         int
 
-	creationTime time.Time
-	ttl          time.Duration
+	lastLeaveTime time.Time
+	ttl           time.Duration
 }
 
 func NewRoom(name string, maxSlots int, ttl time.Duration) *Room {
@@ -52,6 +52,10 @@ func (r *Room) GetMaxPlayersCount() int32 {
 	return int32(r.maxClientsSlots)
 }
 
+func (r *Room) IsTimeFromLastLeaveOverTTL() bool {
+	return time.Now().UTC().Sub(r.lastLeaveTime) > r.ttl
+}
+
 func (r *Room) AddPeer(uuid string) error {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
@@ -64,6 +68,19 @@ func (r *Room) AddPeer(uuid string) error {
 	r.lastClientId++
 
 	return nil
+}
+
+func (r *Room) RemovePeer(uuid string) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	for key, currentUuid := range r.connectedPeers {
+		if currentUuid == uuid {
+			r.lastLeaveTime = time.Now().UTC()
+			delete(r.connectedPeers, key)
+			break
+		}
+	}
 }
 
 func (r *Room) GetTransportIdOfPeer(peer uint32) (string, error) {
