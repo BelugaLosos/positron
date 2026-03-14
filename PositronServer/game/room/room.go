@@ -56,18 +56,19 @@ func (r *Room) IsTimeFromLastLeaveOverTTL() bool {
 	return time.Now().UTC().Sub(r.lastLeaveTime) > r.ttl
 }
 
-func (r *Room) AddPeer(uuid string) error {
+func (r *Room) AddPeer(uuid string) (int, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	if r.currentConnectedClients >= r.maxClientsSlots {
-		return errors.New("Max cleints exeeted")
+		return 0, errors.New("Max cleints exeeted")
 	}
 
-	r.connectedPeers[r.lastClientId] = uuid
+	newPeerId := r.lastClientId
+	r.connectedPeers[newPeerId] = uuid
 	r.lastClientId++
 
-	return nil
+	return int(newPeerId), nil
 }
 
 func (r *Room) RemovePeer(uuid string) {
