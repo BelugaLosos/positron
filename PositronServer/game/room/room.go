@@ -13,11 +13,14 @@ type Room struct {
 	mutex       *sync.RWMutex
 	Termination chan struct{}
 
-	name           string
-	uuid           string
+	name string
+	uuid string
+
 	connectedPeers map[uint32]string // internal room ID to transport uuid
 	peerUuids      []string
-	lastClientId   uint32
+	hostIndex      uint32
+
+	lastClientId uint32
 
 	currentConnectedClients int
 	maxClientsSlots         int
@@ -35,6 +38,7 @@ func NewRoom(name string, maxSlots int, ttl time.Duration) *Room {
 		uuid:                    uuid.New().String(),
 		connectedPeers:          make(map[uint32]string),
 		peerUuids:               make([]string, 0),
+		hostIndex:               0,
 		lastClientId:            0,
 		currentConnectedClients: 0,
 		maxClientsSlots:         maxSlots,
@@ -87,9 +91,13 @@ func (r *Room) AddPeer(uuid string) (int, error) {
 		return 0, errors.New("Max cleints exeeted")
 	}
 
+	r.lastClientId++
 	newPeerId := r.lastClientId
 	r.connectedPeers[newPeerId] = uuid
-	r.lastClientId++
+
+	if len(r.connectedPeers) == 1 {
+		r.hostIndex = newPeerId
+	}
 
 	r.peerUuids = make([]string, 0)
 
@@ -104,10 +112,20 @@ func (r *Room) RemovePeer(uuid string) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
+	removedPeer := uint32(0)
+
 	for key, currentUuid := range r.connectedPeers {
 		if currentUuid == uuid {
 			r.lastLeaveTime = time.Now().UTC()
+			removedPeer = key
 			delete(r.connectedPeers, key)
+			break
+		}
+	}
+
+	if removedPeer == r.hostIndex {
+		for key := range r.connectedPeers {
+			r.hostIndex = key
 			break
 		}
 	}
