@@ -5,14 +5,16 @@ import gameentities "positron/game/gameEntities"
 type GameTickPacket struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
+	host           uint32
 	newObjects     []*gameentities.GameObject
 	removedObjects []uint32
 	valueMod       []*gameentities.NetValue
 	rpc            []*gameentities.RpcCall
 }
 
-func NewTickPacket(newObjects []*gameentities.GameObject, removedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
+func NewTickPacket(host uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
 	return &GameTickPacket{
+		host:           host,
 		newObjects:     newObjects,
 		removedObjects: removedObjects,
 		valueMod:       valueMod,

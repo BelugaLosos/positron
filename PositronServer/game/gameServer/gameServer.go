@@ -2,6 +2,7 @@ package gameserver
 
 import (
 	"log"
+	eventtypes "positron/game/gameHandlers/eventTypes"
 	"positron/game/room"
 	"positron/internal"
 	"sync"
@@ -75,6 +76,8 @@ func (g *GameServer) CreateRoom(name string, maxSlots int, ttl time.Duration) st
 	room := room.NewRoom(name, maxSlots, ttl)
 	g.rooms[room.GetUuid()] = room
 
+	go g.roomTick(room)
+
 	return room.GetUuid()
 }
 
@@ -90,11 +93,44 @@ func (g *GameServer) filterEmptyRooms() {
 		default:
 			for roomUuid, room := range g.rooms {
 				if room.GetCurrentConnectedPeersCount() == 0 && room.IsTimeFromLastLeaveOverTTL() {
+					close(room.Termination)
 					delete(g.rooms, roomUuid)
 				}
 			}
 		}
 
 		time.Sleep(10 * time.Second)
+	}
+}
+
+func (g *GameServer) roomTick(room *room.Room) {
+	for {
+		select {
+		case <-room.Termination:
+			log.Printf("Room %s disposed", room.GetUuid())
+			return
+		default:
+			packet, unreliablePacket := room.CreateTickPackets()
+			peers := room.GetAllConnectedPeers()
+
+			for i := range peers {
+				packetMarshalled, err := g.marhaller.Marshal(packet)
+				packetUnrMarshalled, unrErr := g.marhaller.Marshal(unreliablePacket)
+
+				if err == nil {
+					g.transport.SendToPeer(packetMarshalled, eventtypes.TICK, peers[i], true)
+				} else {
+					log.Println(err)
+				}
+
+				if unrErr == nil {
+					g.transport.SendToPeer(packetUnrMarshalled, eventtypes.UNRELIABLE_TICK, peers[i], false)
+				} else {
+					log.Println(unrErr)
+				}
+			}
+
+			time.Sleep((1 * time.Second) / time.Duration(room.GetTickrate()))
+		}
 	}
 }
