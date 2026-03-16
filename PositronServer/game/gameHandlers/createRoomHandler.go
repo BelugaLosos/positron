@@ -55,7 +55,7 @@ func (c *CreateRoomHandler) PassHandle(packet []byte) {
 	}
 }
 
-func (c *CreateRoomHandler) SetRoom(room *room.Room) {
+func (c *CreateRoomHandler) SetRoom(room *room.Room, inRoomId uint32) {
 	if room != nil {
 		c.inRoom = true
 	} else {

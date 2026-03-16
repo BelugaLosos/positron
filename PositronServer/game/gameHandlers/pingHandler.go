@@ -31,4 +31,4 @@ func (p *PingHandler) PassHandle(packet []byte) {
 	p.transport.SendToPeer(p.cachedResponse, eventtypes.PONG, p.uuid, true)
 }
 
-func (p *PingHandler) SetRoom(room *room.Room) {}
+func (p *PingHandler) SetRoom(room *room.Room, inRoomId uint32) {}

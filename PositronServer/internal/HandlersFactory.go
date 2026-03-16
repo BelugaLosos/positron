@@ -1,5 +1,5 @@
 package internal
 
 type HandlersFactory interface {
-	Create() []Handler
+	Create() ([]Handler, Handler)
 }

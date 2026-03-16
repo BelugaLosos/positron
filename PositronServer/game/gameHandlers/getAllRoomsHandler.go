@@ -64,6 +64,6 @@ func (g *GetAllRoomsHandler) PassHandle(packet []byte) {
 	}
 }
 
-func (g *GetAllRoomsHandler) SetRoom(room *room.Room) {
+func (g *GetAllRoomsHandler) SetRoom(room *room.Room, inRoomId uint32) {
 	g.inRoomNow = room != nil
 }

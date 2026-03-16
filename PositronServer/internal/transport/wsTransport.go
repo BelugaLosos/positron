@@ -165,9 +165,10 @@ func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 
 	t.mutex.Lock()
 
+	handlers, disconnectHandler := t.handlersFactory.Create()
+
 	t.connections[id] = peer
-	t.handlers[peer] = t.handlersFactory.Create()
-	handlers := t.handlers[peer]
+	t.handlers[peer] = handlers
 
 	for i := range handlers {
 		handlers[i].Init(t, t.gServer, id)
@@ -176,10 +177,10 @@ func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	t.mutex.Unlock()
 
 	go peer.sendPump()
-	go t.handleIncoming(id, peer, handlers)
+	go t.handleIncoming(id, peer, handlers, disconnectHandler)
 }
 
-func (t *WsTransport) handleIncoming(id string, wsConn *wsPeer, handlers []internal.Handler) {
+func (t *WsTransport) handleIncoming(id string, wsConn *wsPeer, handlers []internal.Handler, closeHandler internal.Handler) {
 	defer func() {
 		wsConn.ClosePeer()
 
@@ -198,6 +199,7 @@ func (t *WsTransport) handleIncoming(id string, wsConn *wsPeer, handlers []inter
 
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					closeHandler.PassHandle([]byte{})
 					log.Printf("error: %v", err)
 				}
 				return

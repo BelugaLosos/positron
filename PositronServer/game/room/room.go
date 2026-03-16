@@ -49,7 +49,19 @@ func NewRoom(name string, maxSlots int, ttl time.Duration) *Room {
 }
 
 func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatransferobjects.GameUnreliableTickPacket) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
 	return nil, nil
+}
+
+func (r *Room) ResetTempBuffers() {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+}
+
+func (r *Room) GetHost() uint32 {
+	return r.hostIndex
 }
 
 func (r *Room) GetTickrate() int {
@@ -83,7 +95,7 @@ func (r *Room) IsTimeFromLastLeaveOverTTL() bool {
 	return time.Now().UTC().Sub(r.lastLeaveTime) > r.ttl
 }
 
-func (r *Room) AddPeer(uuid string) (int, error) {
+func (r *Room) AddPeer(uuid string) (uint32, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -105,7 +117,7 @@ func (r *Room) AddPeer(uuid string) (int, error) {
 		r.peerUuids = append(r.peerUuids, currentUuid)
 	}
 
-	return int(newPeerId), nil
+	return newPeerId, nil
 }
 
 func (r *Room) RemovePeer(uuid string) {

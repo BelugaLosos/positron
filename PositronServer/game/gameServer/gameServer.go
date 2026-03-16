@@ -91,12 +91,16 @@ func (g *GameServer) filterEmptyRooms() {
 		case <-g.termination:
 			return
 		default:
+			g.mutex.Lock()
+
 			for roomUuid, room := range g.rooms {
 				if room.GetCurrentConnectedPeersCount() == 0 && room.IsTimeFromLastLeaveOverTTL() {
 					close(room.Termination)
 					delete(g.rooms, roomUuid)
 				}
 			}
+
+			g.mutex.Unlock()
 		}
 
 		time.Sleep(10 * time.Second)
@@ -114,8 +118,8 @@ func (g *GameServer) roomTick(room *room.Room) {
 			peers := room.GetAllConnectedPeers()
 
 			for i := range peers {
-				packetMarshalled, err := g.marhaller.Marshal(packet)
-				packetUnrMarshalled, unrErr := g.marhaller.Marshal(unreliablePacket)
+				packetMarshalled, err := g.marhaller.Marshal(packet)                 //EXTRA ALLOC!
+				packetUnrMarshalled, unrErr := g.marhaller.Marshal(unreliablePacket) //EXTRA ALLOC!
 
 				if err == nil {
 					g.transport.SendToPeer(packetMarshalled, eventtypes.TICK, peers[i], true)
@@ -129,6 +133,8 @@ func (g *GameServer) roomTick(room *room.Room) {
 					log.Println(unrErr)
 				}
 			}
+
+			room.ResetTempBuffers()
 
 			time.Sleep((1 * time.Second) / time.Duration(room.GetTickrate()))
 		}
