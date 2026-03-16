@@ -15,3 +15,7 @@ func NewGameUnreliableTickPacket(movedObjects []*gameentities.GameObject, timeSt
 		movedObjects: movedObjects,
 	}
 }
+
+func (g *GameUnreliableTickPacket) GetMovedObjects() []*gameentities.GameObject {
+	return g.movedObjects
+}

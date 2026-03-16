@@ -11,6 +11,15 @@ type GameTickPacket struct {
 	rpc            []*gameentities.RpcCall
 }
 
+func NewTickPacket(newObjects []*gameentities.GameObject, removedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
+	return &GameTickPacket{
+		newObjects:     newObjects,
+		removedObjects: removedObjects,
+		valueMod:       valueMod,
+		rpc:            rpc,
+	}
+}
+
 func (g *GameTickPacket) GetNewObjects() []*gameentities.GameObject {
 	return g.newObjects
 }
