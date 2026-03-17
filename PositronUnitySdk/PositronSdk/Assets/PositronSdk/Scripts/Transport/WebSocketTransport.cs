@@ -12,7 +12,7 @@ namespace Positron.Transport
         private WebSocket _webSokcet;
         private CancellationTokenSource _dispatchCancellationToken;
 
-        public event Action<byte[]> onMessage;
+        public event Action<byte[]> onRawMessage;
 
         public async UniTask Connect(PositronSettings settings)
         {
@@ -27,7 +27,7 @@ namespace Positron.Transport
 
             _webSokcet.OnMessage += (data) =>
             {
-                onMessage?.Invoke(data);
+                onRawMessage?.Invoke(data);
             };
         }
 
@@ -43,14 +43,20 @@ namespace Positron.Transport
             _dispatchCancellationToken.Cancel();
         }
 
-        public void Send(Span<byte> buffer)
+        public void Send(Span<byte> buffer, byte type, bool isReliable)
         {
             if (_webSokcet.State != WebSocketState.Open)
             {
                 return;
             }
 
-            _webSokcet.Send(buffer.ToArray());
+            byte isCompressed = 0;
+            byte[] controlBytes = { type, isCompressed };
+
+            Span<byte> newBuffer = new(controlBytes, 0, 2 + buffer.Length);
+            buffer.CopyTo(newBuffer);
+
+            _webSokcet.Send(newBuffer.ToArray());
         }
 
         private async UniTask DispathLoop()

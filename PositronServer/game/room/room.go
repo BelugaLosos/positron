@@ -2,6 +2,7 @@ package room
 
 import (
 	"errors"
+	gameentities "positron/game/gameEntities"
 	datatransferobjects "positron/game/gameHandlers/dataTransferObjects"
 	"sync"
 	"time"
@@ -28,6 +29,10 @@ type Room struct {
 	lastLeaveTime time.Time
 	ttl           time.Duration
 	tickrate      int
+
+	gameObjects []*gameentities.GameObject
+	netValues   []*gameentities.NetValue
+	cachedRpcs  []*gameentities.RpcCall
 }
 
 func NewRoom(name string, maxSlots int, ttl time.Duration) *Room {
@@ -45,6 +50,9 @@ func NewRoom(name string, maxSlots int, ttl time.Duration) *Room {
 		lastLeaveTime:           time.Now().UTC(),
 		ttl:                     ttl,
 		tickrate:                30,
+		gameObjects:             make([]*gameentities.GameObject, 0),
+		netValues:               make([]*gameentities.NetValue, 0),
+		cachedRpcs:              make([]*gameentities.RpcCall, 0),
 	}
 }
 
@@ -93,6 +101,10 @@ func (r *Room) GetMaxPlayersCount() int32 {
 
 func (r *Room) IsTimeFromLastLeaveOverTTL() bool {
 	return time.Now().UTC().Sub(r.lastLeaveTime) > r.ttl
+}
+
+func (r *Room) GetWorld() ([]*gameentities.GameObject, []*gameentities.NetValue, []*gameentities.RpcCall) {
+	return r.gameObjects, r.netValues, r.cachedRpcs
 }
 
 func (r *Room) AddPeer(uuid string) (uint32, error) {

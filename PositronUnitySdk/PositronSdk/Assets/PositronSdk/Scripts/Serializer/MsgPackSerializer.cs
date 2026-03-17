@@ -3,7 +3,6 @@ using MessagePack.Resolvers;
 using MessagePack.Unity;
 using Positron.Client.Interfaces;
 using System;
-using UnityEngine;
 
 namespace Positron.Serialzier
 {
@@ -11,13 +10,13 @@ namespace Positron.Serialzier
     {
         public void Init()
         {
-            //StaticCompositeResolver.Instance.Register(
-            //    GeneratedResolver.Instance,
-            //    BuiltinResolver.Instance,
-            //    AttributeFormatterResolver.Instance,
-            //    PrimitiveObjectResolver.Instance,
-            //    StandardResolver.Instance
-            //);
+            StaticCompositeResolver.Instance.Register(
+                GeneratedResolver.Instance,
+                BuiltinResolver.Instance,
+                AttributeFormatterResolver.Instance,
+                PrimitiveObjectResolver.Instance,
+                StandardResolver.Instance
+            );
 
             MessagePackSerializer.DefaultOptions = MessagePackSerializerOptions.Standard.
                 WithResolver(UnityResolver.InstanceWithStandardResolver);

@@ -8,7 +8,7 @@ namespace Positron.Client.Interfaces
     {
         UniTask Connect(PositronSettings settings);
         UniTask Disconnect();
-        void Send(Span<byte> buffer);
-        event Action<byte[]> onMessage;
+        void Send(Span<byte> buffer, byte type, bool isReliable);
+        event Action<byte[]> onRawMessage;
     }
 }

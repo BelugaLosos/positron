@@ -8,14 +8,16 @@ type JoinRoomResponsePacket struct {
 	gameObjects []*gameentities.GameObject
 	netValues   []*gameentities.NetValue
 	cachedRpcs  []*gameentities.RpcCall
+	selfId      uint32
 	host        uint32
 }
 
-func NewJoinRoomResponsePacket(gameObjects []*gameentities.GameObject, netValues []*gameentities.NetValue, cachedRpcs []*gameentities.RpcCall, host uint32) *JoinRoomResponsePacket {
+func NewJoinRoomResponsePacket(gameObjects []*gameentities.GameObject, netValues []*gameentities.NetValue, cachedRpcs []*gameentities.RpcCall, selfId uint32, host uint32) *JoinRoomResponsePacket {
 	return &JoinRoomResponsePacket{
 		gameObjects: gameObjects,
 		netValues:   netValues,
 		cachedRpcs:  cachedRpcs,
+		selfId:      selfId,
 		host:        host,
 	}
 }

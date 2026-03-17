@@ -5,21 +5,27 @@ import gameentities "positron/game/gameEntities"
 type GameTickPacket struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	host           uint32
-	newObjects     []*gameentities.GameObject
-	removedObjects []uint32
-	valueMod       []*gameentities.NetValue
-	rpc            []*gameentities.RpcCall
+	host              uint32
+	newObjects        []*gameentities.GameObject
+	removedObjects    []uint32
+	transferedObjects []uint32
+	valueMod          []*gameentities.NetValue
+	rpc               []*gameentities.RpcCall
 }
 
-func NewTickPacket(host uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
+func NewTickPacket(host uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
 	return &GameTickPacket{
-		host:           host,
-		newObjects:     newObjects,
-		removedObjects: removedObjects,
-		valueMod:       valueMod,
-		rpc:            rpc,
+		host:              host,
+		newObjects:        newObjects,
+		removedObjects:    removedObjects,
+		transferedObjects: transferedObjects,
+		valueMod:          valueMod,
+		rpc:               rpc,
 	}
+}
+
+func (g *GameTickPacket) GetHost() uint32 {
+	return g.host
 }
 
 func (g *GameTickPacket) GetNewObjects() []*gameentities.GameObject {
@@ -28,6 +34,10 @@ func (g *GameTickPacket) GetNewObjects() []*gameentities.GameObject {
 
 func (g *GameTickPacket) GetRemovedObjects() []uint32 {
 	return g.removedObjects
+}
+
+func (g *GameTickPacket) GetTranferedObjects() []uint32 {
+	return g.transferedObjects
 }
 
 func (g *GameTickPacket) GetValueMod() []*gameentities.NetValue {

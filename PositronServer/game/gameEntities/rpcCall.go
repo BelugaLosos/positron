@@ -6,7 +6,7 @@ type RpcCall struct {
 	objectId     uint32
 	targetClient uint32
 	subObjectId  uint16
-	targets      uint8
+	rpcType      uint8
 	methodName   string
 	args         []byte
 }
@@ -24,7 +24,7 @@ func (r *RpcCall) GetSubObjectId() uint16 {
 }
 
 func (r *RpcCall) GetTarget() uint8 {
-	return r.targets
+	return r.rpcType
 }
 
 func (r *RpcCall) GetMethodName() string {
