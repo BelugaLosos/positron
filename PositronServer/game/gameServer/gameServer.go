@@ -1,6 +1,7 @@
 package gameserver
 
 import (
+	"bytes"
 	"log"
 	eventtypes "positron/game/gameHandlers/eventTypes"
 	"positron/game/room"
@@ -19,6 +20,12 @@ type GameServer struct {
 	marhaller       internal.MarshalService
 
 	rooms map[string]*room.Room
+}
+
+var bufferPool = sync.Pool{
+	New: func() interface{} {
+		return &bytes.Buffer{}
+	},
 }
 
 func NewGameServer(addr string, transport internal.PositronTransportServer, marshaller internal.MarshalService) *GameServer {
@@ -118,20 +125,28 @@ func (g *GameServer) roomTick(room *room.Room) {
 			peers := room.GetAllConnectedPeers()
 
 			for i := range peers {
-				packetMarshalled, err := g.marhaller.Marshal(packet)                 //EXTRA ALLOC!
-				packetUnrMarshalled, unrErr := g.marhaller.Marshal(unreliablePacket) //EXTRA ALLOC!
+				packetMarshallBuffer := bufferPool.Get().(*bytes.Buffer)
+				packetMarshallBuffer.Reset()
+				packetUnrMarshalled := bufferPool.Get().(*bytes.Buffer)
+				packetUnrMarshalled.Reset()
+
+				err := g.marhaller.MarshalNonAlloc(packetMarshallBuffer, packet)
+				unrErr := g.marhaller.MarshalNonAlloc(packetUnrMarshalled, unreliablePacket)
 
 				if err == nil {
-					g.transport.SendToPeer(packetMarshalled, eventtypes.TICK, peers[i], true)
+					g.transport.SendToPeer(packetMarshallBuffer.Bytes(), eventtypes.TICK, peers[i], true)
 				} else {
 					log.Println(err)
 				}
 
 				if unrErr == nil {
-					g.transport.SendToPeer(packetUnrMarshalled, eventtypes.UNRELIABLE_TICK, peers[i], false)
+					g.transport.SendToPeer(packetUnrMarshalled.Bytes(), eventtypes.UNRELIABLE_TICK, peers[i], false)
 				} else {
 					log.Println(unrErr)
 				}
+
+				bufferPool.Put(packetMarshallBuffer)
+				bufferPool.Put(packetUnrMarshalled)
 			}
 
 			room.ResetTempBuffers()
