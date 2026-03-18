@@ -10,16 +10,16 @@ namespace Positron.Serialzier
     {
         public void Init()
         {
-            StaticCompositeResolver.Instance.Register(
-                GeneratedResolver.Instance,
-                BuiltinResolver.Instance,
-                AttributeFormatterResolver.Instance,
-                PrimitiveObjectResolver.Instance,
-                StandardResolver.Instance
+            IFormatterResolver unityResolver = CompositeResolver.Create(
+                GeneratedResolver.Instance,          
+                AttributeFormatterResolver.Instance, 
+                UnityResolver.Instance, 
+                StandardResolver.Instance,           
+                BuiltinResolver.Instance,            
+                PrimitiveObjectResolver.Instance     
             );
 
-            MessagePackSerializer.DefaultOptions = MessagePackSerializerOptions.Standard.
-                WithResolver(UnityResolver.InstanceWithStandardResolver);
+            MessagePackSerializer.DefaultOptions = MessagePackSerializerOptions.Standard.WithResolver(unityResolver);
         }
 
         public T Deserialize<T>(Span<byte> data)

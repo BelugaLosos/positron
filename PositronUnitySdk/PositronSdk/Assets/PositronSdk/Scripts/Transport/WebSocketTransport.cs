@@ -1,5 +1,6 @@
 using Cysharp.Threading.Tasks;
 using NativeWebSocket;
+using Positron.Client.ConstantHolders;
 using Positron.Client.Interfaces;
 using Positron.Client.Settings;
 using System;
@@ -12,7 +13,7 @@ namespace Positron.Transport
         private WebSocket _webSokcet;
         private CancellationTokenSource _dispatchCancellationToken;
 
-        public event Action<byte[]> onRawMessage;
+        public event Action<EventTypes, byte[]> onRawMessage;
 
         public async UniTask Connect(PositronSettings settings)
         {
@@ -27,7 +28,18 @@ namespace Positron.Transport
 
             _webSokcet.OnMessage += (data) =>
             {
-                onRawMessage?.Invoke(data);
+                Span<byte> packet = data;
+                EventTypes type = (EventTypes)packet[0];
+                bool isCompressed = data[1] == 1;
+
+                Span<byte> payload = packet.Slice(2);
+
+                if (isCompressed)
+                {
+                    payload = lz4.Decompress(payload.ToArray());
+                }
+
+                onRawMessage?.Invoke(type, payload.ToArray());
             };
         }
 
@@ -43,7 +55,7 @@ namespace Positron.Transport
             _dispatchCancellationToken.Cancel();
         }
 
-        public void Send(Span<byte> buffer, byte type, bool isReliable)
+        public void Send(Span<byte> rawMessage, EventTypes type, bool isReliable)
         {
             if (_webSokcet.State != WebSocketState.Open)
             {
@@ -51,12 +63,26 @@ namespace Positron.Transport
             }
 
             byte isCompressed = 0;
-            byte[] controlBytes = { type, isCompressed };
+            Span<byte> resultiveMessage;
 
-            Span<byte> newBuffer = new(controlBytes, 0, 2 + buffer.Length);
-            buffer.CopyTo(newBuffer);
+            if (rawMessage.Length > 1000)
+            {
+                resultiveMessage = lz4.Compress(rawMessage.ToArray());
+                isCompressed = 1;
+            }
+            else
+            {
+                resultiveMessage = rawMessage;
+            }
 
-            _webSokcet.Send(newBuffer.ToArray());
+            Span<byte> socketMessage = stackalloc byte[2 + resultiveMessage.Length];
+
+            socketMessage[0] = (byte)type;
+            socketMessage[1] = isCompressed;
+
+            resultiveMessage.CopyTo(socketMessage.Slice(2));
+
+            _webSokcet.Send(socketMessage.ToArray());
         }
 
         private async UniTask DispathLoop()
