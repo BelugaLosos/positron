@@ -42,6 +42,7 @@ namespace Positron
             _pingModel.EstimationLoop().Forget();
 
             _monoHook = new GameObject("PositronMonoHook").AddComponent<MonoHook>();
+            GameObject.DontDestroyOnLoad(_monoHook);
 
             _monoHook.destroyed += Disconnect;
             _client.connected += OnConnected;

@@ -38,7 +38,7 @@ namespace Positron.Client.Ping
             {
                 _client.SendRaw(stackalloc byte[] { 0xFF }, EventTypes.PING, true);
                 _pingTime = Time.timeAsDouble;
-                await UniTask.WaitForSeconds(1);
+                await UniTask.WaitForSeconds(1f);
             }
         }
     }
