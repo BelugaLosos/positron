@@ -4,6 +4,7 @@ import (
 	"errors"
 	gameentities "positron/game/gameEntities"
 	datatransferobjects "positron/game/gameHandlers/dataTransferObjects"
+	roommodels "positron/game/room/roomModels"
 	"sync"
 	"time"
 
@@ -30,9 +31,9 @@ type Room struct {
 	ttl           time.Duration
 	tickrate      int
 
-	gameObjects []*gameentities.GameObject
-	netValues   []*gameentities.NetValue
-	cachedRpcs  []*gameentities.RpcCall
+	gameObjectsModel *roommodels.GameObjectsModel
+	netValuesModel   *roommodels.NetValuesModel
+	rpcsModel        *roommodels.RpcsModel
 }
 
 func NewRoom(name string, maxSlots int, ttl time.Duration) *Room {
@@ -50,9 +51,9 @@ func NewRoom(name string, maxSlots int, ttl time.Duration) *Room {
 		lastLeaveTime:           time.Now().UTC(),
 		ttl:                     ttl,
 		tickrate:                30,
-		gameObjects:             make([]*gameentities.GameObject, 0),
-		netValues:               make([]*gameentities.NetValue, 0),
-		cachedRpcs:              make([]*gameentities.RpcCall, 0),
+		gameObjectsModel:        roommodels.NewGameObjectsModel(),
+		netValuesModel:          roommodels.NewNetValuesModel(),
+		rpcsModel:               roommodels.NewRpcsModel(),
 	}
 }
 
@@ -66,6 +67,18 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 func (r *Room) ResetTempBuffers() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
+
+	r.gameObjectsModel.ResetTempBuffers()
+	r.netValuesModel.ResetTempBuffers()
+	r.rpcsModel.ResetTempBuffers()
+}
+
+func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket) {
+
+}
+
+func (r *Room) ProcessUnreliableTick(packet *datatransferobjects.GameUnreliableTickPacket) {
+
 }
 
 func (r *Room) GetHost() uint32 {
@@ -104,7 +117,7 @@ func (r *Room) IsTimeFromLastLeaveOverTTL() bool {
 }
 
 func (r *Room) GetWorld() ([]*gameentities.GameObject, []*gameentities.NetValue, []*gameentities.RpcCall) {
-	return r.gameObjects, r.netValues, r.cachedRpcs
+	return r.gameObjectsModel.GetGameObjects(), r.netValuesModel.GetValues(), r.rpcsModel.GetCachedRpcs()
 }
 
 func (r *Room) AddPeer(uuid string) (uint32, error) {
