@@ -8,5 +8,6 @@ namespace Positron.Client.Settings
         [field: SerializeField] public string Address { get; private set; }
         [field: SerializeField] public int Port { get; private set; }
         [field: SerializeField] public bool IsSecure { get; private set; }
+        [field: SerializeField] public bool Autoconnect { get; private set; }
     }
 }

@@ -22,9 +22,15 @@ namespace Positron.Transport
             _dispatchCancellationToken = new();
             _webSokcet = new($"{(settings.IsSecure ? "wss" : "ws")}://{settings.Address}:{settings.Port}");
 
-            await _webSokcet.Connect();
+            UniTaskCompletionSource connectTcs = new();
 
-            DispathLoop().Forget();
+            _webSokcet.OnOpen += () => connectTcs.TrySetResult();
+            _webSokcet.OnError += (e) => connectTcs.TrySetException(new(e));
+            _webSokcet.OnClose += (e) => 
+            { 
+                _dispatchCancellationToken.Cancel(); 
+                _webSokcet.Close();
+            };
 
             _webSokcet.OnMessage += (data) =>
             {
@@ -41,6 +47,12 @@ namespace Positron.Transport
 
                 onRawMessage?.Invoke(type, payload.ToArray());
             };
+
+
+            DispathLoop().Forget();
+            _ = _webSokcet.Connect();
+
+            await connectTcs.Task;
         }
 
         public async UniTask Disconnect()
@@ -87,12 +99,12 @@ namespace Positron.Transport
 
         private async UniTask DispathLoop()
         {
-            await UniTask.SwitchToMainThread();
+            await UniTask.WaitWhile(() => _webSokcet == null);
 
-            while (_webSokcet.State == WebSocketState.Open)
+            while (!_dispatchCancellationToken.IsCancellationRequested)
             {
                 _webSokcet.DispatchMessageQueue();
-                await UniTask.Yield(cancellationToken: _dispatchCancellationToken.Token);
+                await UniTask.Yield(PlayerLoopTiming.Update, _dispatchCancellationToken.Token);
             }
         }
     }
