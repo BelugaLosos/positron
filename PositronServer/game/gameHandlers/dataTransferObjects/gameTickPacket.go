@@ -6,6 +6,7 @@ type GameTickPacket struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
 	host              uint32
+	client            uint32
 	newObjects        []*gameentities.GameObject
 	removedObjects    []uint32
 	transferedObjects []uint32
@@ -13,9 +14,10 @@ type GameTickPacket struct {
 	rpc               []*gameentities.RpcCall
 }
 
-func NewTickPacket(host uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
+func NewTickPacket(host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
 	return &GameTickPacket{
 		host:              host,
+		client:            sourceClient,
 		newObjects:        newObjects,
 		removedObjects:    removedObjects,
 		transferedObjects: transferedObjects,
@@ -26,6 +28,10 @@ func NewTickPacket(host uint32, newObjects []*gameentities.GameObject, removedOb
 
 func (g *GameTickPacket) GetHost() uint32 {
 	return g.host
+}
+
+func (g *GameTickPacket) GetSourceClient() uint32 {
+	return g.client
 }
 
 func (g *GameTickPacket) GetNewObjects() []*gameentities.GameObject {

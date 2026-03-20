@@ -61,7 +61,24 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	return nil, nil
+	worldModAdd, worldModRemove, worldModTransfer := r.gameObjectsModel.GetModification()
+
+	gameTick := datatransferobjects.NewTickPacket(
+		r.hostIndex,
+		0,
+		worldModAdd,
+		worldModRemove,
+		worldModTransfer,
+		r.netValuesModel.GetTempMod(),
+		r.rpcsModel.GetCurrentCallBuffer(),
+	)
+
+	gamePositionsTick := datatransferobjects.NewGameUnreliableTickPacket(
+		r.gameObjectsModel.GetPositionMod(),
+		uint64(time.Now().UTC().Unix()),
+	)
+
+	return gameTick, gamePositionsTick
 }
 
 func (r *Room) ResetTempBuffers() {
@@ -74,11 +91,31 @@ func (r *Room) ResetTempBuffers() {
 }
 
 func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
+	for i := range packet.GetNewObjects() {
+		r.gameObjectsModel.AddGameObject(packet.GetNewObjects()[i], packet.GetSourceClient())
+	}
+
+	for i := range packet.GetRemovedObjects() {
+		r.gameObjectsModel.RemoveGameObject(packet.GetRemovedObjects()[i], packet.GetSourceClient())
+	}
+
+	for i := range packet.GetValueMod() {
+		r.netValuesModel.AddOrModify(packet.GetValueMod()[i])
+	}
+
+	for i := range packet.GetRpcs() {
+		r.rpcsModel.Call(packet.GetRpcs()[i])
+	}
 }
 
 func (r *Room) ProcessUnreliableTick(packet *datatransferobjects.GameUnreliableTickPacket) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
 
+	r.gameObjectsModel.MoveGameObjects(packet)
 }
 
 func (r *Room) GetHost() uint32 {
@@ -172,6 +209,8 @@ func (r *Room) RemovePeer(uuid string) {
 	for _, currentUuid := range r.connectedPeers {
 		r.peerUuids = append(r.peerUuids, currentUuid)
 	}
+
+	r.gameObjectsModel.TransferObjectsFromClientToHost(removedPeer, r.hostIndex)
 }
 
 func (r *Room) GetTransportIdOfPeer(peer uint32) (string, error) {

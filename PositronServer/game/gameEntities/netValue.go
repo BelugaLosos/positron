@@ -3,14 +3,15 @@ package gameentities
 type NetValue struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	creationId     uint64
+	localClientId  uint64
 	parentObjectId uint32
 	subObjectId    uint16
+	deleting       bool
 	payload        []byte
 }
 
-func (n *NetValue) GetCreationId() uint64 {
-	return n.creationId
+func (n *NetValue) GetLocalClientId() uint64 {
+	return n.localClientId
 }
 
 func (n *NetValue) GetParentObjectId() uint32 {
@@ -23,4 +24,16 @@ func (n *NetValue) GetSubObjectId() uint16 {
 
 func (n *NetValue) GetPayload() []byte {
 	return n.payload
+}
+
+func (n *NetValue) ModifyPayload(newPayload []byte) {
+	n.payload = newPayload
+}
+
+func (n *NetValue) GetIsDeleting() bool {
+	return n.deleting
+}
+
+func (n *NetValue) MarkAsDeleting() {
+	n.deleting = true
 }

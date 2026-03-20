@@ -183,8 +183,9 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.DataTransferObjects.GameTickPacket value, global::MessagePack.MessagePackSerializerOptions options)
         {
             global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
-            writer.WriteArrayHeader(6);
+            writer.WriteArrayHeader(7);
             writer.Write(value.Host);
+            writer.Write(value.Client);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetGameObject[]>(formatterResolver).Serialize(ref writer, value.NewGameObjects, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<uint[]>(formatterResolver).Serialize(ref writer, value.RemovedObjects, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<uint[]>(formatterResolver).Serialize(ref writer, value.TransferedToHostObjects, options);
@@ -209,21 +210,24 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
                 switch (i)
                 {
                     case 0:
-                        ____result.Host = reader.ReadInt32();
+                        ____result.Host = reader.ReadUInt32();
                         break;
                     case 1:
-                        ____result.NewGameObjects = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetGameObject[]>(formatterResolver).Deserialize(ref reader, options);
+                        ____result.Client = reader.ReadUInt32();
                         break;
                     case 2:
-                        ____result.RemovedObjects = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<uint[]>(formatterResolver).Deserialize(ref reader, options);
+                        ____result.NewGameObjects = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetGameObject[]>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     case 3:
-                        ____result.TransferedToHostObjects = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<uint[]>(formatterResolver).Deserialize(ref reader, options);
+                        ____result.RemovedObjects = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<uint[]>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     case 4:
-                        ____result.ValueModification = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetValue[]>(formatterResolver).Deserialize(ref reader, options);
+                        ____result.TransferedToHostObjects = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<uint[]>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     case 5:
+                        ____result.ValueModification = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetValue[]>(formatterResolver).Deserialize(ref reader, options);
+                        break;
+                    case 6:
                         ____result.Rpcs = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.RpcCall[]>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     default:
@@ -327,10 +331,11 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.DataTransferObjects.JoinRoomResponse value, global::MessagePack.MessagePackSerializerOptions options)
         {
             global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
-            writer.WriteArrayHeader(5);
+            writer.WriteArrayHeader(6);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetGameObject[]>(formatterResolver).Serialize(ref writer, value.GameObjects, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetValue[]>(formatterResolver).Serialize(ref writer, value.Values, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.RpcCall[]>(formatterResolver).Serialize(ref writer, value.CachedRpcCalls, options);
+            writer.Write(value.Tickrate);
             writer.Write(value.SelfId);
             writer.Write(value.Host);
         }
@@ -361,9 +366,12 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
                         ____result.CachedRpcCalls = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.RpcCall[]>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     case 3:
-                        ____result.SelfId = reader.ReadUInt32();
+                        ____result.Tickrate = reader.ReadUInt32();
                         break;
                     case 4:
+                        ____result.SelfId = reader.ReadUInt32();
+                        break;
+                    case 5:
                         ____result.Host = reader.ReadUInt32();
                         break;
                     default:
@@ -653,10 +661,11 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.GameEntities.NetValue value, global::MessagePack.MessagePackSerializerOptions options)
         {
-            writer.WriteArrayHeader(4);
+            writer.WriteArrayHeader(5);
             writer.Write(value.CreationId);
             writer.Write(value.ParentObjectId);
             writer.Write(value.SubObjectId);
+            writer.Write(value.Deleting);
             writer.Write(value.Payload);
         }
 
@@ -685,6 +694,9 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
                         ____result.SubObjectId = reader.ReadUInt16();
                         break;
                     case 3:
+                        ____result.Deleting = reader.ReadBoolean();
+                        break;
+                    case 4:
                         ____result.Payload = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
                         break;
                     default:

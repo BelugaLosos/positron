@@ -9,7 +9,8 @@ namespace Positron.Client.DataTransferObjects
         [Key(0)] public NetGameObject[] GameObjects { get; set; }
         [Key(1)] public NetValue[] Values { get; set; }
         [Key(2)] public RpcCall[] CachedRpcCalls { get; set; }
-        [Key(3)] public uint SelfId { get; set; }
-        [Key(4)] public uint Host { get; set; }
+        [Key(3)] public uint Tickrate { get; set; }
+        [Key(4)] public uint SelfId { get; set; }
+        [Key(5)] public uint Host { get; set; }
     }
 }

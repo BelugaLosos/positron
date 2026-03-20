@@ -46,6 +46,11 @@ func (o *GameObject) GetRotation() Vector3 {
 	return o.rotation
 }
 
+func (o *GameObject) SetIdAndOnwer(id uint32, owner uint32) {
+	o.id = id
+	o.owner = owner
+}
+
 type Vector3 struct {
 	cords []float32
 }

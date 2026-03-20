@@ -60,7 +60,7 @@ func (j *JoinRoomHandler) PassHandle(packet []byte) {
 
 	gos, values, rpcs := j.room.GetWorld()
 
-	response := datatransferobjects.NewJoinRoomResponsePacket(gos, values, rpcs, selfId, room.GetHost())
+	response := datatransferobjects.NewJoinRoomResponsePacket(gos, values, rpcs, uint32(room.GetTickrate()), selfId, room.GetHost())
 	binaryResponse, err := j.gameServer.GetMarshaller().Marshal(response)
 
 	if err != nil {
