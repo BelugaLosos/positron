@@ -9,6 +9,7 @@ import (
 type GameObjectsModel struct {
 	mutex *sync.Mutex
 
+	searchMap   map[uint32]*gameentities.GameObject
 	gameObjects []*gameentities.GameObject
 
 	tempAdd      []*gameentities.GameObject
@@ -21,6 +22,7 @@ type GameObjectsModel struct {
 func NewGameObjectsModel() *GameObjectsModel {
 	return &GameObjectsModel{
 		mutex:        &sync.Mutex{},
+		searchMap:    make(map[uint32]*gameentities.GameObject),
 		gameObjects:  make([]*gameentities.GameObject, 0),
 		tempAdd:      make([]*gameentities.GameObject, 0),
 		tempRemove:   make([]uint32, 0),
@@ -75,6 +77,8 @@ func (g *GameObjectsModel) AddGameObject(gameObject *gameentities.GameObject, ow
 
 	g.gameObjects = append(g.gameObjects, gameObject)
 	g.tempAdd = append(g.tempAdd, gameObject)
+
+	g.searchMap[g.lastId] = gameObject
 }
 
 func (g *GameObjectsModel) RemoveGameObject(id uint32, attemptor uint32) {
@@ -82,15 +86,16 @@ func (g *GameObjectsModel) RemoveGameObject(id uint32, attemptor uint32) {
 	defer g.mutex.Unlock()
 
 	for i := range g.gameObjects {
-		GO := g.gameObjects[i]
+		gameObject := g.gameObjects[i]
 
-		if GO.GetId() == id && GO.GetOwnerId() == attemptor {
+		if gameObject.GetId() == id && gameObject.GetOwnerId() == attemptor {
 			g.gameObjects[i] = nil
 			g.gameObjects[i] = g.gameObjects[0]
 			g.gameObjects[0] = nil
 			g.gameObjects = g.gameObjects[1:]
 
-			g.tempRemove = append(g.tempRemove, GO.GetId())
+			g.tempRemove = append(g.tempRemove, gameObject.GetId())
+			delete(g.searchMap, gameObject.GetId())
 		}
 	}
 }

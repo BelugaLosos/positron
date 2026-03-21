@@ -2,11 +2,15 @@ package roommodels
 
 import (
 	gameentities "positron/game/gameEntities"
+	"strconv"
 	"sync"
 )
 
 type NetValuesModel struct {
-	mutex                  *sync.Mutex
+	mutex *sync.Mutex
+
+	searchMap map[string]*gameentities.NetValue
+
 	netValues              []*gameentities.NetValue
 	tempModificationBuffer []*gameentities.NetValue
 }
@@ -14,6 +18,7 @@ type NetValuesModel struct {
 func NewNetValuesModel() *NetValuesModel {
 	return &NetValuesModel{
 		mutex:                  &sync.Mutex{},
+		searchMap:              make(map[string]*gameentities.NetValue),
 		netValues:              make([]*gameentities.NetValue, 0),
 		tempModificationBuffer: make([]*gameentities.NetValue, 0),
 	}
@@ -44,9 +49,9 @@ func (n *NetValuesModel) AddOrModify(value *gameentities.NetValue) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	isExist, gettenValue, _ := n.isValueExists(value)
+	gettenValue, isExist := n.searchMap[n.getKeyOfValue(value)]
 
-	if isExist && gettenValue.GetIsDeleting() {
+	if isExist && value.GetIsDeleting() {
 		return
 	}
 
@@ -61,7 +66,7 @@ func (n *NetValuesModel) TryRemove(value *gameentities.NetValue) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	isExist, _, index := n.isValueExists(value)
+	isExist, _, index := n.findValue(value)
 
 	if isExist {
 		n.netValues[index] = nil
@@ -70,10 +75,12 @@ func (n *NetValuesModel) TryRemove(value *gameentities.NetValue) {
 
 		value.MarkAsDeleting()
 		n.tempModificationBuffer = append(n.tempModificationBuffer, value)
+
+		delete(n.searchMap, n.getKeyOfValue(value))
 	}
 }
 
-func (n *NetValuesModel) isValueExists(value *gameentities.NetValue) (bool, *gameentities.NetValue, int) {
+func (n *NetValuesModel) findValue(value *gameentities.NetValue) (bool, *gameentities.NetValue, int) {
 	for i := range n.netValues {
 		currentValue := n.netValues[i]
 
@@ -87,8 +94,17 @@ func (n *NetValuesModel) isValueExists(value *gameentities.NetValue) (bool, *gam
 
 func (n *NetValuesModel) addValue(value *gameentities.NetValue) {
 	n.netValues = append(n.netValues, value)
+	n.searchMap[n.getKeyOfValue(value)] = value
 }
 
 func (n *NetValuesModel) modifyValue(value *gameentities.NetValue, currentValue *gameentities.NetValue) {
 	currentValue.ModifyPayload(value.GetPayload())
+}
+
+func (n *NetValuesModel) getKeyOfValue(value *gameentities.NetValue) string {
+	left := strconv.FormatUint(uint64(value.GetLocalClientId()), 10)
+	mid := strconv.FormatUint(uint64(value.GetParentObjectId()), 10)
+	right := strconv.FormatUint(uint64(value.GetSubObjectId()), 10)
+
+	return left + mid + right
 }
