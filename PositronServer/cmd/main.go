@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
-	//"net/http"
-	//_ "net/http/pprof"
+	"net/http"
+	_ "net/http/pprof"
 	gameserver "positron/game/gameServer"
 	"positron/internal/marshaller"
 	"positron/internal/transport"
@@ -11,10 +11,9 @@ import (
 )
 
 func main() {
-	//go func() {
-	//	// This starts a local server for profiling
-	//	http.ListenAndServe("localhost:6060", nil)
-	//}()
+	go func() {
+		http.ListenAndServe("localhost:6060", nil)
+	}()
 
 	wg := &sync.WaitGroup{}
 	game := gameserver.NewGameServer("127.0.0.1:7070", transport.NewWsTransport(), marshaller.NewMessagePackMarshaller())
