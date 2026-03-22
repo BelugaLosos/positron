@@ -62,6 +62,8 @@ func (n *NetValuesModel) AddOrModify(value *gameentities.NetValue) {
 	}
 }
 
+// need to be called from room when destroying objects
+// need to be modified for possibility to remove values from object and all subs it obly wayt to remove value from code
 func (n *NetValuesModel) TryRemove(value *gameentities.NetValue) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
