@@ -29,6 +29,7 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin:     func(r *http.Request) bool { return true },
+	WriteBufferPool: &sync.Pool{},
 }
 
 var bufferPool = sync.Pool{
@@ -276,7 +277,17 @@ func (p *wsPeer) sendPump() {
 			return
 		}
 
-		err := p.wsConn.WriteMessage(websocket.BinaryMessage, data)
+		writer, err := p.wsConn.NextWriter(websocket.BinaryMessage)
+
+		if err != nil {
+			p.ClosePeer()
+			log.Println("Can`t get reader")
+			return
+		}
+
+		_, err = writer.Write(data)
+
+		err = writer.Close()
 
 		data = data[:cap(data)]
 		bufferPool.Put(data)
