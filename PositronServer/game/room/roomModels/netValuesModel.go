@@ -84,7 +84,7 @@ func (n *NetValuesModel) findValue(value *gameentities.NetValue) (bool, *gameent
 	for i := range n.netValues {
 		currentValue := n.netValues[i]
 
-		if currentValue.GetLocalClientId() == value.GetLocalClientId() && currentValue.GetParentObjectId() == value.GetParentObjectId() && currentValue.GetSubObjectId() == value.GetSubObjectId() {
+		if currentValue.GetValueId() == value.GetValueId() && currentValue.GetParentObjectId() == value.GetParentObjectId() && currentValue.GetSubObjectId() == value.GetSubObjectId() {
 			return true, currentValue, i
 		}
 	}
@@ -102,7 +102,7 @@ func (n *NetValuesModel) modifyValue(value *gameentities.NetValue, currentValue 
 }
 
 func (n *NetValuesModel) getKeyOfValue(value *gameentities.NetValue) string {
-	left := strconv.FormatUint(uint64(value.GetLocalClientId()), 10)
+	left := strconv.FormatUint(uint64(value.GetValueId()), 10)
 	mid := strconv.FormatUint(uint64(value.GetParentObjectId()), 10)
 	right := strconv.FormatUint(uint64(value.GetSubObjectId()), 10)
 

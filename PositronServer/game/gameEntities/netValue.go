@@ -3,15 +3,15 @@ package gameentities
 type NetValue struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	localClientId  uint64
+	valueId        uint64
 	parentObjectId uint32
 	subObjectId    uint16
 	deleting       bool
 	payload        []byte
 }
 
-func (n *NetValue) GetLocalClientId() uint64 {
-	return n.localClientId
+func (n *NetValue) GetValueId() uint64 {
+	return n.valueId
 }
 
 func (n *NetValue) GetParentObjectId() uint32 {
