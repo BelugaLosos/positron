@@ -76,6 +76,7 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 	gamePositionsTick := datatransferobjects.NewGameUnreliableTickPacket(
 		r.gameObjectsModel.GetPositionMod(),
 		uint64(time.Now().UTC().Unix()),
+		0,
 	)
 
 	return gameTick, gamePositionsTick
@@ -99,7 +100,14 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket) {
 	}
 
 	for i := range packet.GetRemovedObjects() {
-		r.gameObjectsModel.RemoveGameObject(packet.GetRemovedObjects()[i], packet.GetSourceClient())
+		removingObj := packet.GetRemovedObjects()[i]
+		attemptor := packet.GetSourceClient()
+
+		wasRemoved := r.gameObjectsModel.TryRemoveGameObject(removingObj, attemptor)
+
+		if wasRemoved {
+			r.netValuesModel.RemoveAllValuesFromObject(removingObj)
+		}
 	}
 
 	for i := range packet.GetValueMod() {

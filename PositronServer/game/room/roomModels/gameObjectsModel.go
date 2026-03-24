@@ -9,25 +9,30 @@ import (
 type GameObjectsModel struct {
 	mutex *sync.Mutex
 
-	searchMap   map[uint32]*gameentities.GameObject
+	searchMap      map[uint32]*gameentities.GameObject
+	searchPosCache map[uint32]*gameentities.Tranform
+
 	gameObjects []*gameentities.GameObject
 
-	tempAdd      []*gameentities.GameObject
-	tempRemove   []uint32
-	tempTransfer []uint32
+	tempAdd         []*gameentities.GameObject
+	tempRemove      []uint32
+	tempTransfer    []uint32
+	tempPositionMod []*gameentities.Tranform
 
 	lastId uint32
 }
 
 func NewGameObjectsModel() *GameObjectsModel {
 	return &GameObjectsModel{
-		mutex:        &sync.Mutex{},
-		searchMap:    make(map[uint32]*gameentities.GameObject),
-		gameObjects:  make([]*gameentities.GameObject, 0),
-		tempAdd:      make([]*gameentities.GameObject, 0),
-		tempRemove:   make([]uint32, 0),
-		tempTransfer: make([]uint32, 0),
-		lastId:       0,
+		mutex:           &sync.Mutex{},
+		searchMap:       make(map[uint32]*gameentities.GameObject),
+		searchPosCache:  make(map[uint32]*gameentities.Tranform),
+		gameObjects:     make([]*gameentities.GameObject, 0),
+		tempAdd:         make([]*gameentities.GameObject, 0),
+		tempRemove:      make([]uint32, 0),
+		tempTransfer:    make([]uint32, 0),
+		tempPositionMod: make([]*gameentities.Tranform, 0),
+		lastId:          0,
 	}
 }
 
@@ -49,7 +54,7 @@ func (g *GameObjectsModel) GetPositionMod() []*gameentities.Tranform {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	return nil // NEED IMPELEMT
+	return g.tempPositionMod
 }
 
 func (g *GameObjectsModel) ResetTempBuffers() {
@@ -59,13 +64,29 @@ func (g *GameObjectsModel) ResetTempBuffers() {
 	g.tempAdd = g.tempAdd[:0]
 	g.tempRemove = g.tempRemove[:0]
 	g.tempTransfer = g.tempTransfer[:0]
+	g.tempPositionMod = g.tempPositionMod[:0]
 }
 
 func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.GameUnreliableTickPacket) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	// NEED IMPLEMENTATION
+	// NEED CHECK TIME. FOR NOW IT IGNORED
+
+	delta := movingPacket.GetMovedObjects()
+	source := movingPacket.GetSourceClient()
+
+	for i := range delta {
+		position := delta[i]
+		gameObject := g.searchMap[position.GetObjectId()]
+
+		if gameObject.GetOwnerId() == source { // IMPLEMENT DISTANCE CHECK
+			gameObject.Move(position.GetPosition(), position.GetRotation())
+			position.Move(position.GetPosition(), position.GetRotation())
+
+			g.tempPositionMod = append(g.tempPositionMod, position)
+		}
+	}
 }
 
 func (g *GameObjectsModel) AddGameObject(gameObject *gameentities.GameObject, owner uint32) {
@@ -79,25 +100,31 @@ func (g *GameObjectsModel) AddGameObject(gameObject *gameentities.GameObject, ow
 	g.tempAdd = append(g.tempAdd, gameObject)
 
 	g.searchMap[g.lastId] = gameObject
+	g.searchPosCache[g.lastId] = gameentities.NewTransform(gameObject)
 }
 
-func (g *GameObjectsModel) RemoveGameObject(id uint32, attemptor uint32) {
+func (g *GameObjectsModel) TryRemoveGameObject(id uint32, attemptor uint32) bool {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
+
+	success := false
 
 	for i := range g.gameObjects {
 		gameObject := g.gameObjects[i]
 
 		if gameObject.GetId() == id && gameObject.GetOwnerId() == attemptor {
-			g.gameObjects[i] = nil
 			g.gameObjects[i] = g.gameObjects[0]
-			g.gameObjects[0] = nil
 			g.gameObjects = g.gameObjects[1:]
 
 			g.tempRemove = append(g.tempRemove, gameObject.GetId())
 			delete(g.searchMap, gameObject.GetId())
+			delete(g.searchPosCache, gameObject.GetId())
+
+			success = true
 		}
 	}
+
+	return success
 }
 
 func (g *GameObjectsModel) TransferObjectsFromClientToHost(clientId uint32, actualHost uint32) {

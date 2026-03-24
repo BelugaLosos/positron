@@ -51,6 +51,11 @@ func (o *GameObject) SetIdAndOnwer(id uint32, owner uint32) {
 	o.owner = owner
 }
 
+func (o *GameObject) Move(position Vector3, rotation Vector3) {
+	o.rotation = rotation
+	o.positron = position
+}
+
 type Vector3 struct {
 	cords []float32
 }

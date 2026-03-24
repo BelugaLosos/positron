@@ -62,36 +62,24 @@ func (n *NetValuesModel) AddOrModify(value *gameentities.NetValue) {
 	}
 }
 
-// need to be called from room when destroying objects
-// need to be modified for possibility to remove values from object and all subs it obly wayt to remove value from code
-func (n *NetValuesModel) TryRemove(value *gameentities.NetValue) {
+func (n *NetValuesModel) RemoveAllValuesFromObject(objectUuid uint32) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	isExist, _, index := n.findValue(value)
-
-	if isExist {
-		n.netValues[index] = nil
-		n.netValues[index] = n.netValues[0]
-		n.netValues = n.netValues[1:]
-
-		value.MarkAsDeleting()
-		n.tempModificationBuffer = append(n.tempModificationBuffer, value)
-
-		delete(n.searchMap, n.getKeyOfValue(value))
-	}
-}
-
-func (n *NetValuesModel) findValue(value *gameentities.NetValue) (bool, *gameentities.NetValue, int) {
 	for i := range n.netValues {
-		currentValue := n.netValues[i]
+		val := n.netValues[i]
 
-		if currentValue.GetValueId() == value.GetValueId() && currentValue.GetParentObjectId() == value.GetParentObjectId() && currentValue.GetSubObjectId() == value.GetSubObjectId() {
-			return true, currentValue, i
+		if val.GetParentObjectId() == objectUuid {
+			n.netValues[i] = n.netValues[0]
+			n.netValues = n.netValues[1:]
+
+			delete(n.searchMap, n.getKeyOfValue(val))
+
+			val.MarkAsDeleting()
+
+			n.tempModificationBuffer = append(n.tempModificationBuffer, val)
 		}
 	}
-
-	return false, nil, 0
 }
 
 func (n *NetValuesModel) addValue(value *gameentities.NetValue) {

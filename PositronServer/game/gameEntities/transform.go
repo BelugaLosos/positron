@@ -27,3 +27,8 @@ func (t *Tranform) GetPosition() Vector3 {
 func (t *Tranform) GetRotation() Vector3 {
 	return t.rotation
 }
+
+func (t *Tranform) Move(position Vector3, rotation Vector3) {
+	t.position = position
+	t.rotation = rotation
+}
