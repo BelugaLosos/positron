@@ -3,7 +3,9 @@ package roommodels
 import (
 	gameentities "positron/game/gameEntities"
 	datatransferobjects "positron/game/gameHandlers/dataTransferObjects"
+	"positron/util"
 	"sync"
+	"time"
 )
 
 type GameObjectsModel struct {
@@ -19,20 +21,25 @@ type GameObjectsModel struct {
 	tempTransfer    []uint32
 	tempPositionMod []*gameentities.Tranform
 
+	lastUnrPacketTime time.Time
+
 	lastId uint32
 }
 
+const POSITION_DELTA_TO_SYNC = 0.1
+
 func NewGameObjectsModel() *GameObjectsModel {
 	return &GameObjectsModel{
-		mutex:           &sync.Mutex{},
-		searchMap:       make(map[uint32]*gameentities.GameObject),
-		searchPosCache:  make(map[uint32]*gameentities.Tranform),
-		gameObjects:     make([]*gameentities.GameObject, 0),
-		tempAdd:         make([]*gameentities.GameObject, 0),
-		tempRemove:      make([]uint32, 0),
-		tempTransfer:    make([]uint32, 0),
-		tempPositionMod: make([]*gameentities.Tranform, 0),
-		lastId:          0,
+		mutex:             &sync.Mutex{},
+		searchMap:         make(map[uint32]*gameentities.GameObject),
+		searchPosCache:    make(map[uint32]*gameentities.Tranform),
+		gameObjects:       make([]*gameentities.GameObject, 0),
+		tempAdd:           make([]*gameentities.GameObject, 0),
+		tempRemove:        make([]uint32, 0),
+		tempTransfer:      make([]uint32, 0),
+		tempPositionMod:   make([]*gameentities.Tranform, 0),
+		lastUnrPacketTime: time.Now(),
+		lastId:            0,
 	}
 }
 
@@ -71,7 +78,13 @@ func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.Gam
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	// NEED CHECK TIME. FOR NOW IT IGNORED
+	packetTime := time.Unix(int64(movingPacket.GetTime()), 0)
+
+	if packetTime.Before(g.lastUnrPacketTime) {
+		return
+	}
+
+	g.lastUnrPacketTime = packetTime
 
 	delta := movingPacket.GetMovedObjects()
 	source := movingPacket.GetSourceClient()
@@ -80,7 +93,7 @@ func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.Gam
 		position := delta[i]
 		gameObject := g.searchMap[position.GetObjectId()]
 
-		if gameObject.GetOwnerId() == source { // IMPLEMENT DISTANCE CHECK
+		if gameObject.GetOwnerId() == source && util.PointsDistance(position.GetPosition(), gameObject.GetPosition()) > POSITION_DELTA_TO_SYNC {
 			gameObject.Move(position.GetPosition(), position.GetRotation())
 			position.Move(position.GetPosition(), position.GetRotation())
 

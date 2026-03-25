@@ -17,6 +17,10 @@ func NewGameUnreliableTickPacket(movedObjects []*gameentities.Tranform, timeStam
 	}
 }
 
+func (g *GameUnreliableTickPacket) GetTime() uint64 {
+	return g.timestamp
+}
+
 func (g *GameUnreliableTickPacket) GetMovedObjects() []*gameentities.Tranform {
 	return g.movedObjects
 }
