@@ -13,7 +13,7 @@ type GameObjectsModel struct {
 	searchMap      map[uint32]*gameentities.GameObject
 	searchPosCache map[uint32]*gameentities.Tranform
 
-	gameObjects []*gameentities.GameObject
+	gameObjectsStructuredCache []*gameentities.GameObject
 
 	tempAdd         []*gameentities.GameObject
 	tempRemove      []uint32
@@ -27,15 +27,15 @@ const POSITION_DELTA_TO_SYNC = 0.05
 
 func NewGameObjectsModel() *GameObjectsModel {
 	return &GameObjectsModel{
-		mutex:           &sync.Mutex{},
-		searchMap:       make(map[uint32]*gameentities.GameObject),
-		searchPosCache:  make(map[uint32]*gameentities.Tranform),
-		gameObjects:     make([]*gameentities.GameObject, 0),
-		tempAdd:         make([]*gameentities.GameObject, 0),
-		tempRemove:      make([]uint32, 0),
-		tempTransfer:    make([]uint32, 0),
-		tempPositionMod: make([]*gameentities.Tranform, 0),
-		lastId:          0,
+		mutex:                      &sync.Mutex{},
+		searchMap:                  make(map[uint32]*gameentities.GameObject),
+		searchPosCache:             make(map[uint32]*gameentities.Tranform),
+		gameObjectsStructuredCache: make([]*gameentities.GameObject, 0),
+		tempAdd:                    make([]*gameentities.GameObject, 0),
+		tempRemove:                 make([]uint32, 0),
+		tempTransfer:               make([]uint32, 0),
+		tempPositionMod:            make([]*gameentities.Tranform, 0),
+		lastId:                     0,
 	}
 }
 
@@ -43,7 +43,8 @@ func (g *GameObjectsModel) GetGameObjects() []*gameentities.GameObject {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	return g.gameObjects
+	g.updateStructuredCache()
+	return g.gameObjectsStructuredCache
 }
 
 func (g *GameObjectsModel) GetModification() ([]*gameentities.GameObject, []uint32, []uint32) {
@@ -97,7 +98,6 @@ func (g *GameObjectsModel) AddGameObject(gameObject *gameentities.GameObject, ow
 	g.lastId++
 	gameObject.SetIdAndOnwer(g.lastId, owner)
 
-	g.gameObjects = append(g.gameObjects, gameObject)
 	g.tempAdd = append(g.tempAdd, gameObject)
 
 	g.searchMap[g.lastId] = gameObject
@@ -110,19 +110,14 @@ func (g *GameObjectsModel) TryRemoveGameObject(id uint32, attemptor uint32) bool
 
 	success := false
 
-	for i := range g.gameObjects {
-		gameObject := g.gameObjects[i]
+	object, exist := g.searchMap[id]
 
-		if gameObject.GetId() == id && gameObject.GetOwnerId() == attemptor {
-			g.gameObjects[i] = g.gameObjects[0]
-			g.gameObjects = g.gameObjects[1:]
+	if exist && object.GetOwnerId() == attemptor {
+		g.tempRemove = append(g.tempRemove, id)
+		delete(g.searchMap, id)
+		delete(g.searchPosCache, id)
 
-			g.tempRemove = append(g.tempRemove, gameObject.GetId())
-			delete(g.searchMap, gameObject.GetId())
-			delete(g.searchPosCache, gameObject.GetId())
-
-			success = true
-		}
+		success = true
 	}
 
 	return success
@@ -132,11 +127,21 @@ func (g *GameObjectsModel) TransferObjectsFromClientToHost(clientId uint32, actu
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	for i := range g.gameObjects {
-		if g.gameObjects[i].GetOwnerId() == clientId {
-			g.gameObjects[i].SetIdAndOnwer(g.gameObjects[i].GetId(), actualHost)
+	g.updateStructuredCache()
 
-			g.tempTransfer = append(g.tempTransfer, g.gameObjects[i].GetId())
+	for i := range g.gameObjectsStructuredCache {
+		if g.gameObjectsStructuredCache[i].GetOwnerId() == clientId {
+			g.gameObjectsStructuredCache[i].SetIdAndOnwer(g.gameObjectsStructuredCache[i].GetId(), actualHost)
+
+			g.tempTransfer = append(g.tempTransfer, g.gameObjectsStructuredCache[i].GetId())
 		}
+	}
+}
+
+func (g *GameObjectsModel) updateStructuredCache() {
+	g.gameObjectsStructuredCache = g.gameObjectsStructuredCache[:0]
+
+	for _, obj := range g.searchMap {
+		g.gameObjectsStructuredCache = append(g.gameObjectsStructuredCache, obj)
 	}
 }
