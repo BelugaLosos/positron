@@ -148,6 +148,17 @@ func (t *WsTransport) GetPeerHandlers(peerUuid string) []internal.Handler {
 	return t.handlers[wsConn]
 }
 
+func (t *WsTransport) KickClient(uuid string) {
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	peer, ok := t.connections[uuid]
+
+	if ok {
+		peer.ClosePeer()
+	}
+}
+
 func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	peer := &wsPeer{
