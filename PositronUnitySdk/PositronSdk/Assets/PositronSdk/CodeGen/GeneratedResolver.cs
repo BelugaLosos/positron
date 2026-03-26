@@ -247,8 +247,7 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.DataTransferObjects.GameUnreliableTick value, global::MessagePack.MessagePackSerializerOptions options)
         {
             global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
-            writer.WriteArrayHeader(3);
-            writer.Write(value.TimeStamp);
+            writer.WriteArrayHeader(2);
             writer.Write(value.ClientId);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetTransform[]>(formatterResolver).Serialize(ref writer, value.MovedObjects, options);
         }
@@ -270,12 +269,9 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
                 switch (i)
                 {
                     case 0:
-                        ____result.TimeStamp = reader.ReadUInt64();
-                        break;
-                    case 1:
                         ____result.ClientId = reader.ReadUInt32();
                         break;
-                    case 2:
+                    case 1:
                         ____result.MovedObjects = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetTransform[]>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     default:

@@ -75,7 +75,6 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 
 	gamePositionsTick := datatransferobjects.NewGameUnreliableTickPacket(
 		r.gameObjectsModel.GetPositionMod(),
-		uint64(time.Now().UTC().Unix()),
 		0,
 	)
 

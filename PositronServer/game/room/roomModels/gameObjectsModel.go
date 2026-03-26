@@ -5,7 +5,6 @@ import (
 	datatransferobjects "positron/game/gameHandlers/dataTransferObjects"
 	"positron/util"
 	"sync"
-	"time"
 )
 
 type GameObjectsModel struct {
@@ -21,25 +20,22 @@ type GameObjectsModel struct {
 	tempTransfer    []uint32
 	tempPositionMod []*gameentities.Tranform
 
-	lastUnrPacketTime time.Time
-
 	lastId uint32
 }
 
-const POSITION_DELTA_TO_SYNC = 0.1
+const POSITION_DELTA_TO_SYNC = 0.05
 
 func NewGameObjectsModel() *GameObjectsModel {
 	return &GameObjectsModel{
-		mutex:             &sync.Mutex{},
-		searchMap:         make(map[uint32]*gameentities.GameObject),
-		searchPosCache:    make(map[uint32]*gameentities.Tranform),
-		gameObjects:       make([]*gameentities.GameObject, 0),
-		tempAdd:           make([]*gameentities.GameObject, 0),
-		tempRemove:        make([]uint32, 0),
-		tempTransfer:      make([]uint32, 0),
-		tempPositionMod:   make([]*gameentities.Tranform, 0),
-		lastUnrPacketTime: time.Now(),
-		lastId:            0,
+		mutex:           &sync.Mutex{},
+		searchMap:       make(map[uint32]*gameentities.GameObject),
+		searchPosCache:  make(map[uint32]*gameentities.Tranform),
+		gameObjects:     make([]*gameentities.GameObject, 0),
+		tempAdd:         make([]*gameentities.GameObject, 0),
+		tempRemove:      make([]uint32, 0),
+		tempTransfer:    make([]uint32, 0),
+		tempPositionMod: make([]*gameentities.Tranform, 0),
+		lastId:          0,
 	}
 }
 
@@ -77,14 +73,6 @@ func (g *GameObjectsModel) ResetTempBuffers() {
 func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.GameUnreliableTickPacket) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
-
-	packetTime := time.Unix(int64(movingPacket.GetTime()), 0)
-
-	if packetTime.Before(g.lastUnrPacketTime) {
-		return
-	}
-
-	g.lastUnrPacketTime = packetTime
 
 	delta := movingPacket.GetMovedObjects()
 	source := movingPacket.GetSourceClient()
