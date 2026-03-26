@@ -124,15 +124,16 @@ func (g *GameServer) roomTick(room *room.Room) {
 			packet, unreliablePacket := room.CreateTickPackets()
 			peers := room.GetAllConnectedPeers()
 
+			packetMarshallBuffer := bufferPool.Get().(*bytes.Buffer)
+			packetUnrMarshalled := bufferPool.Get().(*bytes.Buffer)
+
+			packetMarshallBuffer.Reset()
+			packetUnrMarshalled.Reset()
+
+			err := g.marhaller.MarshalNonAlloc(packetMarshallBuffer, packet)
+			unrErr := g.marhaller.MarshalNonAlloc(packetUnrMarshalled, unreliablePacket)
+
 			for i := range peers {
-				packetMarshallBuffer := bufferPool.Get().(*bytes.Buffer)
-				packetMarshallBuffer.Reset()
-				packetUnrMarshalled := bufferPool.Get().(*bytes.Buffer)
-				packetUnrMarshalled.Reset()
-
-				err := g.marhaller.MarshalNonAlloc(packetMarshallBuffer, packet)
-				unrErr := g.marhaller.MarshalNonAlloc(packetUnrMarshalled, unreliablePacket)
-
 				if err == nil {
 					g.transport.SendToPeer(packetMarshallBuffer.Bytes(), eventtypes.TICK, peers[i], true)
 				} else {
@@ -144,10 +145,10 @@ func (g *GameServer) roomTick(room *room.Room) {
 				} else {
 					log.Println(unrErr)
 				}
-
-				bufferPool.Put(packetMarshallBuffer)
-				bufferPool.Put(packetUnrMarshalled)
 			}
+
+			bufferPool.Put(packetMarshallBuffer)
+			bufferPool.Put(packetUnrMarshalled)
 
 			room.ResetTempBuffers()
 
