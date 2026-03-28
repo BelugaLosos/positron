@@ -135,3 +135,27 @@ func TestMove(t *testing.T) {
 		t.Error("Invalid reset and distance check")
 	}
 }
+
+func TestGoReset(t *testing.T) {
+	model := roommodels.NewGameObjectsModel()
+	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
+	model.ResetTempBuffers()
+
+	mod1, mod2, mod3 := model.GetModification()
+
+	if len(mod1) != 0 || len(mod2) != 0 || len(mod3) != 0 {
+		t.Error("Ineffient reset")
+	}
+}
+
+func TestGoRegister(t *testing.T) {
+	model := roommodels.NewGameObjectsModel()
+	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
+	model.ResetTempBuffers()
+
+	objs := model.GetGameObjects()
+
+	if len(objs) != 1 || objs[0].GetCreationId() != 0 || objs[0].GetId() != 1 || objs[0].GetOwnerId() != 1 {
+		t.Error("Obj not resigtred or data corrupted")
+	}
+}

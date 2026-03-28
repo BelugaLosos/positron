@@ -85,10 +85,14 @@ func (n *NetValuesModel) RemoveAllValuesFromObject(objectUuid uint32) {
 func (n *NetValuesModel) addValue(value *gameentities.NetValue) {
 	n.netValues = append(n.netValues, value)
 	n.searchMap[n.getKeyOfValue(value)] = value
+
+	n.tempModificationBuffer = append(n.tempModificationBuffer, value)
 }
 
 func (n *NetValuesModel) modifyValue(value *gameentities.NetValue, currentValue *gameentities.NetValue) {
 	currentValue.ModifyPayload(value.GetPayload())
+
+	n.tempModificationBuffer = append(n.tempModificationBuffer, value)
 }
 
 func (n *NetValuesModel) getKeyOfValue(value *gameentities.NetValue) string {
