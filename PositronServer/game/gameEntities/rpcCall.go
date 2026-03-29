@@ -11,6 +11,17 @@ type RpcCall struct {
 	args         []byte
 }
 
+func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType uint8, methodName string, agrs []byte) *RpcCall {
+	return &RpcCall{
+		objectId:     objId,
+		targetClient: targetClient,
+		subObjectId:  subObjectsId,
+		rpcType:      rpcType,
+		methodName:   methodName,
+		args:         agrs,
+	}
+}
+
 func (r *RpcCall) GetObjectId() uint32 {
 	return r.objectId
 }
