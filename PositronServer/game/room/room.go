@@ -126,22 +126,37 @@ func (r *Room) ProcessUnreliableTick(packet *datatransferobjects.GameUnreliableT
 }
 
 func (r *Room) GetHost() uint32 {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
 	return r.hostIndex
 }
 
 func (r *Room) GetTickrate() int {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
 	return r.tickrate
 }
 
 func (r *Room) GetName() string {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
 	return r.name
 }
 
 func (r *Room) GetUuid() string {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
 	return r.uuid
 }
 
 func (r *Room) GetCurrentConnectedPeersCount() int32 {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
 	return int32(len(r.connectedPeers))
 }
 
@@ -153,14 +168,23 @@ func (r *Room) GetAllConnectedPeers() []string {
 }
 
 func (r *Room) GetMaxPlayersCount() int32 {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
 	return int32(r.maxClientsSlots)
 }
 
 func (r *Room) IsTimeFromLastLeaveOverTTL() bool {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
 	return time.Now().UTC().Sub(r.lastLeaveTime) > r.ttl
 }
 
 func (r *Room) GetWorld() ([]*gameentities.GameObject, []*gameentities.NetValue, []*gameentities.RpcCall) {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
 	return r.gameObjectsModel.GetGameObjects(), r.netValuesModel.GetValues(), r.rpcsModel.GetCachedRpcs()
 }
 
