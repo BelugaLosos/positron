@@ -5,7 +5,11 @@ using Positron.Client.Ping;
 using Positron.Client.Settings;
 using Positron.Serialzier;
 using Positron.Transport;
+using Positron.Client.ConstantHolders;
 using UnityEngine;
+using System;
+using Positron.Client.DataTransferObjects;
+using Positron.Client.Interfaces;
 
 namespace Positron
 {
@@ -21,6 +25,10 @@ namespace Positron
         private static bool _pending;
 
         public static IReadOnlyPingModel PingModel => _pingModel;
+        public static IPositronObservableHandler<RoomListResponse> GetRoomsHandler => _client.GetHandler<GetRoomsHandler>();
+
+        public static event Action connected;
+        public static event Action disconnected;
 
         public static void InitSdk(PositronSettings settings)
         {
@@ -34,7 +42,8 @@ namespace Positron
             _client = new
                 (
                     settings, new MsgPackSerializer(), new WebSocketTransport(), 
-                    new PingHandler(_pingModel)
+                    new PingHandler(_pingModel),
+                    new GetRoomsHandler()
                 );
 
             _pingModel.Init(_client);
@@ -91,11 +100,18 @@ namespace Positron
             _pending = true;
         }
 
+        public static void GetRoomsList()
+        {
+            _client.SendRaw(stackalloc byte[1] { 0xFF }, EventTypes.GET_ALL_ROOMS, true);
+        }
+
         private static void OnConnected()
         {
             Debug.Log("Positron connected");
             _connected = true;
             _pending = false;
+
+            connected?.Invoke();
         }
 
         private static void OnDisconnected()
@@ -103,6 +119,8 @@ namespace Positron
             Debug.Log("Positron disconnected");
             _connected = false;
             _pending = false;
+
+            disconnected?.Invoke();
         }
     }
 }

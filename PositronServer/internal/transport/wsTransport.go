@@ -183,6 +183,11 @@ func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	t.handlers[peer] = handlers
 
 	for i := range handlers {
+		if handlers[i] == nil {
+			log.Printf("Handler by id %v is nil of len %v", i, len(handlers))
+			continue
+		}
+
 		handlers[i].Init(t, t.gServer, id)
 	}
 

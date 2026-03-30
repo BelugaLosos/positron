@@ -15,6 +15,7 @@ namespace Positron.Client
         private readonly IPositronHandler[] _handlers;
 
         public ClientStatus Status { get; private set; }
+        public IPositronSerializer Serializer => _serializer;
 
         public event Action connected;
         public event Action disconnected;
@@ -65,6 +66,19 @@ namespace Positron.Client
         public void SendRaw(Span<byte> payloadData, EventTypes eventType, bool reliable)
         {
             _transport.Send(payloadData, eventType, reliable);
+        }
+
+        public T GetHandler<T>() where T : IPositronHandler
+        {
+            foreach (IPositronHandler handler in _handlers)
+            {
+                if (handler.GetType() == typeof(T))
+                {
+                    return (T)handler;
+                }
+            }
+
+            return default;
         }
 
         private void OnReceiveMessageFromTransport(EventTypes types, byte[] payloadData)

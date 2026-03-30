@@ -18,7 +18,7 @@ func NewGameHandlersFactory(gServer *GameServer) *gameHandlersFactory {
 func (g *gameHandlersFactory) Create() ([]internal.Handler, internal.Handler) {
 	disconnectionHandler := gamehandlers.NewLeaveRoomHandler()
 
-	handlers := make([]internal.Handler, 7)
+	handlers := make([]internal.Handler, 0)
 	handlers = append(handlers, gamehandlers.NewPingHanler())
 	handlers = append(handlers, gamehandlers.NewCreateRoomHandler())
 	handlers = append(handlers, gamehandlers.NewGetAllRoomsHandler())
