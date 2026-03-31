@@ -35,7 +35,7 @@ func TestRoomGetters(t *testing.T) {
 func TestAddPeer(t *testing.T) {
 	room := room.NewRoom("test", 10, 10*time.Second)
 
-	id, err := room.AddPeer("11111111111")
+	id, err := room.AddPeer("1")
 
 	if id != 1 {
 		t.Error("wrong id")
@@ -45,7 +45,7 @@ func TestAddPeer(t *testing.T) {
 		t.Error(err)
 	}
 
-	id, err = room.AddPeer("222222222222")
+	id, err = room.AddPeer("2")
 
 	if id != 2 {
 		t.Error("wrong id")
@@ -57,8 +57,8 @@ func TestAddPeer(t *testing.T) {
 
 	peers := room.GetAllConnectedPeers()
 
-	if len(peers) != 2 || peers[0] != "11111111111" || peers[1] != "222222222222" {
-		t.Error("not registred peers")
+	if len(peers) != 2 || peers[0] != "1" || peers[1] != "2" {
+		t.Errorf("not registred peers %v len %v", peers, len(peers))
 	}
 }
 
