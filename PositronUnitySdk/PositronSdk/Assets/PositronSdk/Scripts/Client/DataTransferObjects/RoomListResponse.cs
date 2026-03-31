@@ -13,7 +13,9 @@ namespace Positron.Client.DataTransferObjects
     {
         [Key(0)] public string Name { get; set; }
         [Key(1)] public string Uuid { get; set; }
-        [Key(2)] public int CurrentPlayers { get; set; }
-        [Key(3)] public int MaxPlayers { get; set; }
+        [Key(2)] public uint CurrentPlayers { get; set; }
+        [Key(3)] public uint MaxPlayers { get; set; }
+        [Key(4)] public uint Scene { get; set; }
+        [Key(5)] public byte[] ExternalData { get; set; }
     }
 }

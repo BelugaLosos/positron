@@ -139,9 +139,11 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.DataTransferObjects.CreateRoomPacket value, global::MessagePack.MessagePackSerializerOptions options)
         {
             global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
-            writer.WriteArrayHeader(2);
+            writer.WriteArrayHeader(4);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.Name, options);
             writer.Write(value.PlayerCap);
+            writer.Write(value.Scene);
+            writer.Write(value.ExternalData);
         }
 
         public global::Positron.Client.DataTransferObjects.CreateRoomPacket Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -164,7 +166,13 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
                         ____result.Name = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     case 1:
-                        ____result.PlayerCap = reader.ReadInt32();
+                        ____result.PlayerCap = reader.ReadUInt32();
+                        break;
+                    case 2:
+                        ____result.Scene = reader.ReadUInt32();
+                        break;
+                    case 3:
+                        ____result.ExternalData = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
                         break;
                     default:
                         reader.Skip();
@@ -471,11 +479,13 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.DataTransferObjects.RoomsListElement value, global::MessagePack.MessagePackSerializerOptions options)
         {
             global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
-            writer.WriteArrayHeader(4);
+            writer.WriteArrayHeader(6);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.Name, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.Uuid, options);
             writer.Write(value.CurrentPlayers);
             writer.Write(value.MaxPlayers);
+            writer.Write(value.Scene);
+            writer.Write(value.ExternalData);
         }
 
         public global::Positron.Client.DataTransferObjects.RoomsListElement Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -501,10 +511,16 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
                         ____result.Uuid = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     case 2:
-                        ____result.CurrentPlayers = reader.ReadInt32();
+                        ____result.CurrentPlayers = reader.ReadUInt32();
                         break;
                     case 3:
-                        ____result.MaxPlayers = reader.ReadInt32();
+                        ____result.MaxPlayers = reader.ReadUInt32();
+                        break;
+                    case 4:
+                        ____result.Scene = reader.ReadUInt32();
+                        break;
+                    case 5:
+                        ____result.ExternalData = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
                         break;
                     default:
                         reader.Skip();

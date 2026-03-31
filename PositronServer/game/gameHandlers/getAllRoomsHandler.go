@@ -41,8 +41,10 @@ func (g *GetAllRoomsHandler) PassHandle(packet []byte) {
 		roomList[i] = &datatransferobjects.RoomsListElement{
 			Name:           rooms[i].GetName(),
 			Uuid:           rooms[i].GetUuid(),
-			CurrentPlayers: rooms[i].GetCurrentConnectedPeersCount(),
-			MaxPlayers:     rooms[i].GetMaxPlayersCount(),
+			CurrentPlayers: uint32(rooms[i].GetCurrentConnectedPeersCount()),
+			MaxPlayers:     uint32(rooms[i].GetMaxPlayersCount()),
+			Scene:          rooms[i].GetScene(),
+			ExternalData:   rooms[i].GetExternalData(),
 		}
 	}
 

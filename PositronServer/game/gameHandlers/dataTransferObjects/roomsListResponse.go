@@ -11,6 +11,8 @@ type RoomsListElement struct {
 
 	Name           string
 	Uuid           string
-	CurrentPlayers int32
-	MaxPlayers     int32
+	CurrentPlayers uint32
+	MaxPlayers     uint32
+	Scene          uint32
+	ExternalData   []byte
 }

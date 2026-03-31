@@ -31,12 +31,15 @@ type Room struct {
 	ttl           time.Duration
 	tickrate      int
 
+	scene        uint32
+	ExternalData []byte
+
 	gameObjectsModel *roommodels.GameObjectsModel
 	netValuesModel   *roommodels.NetValuesModel
 	rpcsModel        *roommodels.RpcsModel
 }
 
-func NewRoom(name string, maxSlots int, ttl time.Duration) *Room {
+func NewRoom(name string, maxSlots int, ttl time.Duration, scene uint32, externalData []byte) *Room {
 	return &Room{
 		mutex:                   &sync.RWMutex{},
 		Termination:             make(chan struct{}),
@@ -51,6 +54,8 @@ func NewRoom(name string, maxSlots int, ttl time.Duration) *Room {
 		lastLeaveTime:           time.Now().UTC(),
 		ttl:                     ttl,
 		tickrate:                30,
+		scene:                   scene,
+		ExternalData:            externalData,
 		gameObjectsModel:        roommodels.NewGameObjectsModel(),
 		netValuesModel:          roommodels.NewNetValuesModel(),
 		rpcsModel:               roommodels.NewRpcsModel(),
@@ -137,6 +142,20 @@ func (r *Room) GetTickrate() int {
 	defer r.mutex.RUnlock()
 
 	return r.tickrate
+}
+
+func (r *Room) GetScene() uint32 {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	return r.scene
+}
+
+func (r *Room) GetExternalData() []byte {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	return r.ExternalData
 }
 
 func (r *Room) GetName() string {
