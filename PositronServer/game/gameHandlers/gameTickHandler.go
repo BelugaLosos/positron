@@ -36,7 +36,7 @@ func (g *GameTickHandler) PassHandle(packet []byte) {
 	}
 
 	var tickPacket datatransferobjects.GameTickPacket
-	err := g.marsahller.Unmarshal(packet, tickPacket)
+	err := g.marsahller.Unmarshal(packet, &tickPacket)
 
 	if err != nil {
 		log.Println(err)

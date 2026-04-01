@@ -36,14 +36,14 @@ func (c *CreateRoomHandler) PassHandle(packet []byte) {
 	}
 
 	var data datatransferobjects.CreateRoomPacket
-	err := c.gameSaver.GetMarshaller().Unmarshal(packet, data)
+	err := c.gameSaver.GetMarshaller().Unmarshal(packet, &data)
 
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	uuid := c.gameSaver.CreateRoom(data.GetName(), int(data.GetPlayerCap()), 10*time.Second, data.GetScene(), data.GetExternalData())
+	uuid := c.gameSaver.CreateRoom(data.Name, int(data.PlayerCap), 10*time.Second, data.Scene, data.ExternalData)
 
 	response := datatransferobjects.NewRoomCreationResponsePacket(uuid)
 	binResponse, _ := c.gameSaver.GetMarshaller().Marshal(response)

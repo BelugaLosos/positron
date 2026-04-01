@@ -26,6 +26,7 @@ namespace Positron
 
         public static IReadOnlyPingModel PingModel => _pingModel;
         public static IPositronObservableHandler<RoomListResponse> GetRoomsHandler => _client.GetHandler<GetRoomsHandler>();
+        public static IPositronObservableHandler<RoomCreationResponse> RoomCreatedHandler => _client.GetHandler<RoomCreatedHandler>();
 
         public static event Action connected;
         public static event Action disconnected;
@@ -43,7 +44,8 @@ namespace Positron
                 (
                     settings, new MsgPackSerializer(), new WebSocketTransport(), 
                     new PingHandler(_pingModel),
-                    new GetRoomsHandler()
+                    new GetRoomsHandler(),
+                    new RoomCreatedHandler()
                 );
 
             _pingModel.Init(_client);
@@ -103,6 +105,25 @@ namespace Positron
         public static void GetRoomsList()
         {
             _client.SendRaw(stackalloc byte[1] { 0xFF }, EventTypes.GET_ALL_ROOMS, true);
+        }
+
+        public static void JoinRoom(string uuid)
+        {
+            JoinRoomRequest request = new();
+            request.Uuid = uuid;
+
+            _client.Send(request, EventTypes.JOIN_ROOM, true);
+        }
+
+        public static void CreateRoom(string name, int playerCap, int level, byte[] externalData)
+        {
+            CreateRoomPacket request = new();
+            request.Name = name;
+            request.PlayerCap = (uint)playerCap;
+            request.Scene = (uint)level;
+            request.ExternalData = externalData;
+
+            _client.Send(request, EventTypes.CREATE_ROOM, true);
         }
 
         private static void OnConnected()

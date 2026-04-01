@@ -31,7 +31,7 @@ func (j *JoinRoomHandler) GetType() byte {
 
 func (j *JoinRoomHandler) PassHandle(packet []byte) {
 	var request datatransferobjects.JoinRoomRequestPacket
-	err := j.gameServer.GetMarshaller().Unmarshal(packet, request)
+	err := j.gameServer.GetMarshaller().Unmarshal(packet, &request)
 
 	if err != nil {
 		log.Println(err)
