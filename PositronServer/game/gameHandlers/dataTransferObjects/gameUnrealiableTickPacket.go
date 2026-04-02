@@ -5,21 +5,21 @@ import gameentities "positron/game/gameEntities"
 type GameUnreliableTickPacket struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	sourceClient uint32
-	movedObjects []*gameentities.Tranform
+	SourceClient uint32
+	MovedObjects []*gameentities.Tranform
 }
 
 func NewGameUnreliableTickPacket(movedObjects []*gameentities.Tranform, sourceClient uint32) *GameUnreliableTickPacket {
 	return &GameUnreliableTickPacket{
-		sourceClient: sourceClient,
-		movedObjects: movedObjects,
+		SourceClient: sourceClient,
+		MovedObjects: movedObjects,
 	}
 }
 
 func (g *GameUnreliableTickPacket) GetMovedObjects() []*gameentities.Tranform {
-	return g.movedObjects
+	return g.MovedObjects
 }
 
 func (g *GameUnreliableTickPacket) GetSourceClient() uint32 {
-	return g.sourceClient
+	return g.SourceClient
 }

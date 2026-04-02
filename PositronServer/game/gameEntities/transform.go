@@ -3,32 +3,32 @@ package gameentities
 type Tranform struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	objectId uint32
-	position Vector3
-	rotation Vector3
+	ObjectId uint32
+	Position Vector3
+	Rotation Vector3
 }
 
 func NewTransform(gameObject *GameObject) *Tranform {
 	return &Tranform{
-		objectId: gameObject.id,
-		position: gameObject.positron,
-		rotation: gameObject.rotation,
+		ObjectId: gameObject.Id,
+		Position: gameObject.Positron,
+		Rotation: gameObject.Rotation,
 	}
 }
 
 func (t *Tranform) GetObjectId() uint32 {
-	return t.objectId
+	return t.ObjectId
 }
 
 func (t *Tranform) GetPosition() Vector3 {
-	return t.position
+	return t.Position
 }
 
 func (t *Tranform) GetRotation() Vector3 {
-	return t.rotation
+	return t.Rotation
 }
 
 func (t *Tranform) Move(position Vector3, rotation Vector3) {
-	t.position = position
-	t.rotation = rotation
+	t.Position = position
+	t.Rotation = rotation
 }

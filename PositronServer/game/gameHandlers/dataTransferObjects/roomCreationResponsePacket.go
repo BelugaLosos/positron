@@ -3,11 +3,11 @@ package datatransferobjects
 type RoomCreationResponsePacket struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	uuid string
+	Uuid string
 }
 
 func NewRoomCreationResponsePacket(uuid string) *RoomCreationResponsePacket {
 	return &RoomCreationResponsePacket{
-		uuid: uuid,
+		Uuid: uuid,
 	}
 }

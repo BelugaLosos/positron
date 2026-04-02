@@ -3,45 +3,45 @@ package gameentities
 type RpcCall struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	objectId     uint32
-	targetClient uint32
-	subObjectId  uint16
-	rpcType      uint8
-	methodName   string
-	args         []byte
+	ObjectId     uint32
+	TargetClient uint32
+	SubObjectId  uint16
+	RpcType      uint8
+	MethodName   string
+	Args         []byte
 }
 
 func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType uint8, methodName string, agrs []byte) *RpcCall {
 	return &RpcCall{
-		objectId:     objId,
-		targetClient: targetClient,
-		subObjectId:  subObjectsId,
-		rpcType:      rpcType,
-		methodName:   methodName,
-		args:         agrs,
+		ObjectId:     objId,
+		TargetClient: targetClient,
+		SubObjectId:  subObjectsId,
+		RpcType:      rpcType,
+		MethodName:   methodName,
+		Args:         agrs,
 	}
 }
 
 func (r *RpcCall) GetObjectId() uint32 {
-	return r.objectId
+	return r.ObjectId
 }
 
 func (r *RpcCall) GetTargetClient() uint32 {
-	return r.targetClient
+	return r.TargetClient
 }
 
 func (r *RpcCall) GetSubObjectId() uint16 {
-	return r.subObjectId
+	return r.SubObjectId
 }
 
 func (r *RpcCall) GetTarget() uint8 {
-	return r.rpcType
+	return r.RpcType
 }
 
 func (r *RpcCall) GetMethodName() string {
-	return r.methodName
+	return r.MethodName
 }
 
 func (r *RpcCall) GetArgs() []byte {
-	return r.args
+	return r.Args
 }
