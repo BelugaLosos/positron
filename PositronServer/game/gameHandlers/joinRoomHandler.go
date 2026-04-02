@@ -2,7 +2,7 @@ package gamehandlers
 
 import (
 	"log"
-	datatransferobjects "positron/game/gameHandlers/dataTransferObjects"
+	datatransferobjects "positron/game/dataTransferObjects"
 	eventtypes "positron/game/gameHandlers/eventTypes"
 	"positron/game/room"
 	"positron/internal"

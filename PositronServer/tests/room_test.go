@@ -1,8 +1,8 @@
 package tests
 
 import (
+	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
-	datatransferobjects "positron/game/gameHandlers/dataTransferObjects"
 	"positron/game/room"
 	"testing"
 	"time"

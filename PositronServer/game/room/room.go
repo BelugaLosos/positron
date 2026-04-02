@@ -2,8 +2,8 @@ package room
 
 import (
 	"errors"
+	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
-	datatransferobjects "positron/game/gameHandlers/dataTransferObjects"
 	roommodels "positron/game/room/roomModels"
 	"sync"
 	"time"

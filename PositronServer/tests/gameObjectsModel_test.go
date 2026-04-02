@@ -2,8 +2,8 @@ package tests
 
 import (
 	"log"
+	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
-	datatransferobjects "positron/game/gameHandlers/dataTransferObjects"
 	roommodels "positron/game/room/roomModels"
 	"testing"
 )
