@@ -57,6 +57,8 @@ func (o *GameObject) Move(position Vector3, rotation Vector3) {
 }
 
 type Vector3 struct {
+	_msgpack struct{} `msgpack:",as_array"`
+
 	Cords []float32
 }
 
