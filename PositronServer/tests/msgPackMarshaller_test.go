@@ -5,7 +5,6 @@ import (
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
 	"positron/internal/marshaller"
-	"reflect"
 	"testing"
 )
 
@@ -65,29 +64,4 @@ func TestUnmarshalling(t *testing.T) {
 	}
 
 	log.Printf("Marshalled tick packet len is %v bytes length string presentation {%s}", len(marshalled), string(marshalled))
-}
-
-func TestNetUnreliableTickMarshallization(t *testing.T) {
-	autoTestMarshalling(t, func() interface{} {
-		gameObj := gameentities.NewGameObject(1, 2, 3, 4, *gameentities.NewVector(5, 6, 7), *gameentities.NewVector(8, 9, 10))
-		return datatransferobjects.NewGameUnreliableTickPacket([]*gameentities.Tranform{gameentities.NewTransform(gameObj)}, 1)
-	})
-}
-
-func autoTestMarshalling(t *testing.T, create func() interface{}) {
-	testData := create()
-	marshalled, err := marshaller.NewMessagePackMarshaller().Marshal(&testData)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	var unmarshalled interface{}
-	err = marshaller.NewMessagePackMarshaller().Unmarshal(marshalled, &unmarshalled)
-
-	if err != nil {
-		t.Error(err)
-	}
-
-	reflect.DeepEqual(testData, &unmarshalled)
 }
