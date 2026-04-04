@@ -36,7 +36,11 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	err = enc.EncodeArrayLen(len(g.NewObjects))
 
 	for i := range g.NewObjects {
-		enc.Encode(g.NewObjects[i])
+		err := enc.Encode(g.NewObjects[i])
+
+		if err != nil {
+			return err
+		}
 	}
 
 	err = enc.EncodeArrayLen(len(g.RemovedObjects))
