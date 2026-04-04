@@ -6,16 +6,16 @@ namespace Positron.Client.GameEntities.Premitive
     [MessagePackObject]
     public struct NetVector3
     {
-        [Key(0)] public float[] Coords { get; }
+        [Key(0)] public float[] Cords { get; }
 
         public NetVector3(float x, float y, float z)
         {
-            Coords = new float[3];
-            Coords[0] = x;
-            Coords[1] = y;
-            Coords[2] = z;
+            Cords = new float[3];
+            Cords[0] = x;
+            Cords[1] = y;
+            Cords[2] = z;
         }
 
-        public Vector3 ToUnity() => new(Coords[0], Coords[1], Coords[2]);
+        public Vector3 ToUnity() => new(Cords[0], Cords[1], Cords[2]);
     }
 }
