@@ -31,6 +31,7 @@ func NewTickPacket(host uint32, sourceClient uint32, newObjects []*gameentities.
 }
 
 func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.EncodeArrayLen(7)
 	err := enc.EncodeUint32(g.Host)
 	err = enc.EncodeUint32(g.Client)
 	err = enc.EncodeArrayLen(len(g.NewObjects))
@@ -87,6 +88,7 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
+	dec.DecodeArrayLen()
 	host, err := dec.DecodeUint32()
 
 	if err != nil {

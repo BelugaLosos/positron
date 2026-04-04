@@ -29,6 +29,7 @@ func NewGameObject(id uint32, ownerPeer uint32, assetIndex uint64, creationId ui
 }
 
 func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.EncodeArrayLen(6)
 	err := enc.EncodeUint64(g.AssetIndex)
 
 	if err != nil {
@@ -65,6 +66,7 @@ func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
+	dec.DecodeArrayLen()
 	assetIndex, err := dec.DecodeUint64()
 
 	if err != nil {
@@ -160,7 +162,13 @@ func NewVector(x float32, y float32, z float32) *Vector3 {
 }
 
 func (v *Vector3) EncodeMsgpack(enc *msgpack.Encoder) error {
-	err := enc.EncodeFloat32(v.Cords[0])
+	err := enc.EncodeArrayLen(len(v.Cords))
+
+	if err != nil {
+		return err
+	}
+
+	err = enc.EncodeFloat32(v.Cords[0])
 
 	if err != nil {
 		return err
@@ -178,6 +186,7 @@ func (v *Vector3) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (v *Vector3) DecodeMsgpack(dec *msgpack.Decoder) error {
+	dec.DecodeArrayLen()
 	x, errX := dec.DecodeFloat32()
 	y, errY := dec.DecodeFloat32()
 	z, errZ := dec.DecodeFloat32()

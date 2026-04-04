@@ -19,6 +19,7 @@ func NewTransform(gameObject *GameObject) *Tranform {
 }
 
 func (t *Tranform) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.EncodeArrayLen(3)
 	err := enc.EncodeUint32(t.ObjectId)
 
 	if err != nil {
@@ -37,6 +38,7 @@ func (t *Tranform) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (t *Tranform) DecodeMsgpack(dec *msgpack.Decoder) error {
+	dec.DecodeArrayLen()
 	objectId, err := dec.DecodeUint32()
 
 	if err != nil {

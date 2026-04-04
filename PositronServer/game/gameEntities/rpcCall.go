@@ -25,6 +25,7 @@ func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType 
 }
 
 func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.EncodeArrayLen(6)
 	err := enc.EncodeUint32(r.ObjectId)
 
 	if err != nil {
@@ -55,12 +56,14 @@ func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
+	enc.EncodeArrayLen(len(r.Args))
 	err = enc.EncodeBytes(r.Args)
 
 	return err
 }
 
 func (r *RpcCall) DecodeMsgpack(dec *msgpack.Decoder) error {
+	dec.DecodeArrayLen()
 	id, err := dec.DecodeUint32()
 
 	if err != nil {
@@ -91,6 +94,7 @@ func (r *RpcCall) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
+	dec.DecodeArrayLen()
 	args, err := dec.DecodeBytes()
 
 	r.ObjectId = id

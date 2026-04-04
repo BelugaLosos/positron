@@ -63,7 +63,7 @@ func TestUnmarshalling(t *testing.T) {
 			t.Error("Data corrupt")
 		}
 
-		if len(marshalled) > 140 {
+		if len(marshalled) > 141 {
 			t.Errorf("Too big %v", len(marshalled))
 		}
 

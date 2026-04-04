@@ -21,6 +21,7 @@ func NewGameUnreliableTickPacket(movedObjects []*gameentities.Tranform, sourceCl
 }
 
 func (g *GameUnreliableTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.EncodeArrayLen(2)
 	err := enc.EncodeUint32(g.SourceClient)
 
 	if err != nil {
@@ -41,6 +42,7 @@ func (g *GameUnreliableTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (g *GameUnreliableTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
+	dec.DecodeArrayLen()
 	sourceId, err := dec.DecodeUint32()
 
 	if err != nil {

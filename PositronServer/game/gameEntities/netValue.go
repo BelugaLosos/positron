@@ -13,6 +13,7 @@ type NetValue struct {
 }
 
 func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.EncodeArrayLen(5)
 	err := enc.EncodeUint64(n.ValueId)
 
 	if err != nil {
@@ -37,6 +38,7 @@ func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
+	enc.EncodeArrayLen(len(n.Payload))
 	err = enc.EncodeBytes(n.Payload)
 
 	if err != nil {
@@ -47,6 +49,7 @@ func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
+	dec.DecodeArrayLen()
 	valueId, err := dec.DecodeUint64()
 
 	if err != nil {
@@ -71,6 +74,7 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
+	dec.DecodeArrayLen()
 	paylpad, err := dec.DecodeBytes()
 
 	n.ValueId = valueId
