@@ -1,6 +1,10 @@
 package datatransferobjects
 
-import gameentities "positron/game/gameEntities"
+import (
+	gameentities "positron/game/gameEntities"
+
+	"github.com/vmihailenco/msgpack/v5"
+)
 
 type GameUnreliableTickPacket struct {
 	_msgpack struct{} `msgpack:",as_array"`
@@ -14,6 +18,53 @@ func NewGameUnreliableTickPacket(movedObjects []*gameentities.Tranform, sourceCl
 		SourceClient: sourceClient,
 		MovedObjects: movedObjects,
 	}
+}
+
+func (g *GameUnreliableTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
+	err := enc.EncodeUint32(g.SourceClient)
+
+	if err != nil {
+		return err
+	}
+
+	err = enc.EncodeArrayLen(len(g.MovedObjects))
+
+	for i := range g.MovedObjects {
+		err := enc.Encode(g.MovedObjects[i])
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return err
+}
+
+func (g *GameUnreliableTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
+	sourceId, err := dec.DecodeUint32()
+
+	if err != nil {
+		return err
+	}
+
+	movedLen, err := dec.DecodeArrayLen()
+	moved := make([]*gameentities.Tranform, movedLen)
+
+	for i := range movedLen {
+		var obj gameentities.Tranform
+		err := dec.Decode(&obj)
+
+		if err != nil {
+			return err
+		}
+
+		moved[i] = &obj
+	}
+
+	g.SourceClient = sourceId
+	g.MovedObjects = moved
+
+	return err
 }
 
 func (g *GameUnreliableTickPacket) GetMovedObjects() []*gameentities.Tranform {

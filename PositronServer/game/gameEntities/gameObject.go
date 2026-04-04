@@ -1,5 +1,11 @@
 package gameentities
 
+import (
+	"fmt"
+
+	"github.com/vmihailenco/msgpack/v5"
+)
+
 type GameObject struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
@@ -20,6 +26,91 @@ func NewGameObject(id uint32, ownerPeer uint32, assetIndex uint64, creationId ui
 		Positron:   position,
 		Rotation:   rotation,
 	}
+}
+
+func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
+	err := enc.EncodeUint64(g.AssetIndex)
+
+	if err != nil {
+		return err
+	}
+
+	err = enc.EncodeUint64(g.CreationId)
+
+	if err != nil {
+		return err
+	}
+
+	err = enc.EncodeUint32(g.Id)
+
+	if err != nil {
+		return err
+	}
+
+	err = enc.EncodeUint32(g.Owner)
+
+	if err != nil {
+		return err
+	}
+
+	err = enc.Encode(&g.Positron)
+
+	if err != nil {
+		return err
+	}
+
+	err = enc.Encode(&g.Rotation)
+
+	return err
+}
+
+func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
+	assetIndex, err := dec.DecodeUint64()
+
+	if err != nil {
+		return err
+	}
+
+	CreationId, err := dec.DecodeUint64()
+
+	if err != nil {
+		return err
+	}
+
+	Id, err := dec.DecodeUint32()
+
+	if err != nil {
+		return err
+	}
+
+	Owner, err := dec.DecodeUint32()
+
+	if err != nil {
+		return err
+	}
+
+	var position Vector3
+	err = dec.Decode(&position)
+
+	if err != nil {
+		return err
+	}
+
+	var rotation Vector3
+	err = dec.Decode(&rotation)
+
+	if err != nil {
+		return err
+	}
+
+	g.AssetIndex = assetIndex
+	g.CreationId = CreationId
+	g.Id = Id
+	g.Owner = Owner
+	g.Positron = position
+	g.Rotation = rotation
+
+	return nil
 }
 
 func (o *GameObject) GetCreationId() uint64 {
@@ -66,6 +157,38 @@ func NewVector(x float32, y float32, z float32) *Vector3 {
 	return &Vector3{
 		Cords: []float32{x, y, z},
 	}
+}
+
+func (v *Vector3) EncodeMsgpack(enc *msgpack.Encoder) error {
+	err := enc.EncodeFloat32(v.Cords[0])
+
+	if err != nil {
+		return err
+	}
+
+	err = enc.EncodeFloat32(v.Cords[1])
+
+	if err != nil {
+		return err
+	}
+
+	err = enc.EncodeFloat32(v.Cords[2])
+
+	return err
+}
+
+func (v *Vector3) DecodeMsgpack(dec *msgpack.Decoder) error {
+	x, errX := dec.DecodeFloat32()
+	y, errY := dec.DecodeFloat32()
+	z, errZ := dec.DecodeFloat32()
+
+	v.Cords = []float32{x, y, z}
+
+	if errX != nil || errY != nil || errZ != nil {
+		return fmt.Errorf("XE: %v, YE: %v, ZE: %v", errX, errY, errZ)
+	}
+
+	return nil
 }
 
 func (v *Vector3) GetX() float32 {

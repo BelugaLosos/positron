@@ -1,5 +1,7 @@
 package gameentities
 
+import "github.com/vmihailenco/msgpack/v5"
+
 type Tranform struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
@@ -14,6 +16,48 @@ func NewTransform(gameObject *GameObject) *Tranform {
 		Position: gameObject.Positron,
 		Rotation: gameObject.Rotation,
 	}
+}
+
+func (t *Tranform) EncodeMsgpack(enc *msgpack.Encoder) error {
+	err := enc.EncodeUint32(t.ObjectId)
+
+	if err != nil {
+		return err
+	}
+
+	err = enc.Encode(&t.Position)
+
+	if err != nil {
+		return err
+	}
+
+	err = enc.Encode(&t.Rotation)
+
+	return err
+}
+
+func (t *Tranform) DecodeMsgpack(dec *msgpack.Decoder) error {
+	objectId, err := dec.DecodeUint32()
+
+	if err != nil {
+		return err
+	}
+
+	var position Vector3
+	err = dec.Decode(&position)
+
+	if err != nil {
+		return err
+	}
+
+	var rotation Vector3
+	err = dec.Decode(&rotation)
+
+	t.ObjectId = objectId
+	t.Position = position
+	t.Rotation = rotation
+
+	return err
 }
 
 func (t *Tranform) GetObjectId() uint32 {
