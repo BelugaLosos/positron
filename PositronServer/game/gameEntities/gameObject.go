@@ -162,6 +162,7 @@ func NewVector(x float32, y float32, z float32) *Vector3 {
 }
 
 func (v *Vector3) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.EncodeArrayLen(1)
 	err := enc.EncodeArrayLen(len(v.Cords))
 
 	if err != nil {
@@ -186,6 +187,7 @@ func (v *Vector3) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (v *Vector3) DecodeMsgpack(dec *msgpack.Decoder) error {
+	dec.DecodeArrayLen()
 	dec.DecodeArrayLen()
 	x, errX := dec.DecodeFloat32()
 	y, errY := dec.DecodeFloat32()
