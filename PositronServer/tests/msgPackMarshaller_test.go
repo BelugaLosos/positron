@@ -36,12 +36,12 @@ func TestUnmarshalling(t *testing.T) {
 			testData.GetNewObjects()[0].GetOwnerId() != unmarshalled.GetNewObjects()[0].GetOwnerId() ||
 			testData.GetNewObjects()[0].GetAssetIndex() != unmarshalled.GetNewObjects()[0].GetAssetIndex() ||
 			testData.GetNewObjects()[0].GetCreationId() != unmarshalled.GetNewObjects()[0].GetCreationId() ||
-			testData.GetNewObjects()[0].GetPosition().Cords[0] != unmarshalled.GetNewObjects()[0].GetPosition().Cords[0] ||
-			testData.GetNewObjects()[0].GetPosition().Cords[1] != unmarshalled.GetNewObjects()[0].GetPosition().Cords[1] ||
-			testData.GetNewObjects()[0].GetPosition().Cords[2] != unmarshalled.GetNewObjects()[0].GetPosition().Cords[2] ||
-			testData.GetNewObjects()[0].GetRotation().Cords[0] != unmarshalled.GetNewObjects()[0].GetRotation().Cords[0] ||
-			testData.GetNewObjects()[0].GetRotation().Cords[1] != unmarshalled.GetNewObjects()[0].GetRotation().Cords[1] ||
-			testData.GetNewObjects()[0].GetRotation().Cords[2] != unmarshalled.GetNewObjects()[0].GetRotation().Cords[2] ||
+			testData.GetNewObjects()[0].GetPosition().X != unmarshalled.GetNewObjects()[0].GetPosition().X ||
+			testData.GetNewObjects()[0].GetPosition().Y != unmarshalled.GetNewObjects()[0].GetPosition().Y ||
+			testData.GetNewObjects()[0].GetPosition().Z != unmarshalled.GetNewObjects()[0].GetPosition().Z ||
+			testData.GetNewObjects()[0].GetRotation().X != unmarshalled.GetNewObjects()[0].GetRotation().X ||
+			testData.GetNewObjects()[0].GetRotation().Y != unmarshalled.GetNewObjects()[0].GetRotation().Y ||
+			testData.GetNewObjects()[0].GetRotation().Z != unmarshalled.GetNewObjects()[0].GetRotation().Z ||
 			testData.GetRemovedObjects()[0] != unmarshalled.GetRemovedObjects()[0] ||
 			testData.GetTranferedObjects()[0] != unmarshalled.GetTranferedObjects()[0] ||
 			testData.GetValueMod()[0].GetIsDeleting() != unmarshalled.GetValueMod()[0].GetIsDeleting() ||
@@ -63,7 +63,7 @@ func TestUnmarshalling(t *testing.T) {
 			t.Error("Data corrupt")
 		}
 
-		if len(marshalled) > 143 {
+		if len(marshalled) > 141 {
 			t.Errorf("Too big %v", len(marshalled))
 		}
 
@@ -89,12 +89,12 @@ func TestUnreliable(t *testing.T) {
 
 		if unmarshalled.GetSourceClient() != tick.GetSourceClient() ||
 			unmarshalled.GetMovedObjects()[0].GetObjectId() != tick.GetMovedObjects()[0].GetObjectId() ||
-			unmarshalled.GetMovedObjects()[0].GetPosition().Cords[0] != tick.GetMovedObjects()[0].GetPosition().Cords[0] ||
-			unmarshalled.GetMovedObjects()[0].GetPosition().Cords[1] != tick.GetMovedObjects()[0].GetPosition().Cords[1] ||
-			unmarshalled.GetMovedObjects()[0].GetPosition().Cords[2] != tick.GetMovedObjects()[0].GetPosition().Cords[2] ||
-			unmarshalled.GetMovedObjects()[0].GetRotation().Cords[0] != tick.GetMovedObjects()[0].GetRotation().Cords[0] ||
-			unmarshalled.GetMovedObjects()[0].GetRotation().Cords[1] != tick.GetMovedObjects()[0].GetRotation().Cords[1] ||
-			unmarshalled.GetMovedObjects()[0].GetRotation().Cords[2] != tick.GetMovedObjects()[0].GetRotation().Cords[2] ||
+			unmarshalled.GetMovedObjects()[0].GetPosition().X != tick.GetMovedObjects()[0].GetPosition().X ||
+			unmarshalled.GetMovedObjects()[0].GetPosition().Y != tick.GetMovedObjects()[0].GetPosition().Y ||
+			unmarshalled.GetMovedObjects()[0].GetPosition().Z != tick.GetMovedObjects()[0].GetPosition().Z ||
+			unmarshalled.GetMovedObjects()[0].GetRotation().X != tick.GetMovedObjects()[0].GetRotation().X ||
+			unmarshalled.GetMovedObjects()[0].GetRotation().Y != tick.GetMovedObjects()[0].GetRotation().Y ||
+			unmarshalled.GetMovedObjects()[0].GetRotation().Z != tick.GetMovedObjects()[0].GetRotation().Z ||
 			len(unmarshalled.GetMovedObjects()) != len(tick.GetMovedObjects()) {
 			t.Error("Data corrupt")
 		}

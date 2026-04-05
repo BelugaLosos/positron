@@ -152,48 +152,47 @@ func (o *GameObject) Move(position Vector3, rotation Vector3) {
 type Vector3 struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	Cords []float32
+	X float32
+	Y float32
+	Z float32
 }
 
 func NewVector(x float32, y float32, z float32) *Vector3 {
 	return &Vector3{
-		Cords: []float32{x, y, z},
+		X: x,
+		Y: y,
+		Z: z,
 	}
 }
 
 func (v *Vector3) EncodeMsgpack(enc *msgpack.Encoder) error {
-	enc.EncodeArrayLen(1)
-	err := enc.EncodeArrayLen(len(v.Cords))
+	enc.EncodeArrayLen(3)
+	err := enc.EncodeFloat32(v.X)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeFloat32(v.Cords[0])
+	err = enc.EncodeFloat32(v.Y)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeFloat32(v.Cords[1])
-
-	if err != nil {
-		return err
-	}
-
-	err = enc.EncodeFloat32(v.Cords[2])
+	err = enc.EncodeFloat32(v.Z)
 
 	return err
 }
 
 func (v *Vector3) DecodeMsgpack(dec *msgpack.Decoder) error {
 	dec.DecodeArrayLen()
-	dec.DecodeArrayLen()
 	x, errX := dec.DecodeFloat32()
 	y, errY := dec.DecodeFloat32()
 	z, errZ := dec.DecodeFloat32()
 
-	v.Cords = []float32{x, y, z}
+	v.X = x
+	v.Y = y
+	v.Z = z
 
 	if errX != nil || errY != nil || errZ != nil {
 		return fmt.Errorf("XE: %v, YE: %v, ZE: %v", errX, errY, errZ)
@@ -203,13 +202,13 @@ func (v *Vector3) DecodeMsgpack(dec *msgpack.Decoder) error {
 }
 
 func (v *Vector3) GetX() float32 {
-	return v.Cords[0]
+	return v.X
 }
 
 func (v *Vector3) GetY() float32 {
-	return v.Cords[1]
+	return v.Y
 }
 
 func (v *Vector3) GetZ() float32 {
-	return v.Cords[2]
+	return v.Z
 }

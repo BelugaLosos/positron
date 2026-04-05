@@ -56,7 +56,6 @@ func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	enc.EncodeArrayLen(len(r.Args))
 	err = enc.EncodeBytes(r.Args)
 
 	return err
@@ -94,7 +93,6 @@ func (r *RpcCall) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	dec.DecodeArrayLen()
 	args, err := dec.DecodeBytes()
 
 	r.ObjectId = id

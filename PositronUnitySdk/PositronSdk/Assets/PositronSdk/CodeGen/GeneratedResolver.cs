@@ -822,9 +822,10 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities.Premitive
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.GameEntities.Premitive.NetVector3 value, global::MessagePack.MessagePackSerializerOptions options)
         {
-            global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
-            writer.WriteArrayHeader(1);
-            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<float[]>(formatterResolver).Serialize(ref writer, value.Cords, options);
+            writer.WriteArrayHeader(3);
+            writer.Write(value.X);
+            writer.Write(value.Y);
+            writer.Write(value.Z);
         }
 
         public global::Positron.Client.GameEntities.Premitive.NetVector3 Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -835,16 +836,23 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities.Premitive
             }
 
             options.Security.DepthStep(ref reader);
-            global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
             var length = reader.ReadArrayHeader();
-            var ____result = new global::Positron.Client.GameEntities.Premitive.NetVector3();
+            var __X__ = default(float);
+            var __Y__ = default(float);
+            var __Z__ = default(float);
 
             for (int i = 0; i < length; i++)
             {
                 switch (i)
                 {
                     case 0:
-                        global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<float[]>(formatterResolver).Deserialize(ref reader, options);
+                        __X__ = reader.ReadSingle();
+                        break;
+                    case 1:
+                        __Y__ = reader.ReadSingle();
+                        break;
+                    case 2:
+                        __Z__ = reader.ReadSingle();
                         break;
                     default:
                         reader.Skip();
@@ -852,6 +860,7 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities.Premitive
                 }
             }
 
+            var ____result = new global::Positron.Client.GameEntities.Premitive.NetVector3(__X__, __Y__, __Z__);
             reader.Depth--;
             return ____result;
         }

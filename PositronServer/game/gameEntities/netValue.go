@@ -38,7 +38,6 @@ func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	enc.EncodeArrayLen(len(n.Payload))
 	err = enc.EncodeBytes(n.Payload)
 
 	if err != nil {
@@ -74,7 +73,6 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	dec.DecodeArrayLen()
 	paylpad, err := dec.DecodeBytes()
 
 	n.ValueId = valueId
