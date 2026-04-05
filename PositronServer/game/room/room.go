@@ -68,7 +68,7 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 
 	worldModAdd, worldModRemove, worldModTransfer := r.gameObjectsModel.GetModification()
 
-	gameTick := datatransferobjects.NewTickPacket(
+	gameTick := datatransferobjects.NewTickPacket( // add packet pool
 		r.hostIndex,
 		0,
 		worldModAdd,
@@ -78,7 +78,7 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 		r.rpcsModel.GetCurrentCallBuffer(),
 	)
 
-	gamePositionsTick := datatransferobjects.NewGameUnreliableTickPacket(
+	gamePositionsTick := datatransferobjects.NewGameUnreliableTickPacket( // add packet pool
 		r.gameObjectsModel.GetPositionMod(),
 		0,
 	)

@@ -20,7 +20,7 @@ func NewTransform(gameObject *GameObject) *Tranform {
 
 func (t *Tranform) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.EncodeArrayLen(3)
-	err := enc.EncodeUint32(t.ObjectId)
+	err := enc.EncodeUint(uint64(t.ObjectId))
 
 	if err != nil {
 		return err
@@ -39,7 +39,7 @@ func (t *Tranform) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 func (t *Tranform) DecodeMsgpack(dec *msgpack.Decoder) error {
 	dec.DecodeArrayLen()
-	objectId, err := dec.DecodeUint32()
+	objectId, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
@@ -55,7 +55,7 @@ func (t *Tranform) DecodeMsgpack(dec *msgpack.Decoder) error {
 	var rotation Vector3
 	err = dec.Decode(&rotation)
 
-	t.ObjectId = objectId
+	t.ObjectId = uint32(objectId)
 	t.Position = position
 	t.Rotation = rotation
 

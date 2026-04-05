@@ -30,25 +30,25 @@ func NewGameObject(id uint32, ownerPeer uint32, assetIndex uint64, creationId ui
 
 func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.EncodeArrayLen(6)
-	err := enc.EncodeUint64(g.AssetIndex)
+	err := enc.EncodeUint(g.AssetIndex)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint64(g.CreationId)
+	err = enc.EncodeUint(g.CreationId)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint32(g.Id)
+	err = enc.EncodeUint(uint64(g.Id))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint32(g.Owner)
+	err = enc.EncodeUint(uint64(g.Owner))
 
 	if err != nil {
 		return err
@@ -67,25 +67,25 @@ func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
 	dec.DecodeArrayLen()
-	assetIndex, err := dec.DecodeUint64()
+	assetIndex, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
 	}
 
-	CreationId, err := dec.DecodeUint64()
+	CreationId, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
 	}
 
-	Id, err := dec.DecodeUint32()
+	Id, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
 	}
 
-	Owner, err := dec.DecodeUint32()
+	Owner, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
@@ -105,10 +105,10 @@ func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	g.AssetIndex = assetIndex
-	g.CreationId = CreationId
-	g.Id = Id
-	g.Owner = Owner
+	g.AssetIndex = uint64(assetIndex)
+	g.CreationId = uint64(CreationId)
+	g.Id = uint32(Id)
+	g.Owner = uint32(Owner)
 	g.Positron = position
 	g.Rotation = rotation
 

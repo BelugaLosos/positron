@@ -14,19 +14,19 @@ type NetValue struct {
 
 func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.EncodeArrayLen(5)
-	err := enc.EncodeUint64(n.ValueId)
+	err := enc.EncodeUint(n.ValueId)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint32(n.ParentObjectId)
+	err = enc.EncodeUint(uint64(n.ParentObjectId))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint16(n.SubObjectId)
+	err = enc.EncodeUint(uint64(n.SubObjectId))
 
 	if err != nil {
 		return err
@@ -49,19 +49,19 @@ func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 	dec.DecodeArrayLen()
-	valueId, err := dec.DecodeUint64()
+	valueId, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
 	}
 
-	parentObjectId, err := dec.DecodeUint32()
+	parentObjectId, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
 	}
 
-	subObjectId, err := dec.DecodeUint16()
+	subObjectId, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
@@ -75,9 +75,9 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	paylpad, err := dec.DecodeBytes()
 
-	n.ValueId = valueId
-	n.ParentObjectId = parentObjectId
-	n.SubObjectId = subObjectId
+	n.ValueId = uint64(valueId)
+	n.ParentObjectId = uint32(parentObjectId)
+	n.SubObjectId = uint16(subObjectId)
 	n.Deleting = isDeleting
 	n.Payload = paylpad
 

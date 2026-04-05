@@ -26,25 +26,25 @@ func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType 
 
 func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.EncodeArrayLen(6)
-	err := enc.EncodeUint32(r.ObjectId)
+	err := enc.EncodeUint(uint64(r.ObjectId))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint32(r.TargetClient)
+	err = enc.EncodeUint(uint64(r.TargetClient))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint16(r.SubObjectId)
+	err = enc.EncodeUint(uint64(r.SubObjectId))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint8(r.RpcType)
+	err = enc.EncodeUint(uint64(r.RpcType))
 
 	if err != nil {
 		return err
@@ -63,25 +63,25 @@ func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 func (r *RpcCall) DecodeMsgpack(dec *msgpack.Decoder) error {
 	dec.DecodeArrayLen()
-	id, err := dec.DecodeUint32()
+	id, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
 	}
 
-	clientId, err := dec.DecodeUint32()
+	clientId, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
 	}
 
-	subId, err := dec.DecodeUint16()
+	subId, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
 	}
 
-	typeId, err := dec.DecodeUint8()
+	typeId, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
@@ -95,10 +95,10 @@ func (r *RpcCall) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	args, err := dec.DecodeBytes()
 
-	r.ObjectId = id
-	r.TargetClient = clientId
-	r.SubObjectId = subId
-	r.RpcType = typeId
+	r.ObjectId = uint32(id)
+	r.TargetClient = uint32(clientId)
+	r.SubObjectId = uint16(subId)
+	r.RpcType = uint8(typeId)
 	r.MethodName = method
 	r.Args = args
 

@@ -32,8 +32,8 @@ func NewTickPacket(host uint32, sourceClient uint32, newObjects []*gameentities.
 
 func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.EncodeArrayLen(7)
-	err := enc.EncodeUint32(g.Host)
-	err = enc.EncodeUint32(g.Client)
+	err := enc.EncodeUint(uint64(g.Host))
+	err = enc.EncodeUint(uint64(g.Client))
 	err = enc.EncodeArrayLen(len(g.NewObjects))
 
 	for i := range g.NewObjects {
@@ -47,13 +47,13 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	err = enc.EncodeArrayLen(len(g.RemovedObjects))
 
 	for i := range g.RemovedObjects {
-		enc.EncodeUint32(g.RemovedObjects[i])
+		enc.EncodeUint(uint64(g.RemovedObjects[i]))
 	}
 
 	err = enc.EncodeArrayLen(len(g.TransferedObjects))
 
 	for i := range g.TransferedObjects {
-		err := enc.Encode(g.TransferedObjects[i])
+		err := enc.EncodeUint(uint64(g.TransferedObjects[i]))
 
 		if err != nil {
 			return err
@@ -89,23 +89,23 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	dec.DecodeArrayLen()
-	host, err := dec.DecodeUint32()
+	host, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
 	}
 
-	i.Host = host
+	i.Host = uint32(host)
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-	client, err := dec.DecodeUint32()
+	client, err := dec.DecodeUint()
 
 	if err != nil {
 		return err
 	}
 
-	i.Client = client
+	i.Client = uint32(client)
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -141,13 +141,13 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	removedObjsArray := make([]uint32, removedObjectsLen)
 
 	for i := range removedObjsArray {
-		removeId, err := dec.DecodeUint32()
+		removeId, err := dec.DecodeUint()
 
 		if err != nil {
 			return err
 		}
 
-		removedObjsArray[i] = removeId
+		removedObjsArray[i] = uint32(removeId)
 	}
 
 	i.RemovedObjects = removedObjsArray
@@ -163,13 +163,13 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	transferedObjects := make([]uint32, transferedObjsLen)
 
 	for i := range transferedObjsLen {
-		transferedId, err := dec.DecodeUint32()
+		transferedId, err := dec.DecodeUint()
 
 		if err != nil {
 			return err
 		}
 
-		transferedObjects[i] = transferedId
+		transferedObjects[i] = uint32(transferedId)
 	}
 
 	i.TransferedObjects = transferedObjects

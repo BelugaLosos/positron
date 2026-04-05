@@ -65,7 +65,7 @@ func TestAddPeer(t *testing.T) {
 
 	peers := room.GetAllConnectedPeers()
 
-	if len(peers) != 2 || peers[0] != "1" || peers[1] != "2" {
+	if len(peers) != 2 || (peers[0] != "1" && peers[0] != "2") || (peers[1] != "2" && peers[1] != "1") { // peers is map and NOT strict organized!
 		t.Errorf("not registred peers %v len %v", peers, len(peers))
 	}
 }
