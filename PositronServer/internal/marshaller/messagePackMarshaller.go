@@ -29,6 +29,8 @@ func (m *MessagePackMarshaller) MarshalNonAlloc(buf *bytes.Buffer, obj any) erro
 	buf.Reset()
 
 	enc := msgpack.GetEncoder()
+	enc.UseCompactInts(true)
+	enc.UseCompactFloats(true)
 	defer msgpack.PutEncoder(enc)
 
 	enc.Reset(buf)

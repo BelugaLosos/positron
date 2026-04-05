@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"bytes"
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
 	"positron/internal/marshaller"
@@ -17,7 +18,10 @@ func TestUnmarshalling(t *testing.T) {
 		rpc := gameentities.NewRpcCall(11, 12, 13, 14, "sraka", []byte("fff"))
 
 		testData := datatransferobjects.NewTickPacket(15, 16, []*gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []*gameentities.NetValue{val}, []*gameentities.RpcCall{rpc})
-		marshalled, err := marshaller.NewMessagePackMarshaller().Marshal(testData)
+
+		buf := &bytes.Buffer{}
+		err := marshaller.NewMessagePackMarshaller().MarshalNonAlloc(buf, testData)
+		marshalled := buf.Bytes()
 
 		if err != nil {
 			t.Error(err)
@@ -74,7 +78,10 @@ func TestUnmarshalling(t *testing.T) {
 func TestUnreliable(t *testing.T) {
 	for range 100_000 {
 		tick := datatransferobjects.NewGameUnreliableTickPacket([]*gameentities.Tranform{gameentities.NewTransform(gameentities.NewGameObject(1, 2, 3, 4, *gameentities.NewVector(5, 6, 7), *gameentities.NewVector(8, 9, 10)))}, 1)
-		marshalled, err := marshaller.NewMessagePackMarshaller().Marshal(tick)
+
+		buf := &bytes.Buffer{}
+		err := marshaller.NewMessagePackMarshaller().MarshalNonAlloc(buf, tick)
+		marshalled := buf.Bytes()
 
 		if err != nil {
 			t.Error(err)
