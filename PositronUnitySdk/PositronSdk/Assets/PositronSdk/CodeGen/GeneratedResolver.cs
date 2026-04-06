@@ -139,10 +139,11 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.DataTransferObjects.CreateRoomPacket value, global::MessagePack.MessagePackSerializerOptions options)
         {
             global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
-            writer.WriteArrayHeader(4);
+            writer.WriteArrayHeader(5);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.Name, options);
             writer.Write(value.PlayerCap);
             writer.Write(value.Scene);
+            writer.Write(value.Tickrate);
             writer.Write(value.ExternalData);
         }
 
@@ -172,6 +173,9 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
                         ____result.Scene = reader.ReadUInt32();
                         break;
                     case 3:
+                        ____result.Tickrate = reader.ReadUInt32();
+                        break;
+                    case 4:
                         ____result.ExternalData = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
                         break;
                     default:

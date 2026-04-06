@@ -6,5 +6,6 @@ type CreateRoomPacket struct {
 	Name         string
 	PlayerCap    uint32
 	Scene        uint32
+	Tickrate     uint32
 	ExternalData []byte
 }

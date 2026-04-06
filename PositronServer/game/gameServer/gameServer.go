@@ -76,11 +76,11 @@ func (g *GameServer) GetAllRooms() []*room.Room {
 	return rooms
 }
 
-func (g *GameServer) CreateRoom(name string, maxSlots int, ttl time.Duration, scene uint32, externalData []byte) string {
+func (g *GameServer) CreateRoom(name string, maxSlots int, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte) string {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	room := room.NewRoom(name, maxSlots, ttl, scene, externalData)
+	room := room.NewRoom(name, maxSlots, ttl, scene, tickrate, externalData)
 	g.rooms[room.GetUuid()] = room
 
 	go g.roomTick(room)

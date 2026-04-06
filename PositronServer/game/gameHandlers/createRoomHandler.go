@@ -43,7 +43,7 @@ func (c *CreateRoomHandler) PassHandle(packet []byte) {
 		return
 	}
 
-	uuid := c.gameSaver.CreateRoom(data.Name, int(data.PlayerCap), 10*time.Second, data.Scene, data.ExternalData)
+	uuid := c.gameSaver.CreateRoom(data.Name, int(data.PlayerCap), 10*time.Second, data.Scene, data.Tickrate, data.ExternalData)
 
 	response := datatransferobjects.NewRoomCreationResponsePacket(uuid)
 	binResponse, _ := c.gameSaver.GetMarshaller().Marshal(response)

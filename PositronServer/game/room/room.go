@@ -39,7 +39,7 @@ type Room struct {
 	rpcsModel        *roommodels.RpcsModel
 }
 
-func NewRoom(name string, maxSlots int, ttl time.Duration, scene uint32, externalData []byte) *Room {
+func NewRoom(name string, maxSlots int, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte) *Room {
 	return &Room{
 		mutex:                   &sync.RWMutex{},
 		Termination:             make(chan struct{}),
@@ -53,7 +53,7 @@ func NewRoom(name string, maxSlots int, ttl time.Duration, scene uint32, externa
 		maxClientsSlots:         maxSlots,
 		lastLeaveTime:           time.Now().UTC(),
 		ttl:                     ttl,
-		tickrate:                30,
+		tickrate:                int(tickrate),
 		scene:                   scene,
 		ExternalData:            externalData,
 		gameObjectsModel:        roommodels.NewGameObjectsModel(),
