@@ -9,7 +9,7 @@ import (
 )
 
 func TestRoomGetters(t *testing.T) {
-	room := room.NewRoom("test", 10, 10*time.Second, 0, make([]byte, 3))
+	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3))
 
 	if room.GetHost() != 0 {
 		t.Error("host corruption")
@@ -41,7 +41,7 @@ func TestRoomGetters(t *testing.T) {
 }
 
 func TestAddPeer(t *testing.T) {
-	room := room.NewRoom("test", 10, 10*time.Second, 0, make([]byte, 3))
+	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3))
 
 	id, err := room.AddPeer("1")
 
@@ -71,7 +71,7 @@ func TestAddPeer(t *testing.T) {
 }
 
 func TestRemovePeer(t *testing.T) {
-	room := room.NewRoom("test", 10, 10*time.Second, 0, make([]byte, 3))
+	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3))
 	room.AddPeer("1")
 	room.AddPeer("2")
 
@@ -83,7 +83,7 @@ func TestRemovePeer(t *testing.T) {
 }
 
 func TestTick(t *testing.T) {
-	room := room.NewRoom("test", 10, 10*time.Second, 0, make([]byte, 3))
+	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3))
 	room.AddPeer("1111")
 	room.ProcessTick(datatransferobjects.NewTickPacket(
 		1,

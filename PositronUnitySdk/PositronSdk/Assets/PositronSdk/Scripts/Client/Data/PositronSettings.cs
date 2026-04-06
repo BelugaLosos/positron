@@ -9,5 +9,8 @@ namespace Positron.Client.Settings
         [field: SerializeField] public int Port { get; private set; }
         [field: SerializeField] public bool IsSecure { get; private set; }
         [field: SerializeField] public bool Autoconnect { get; private set; }
+        [SerializeField][Min(1)] private int _tickrate = 30;
+
+        public int Tickrate => _tickrate;
     }
 }

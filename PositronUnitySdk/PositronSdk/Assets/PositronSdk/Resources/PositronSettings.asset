@@ -16,3 +16,4 @@ MonoBehaviour:
   <Port>k__BackingField: 7070
   <IsSecure>k__BackingField: 0
   <Autoconnect>k__BackingField: 1
+  _tickrate: 30

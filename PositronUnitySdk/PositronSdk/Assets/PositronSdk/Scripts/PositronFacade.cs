@@ -17,6 +17,7 @@ namespace Positron
     {
         private static PositronClient _client;
         private static MonoHook _monoHook;
+        private static PositronSettings _settings;
 
         private static PingModel _pingModel;
 
@@ -38,6 +39,8 @@ namespace Positron
                 Debug.LogError("Initialized after initialized");
                 return;
             }
+
+            _settings = settings;
 
             _pingModel = new();
             _client = new
@@ -121,6 +124,7 @@ namespace Positron
             request.Name = name;
             request.PlayerCap = (uint)playerCap;
             request.Scene = (uint)level;
+            request.Tickrate = (uint)_settings.Tickrate;
             request.ExternalData = externalData;
 
             _client.Send(request, EventTypes.CREATE_ROOM, true);

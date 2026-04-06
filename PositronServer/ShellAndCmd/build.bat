@@ -1,4 +1,3 @@
 cd ..
 cd cmd
-go build .
-cmd.exe
+go build -o Positron.exe .

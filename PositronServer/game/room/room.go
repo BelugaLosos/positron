@@ -2,6 +2,7 @@ package room
 
 import (
 	"errors"
+	"log"
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
 	roommodels "positron/game/room/roomModels"
@@ -39,7 +40,21 @@ type Room struct {
 	rpcsModel        *roommodels.RpcsModel
 }
 
+func clamp(current int, min int, max int) int {
+	if current < min {
+		return min
+	}
+
+	if current > max {
+		return max
+	}
+
+	return current
+}
+
 func NewRoom(name string, maxSlots int, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte) *Room {
+	log.Printf("Created room with params N: %v P_CAP: %v TTL: %v SC: %v T_RATE: %v DATA_SEGMENT: %v", name, maxSlots, ttl, scene, tickrate, externalData)
+
 	return &Room{
 		mutex:                   &sync.RWMutex{},
 		Termination:             make(chan struct{}),
@@ -53,7 +68,7 @@ func NewRoom(name string, maxSlots int, ttl time.Duration, scene uint32, tickrat
 		maxClientsSlots:         maxSlots,
 		lastLeaveTime:           time.Now().UTC(),
 		ttl:                     ttl,
-		tickrate:                int(tickrate),
+		tickrate:                clamp(int(tickrate), 1, 256),
 		scene:                   scene,
 		ExternalData:            externalData,
 		gameObjectsModel:        roommodels.NewGameObjectsModel(),
