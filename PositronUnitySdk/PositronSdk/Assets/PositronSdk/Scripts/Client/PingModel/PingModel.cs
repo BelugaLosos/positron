@@ -3,14 +3,17 @@ using Positron.Client.Interfaces;
 using UnityEngine;
 using Positron.Client.ConstantHolders;
 using System;
+using System.Threading;
 
 namespace Positron.Client.Ping
 {
-    public class PingModel : IReadOnlyPingModel
+    public class PingModel : IReadOnlyPingModel, IDisposable
     {
         private IPositronClient _client;
         private double _pingTime;
         private double _pongTime;
+
+        private CancellationTokenSource _ctx;
 
         public int LatencyMs { get; private set; }
 
@@ -19,6 +22,7 @@ namespace Positron.Client.Ping
         public void Init(IPositronClient client)
         {
             _client = client;
+            _ctx = new();
         }
 
         public void Pong()
@@ -38,8 +42,13 @@ namespace Positron.Client.Ping
             {
                 _client.SendRaw(stackalloc byte[] { 0xFF }, EventTypes.PING, true);
                 _pingTime = Time.timeAsDouble;
-                await UniTask.WaitForSeconds(1f);
+                await UniTask.WaitForSeconds(1f, cancellationToken: _ctx.Token);
             }
+        }
+
+        public void Dispose()
+        {
+            _ctx.Cancel();
         }
     }
 }

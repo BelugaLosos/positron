@@ -32,6 +32,41 @@ namespace Positron
         public static event Action connected;
         public static event Action disconnected;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticFileds()
+        {
+            if (_client != null)
+            {
+                _client.Disconnect();
+                _client.Dispose();
+            }
+
+            if (_monoHook != null)
+            {
+                GameObject.DestroyImmediate(_monoHook);
+            }
+
+            if (_pingModel != null) 
+            {
+                _pingModel.Dispose();
+            }
+
+            if (_connected)
+            {
+                Disconnect();
+            }
+
+            _client = null;
+            _monoHook = null;
+            _settings = null;
+            _pingModel = null;
+            _initialized = false;
+            _connected = false;
+            _pending = false;
+
+            Debug.Log("Positron hooked and handled domain reload");
+        }
+
         public static void InitSdk(PositronSettings settings)
         {
             if (_initialized)
@@ -144,6 +179,8 @@ namespace Positron
             Debug.Log("Positron disconnected");
             _connected = false;
             _pending = false;
+
+            _pingModel.Dispose();
 
             disconnected?.Invoke();
         }
