@@ -17,6 +17,11 @@ namespace Positron.Client.Handlers
             _pingModel = pingModel;
         }
 
+        public void Dispose()
+        {
+            _pingModel.Dispose();
+        }
+
         public void Handle(Span<byte> packet)
         {
             _pingModel.Pong();

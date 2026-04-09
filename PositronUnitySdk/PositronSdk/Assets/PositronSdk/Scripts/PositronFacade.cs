@@ -35,12 +35,6 @@ namespace Positron
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticFileds()
         {
-            if (_client != null)
-            {
-                _client.Disconnect();
-                _client.Dispose();
-            }
-
             if (_monoHook != null)
             {
                 GameObject.DestroyImmediate(_monoHook);
@@ -54,6 +48,13 @@ namespace Positron
             if (_connected)
             {
                 Disconnect();
+            }
+            else
+            {
+                if (_client != null)
+                {
+                    _client.Dispose();
+                }
             }
 
             _client = null;
@@ -137,6 +138,7 @@ namespace Positron
 
             Debug.Log("Disconnecting...");
             _client.Disconnect();
+            _client.Dispose();
             _pending = true;
         }
 

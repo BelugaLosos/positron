@@ -48,7 +48,15 @@ namespace Positron.Client.Ping
 
         public void Dispose()
         {
+            if (_ctx == null)
+            {
+                return;
+            }
+
             _ctx.Cancel();
+            _ctx.Dispose();
+        
+            _ctx = null;
         }
     }
 }

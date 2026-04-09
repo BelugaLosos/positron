@@ -37,6 +37,11 @@ namespace Positron.Client
 
         public void Dispose()
         {
+            foreach (IPositronHandler handler in _handlers)
+            {
+                handler.Dispose();
+            }
+
             Disconnect();
         }
 

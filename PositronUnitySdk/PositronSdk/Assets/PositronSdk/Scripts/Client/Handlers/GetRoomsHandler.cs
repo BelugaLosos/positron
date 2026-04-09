@@ -18,6 +18,8 @@ namespace Positron.Client.Handlers
             _client = client;
         }
 
+        public void Dispose() { }
+
         public void Handle(Span<byte> packet)
         {
             callback?.Invoke(_client.Serializer.Deserialize<RoomListResponse>(packet));
