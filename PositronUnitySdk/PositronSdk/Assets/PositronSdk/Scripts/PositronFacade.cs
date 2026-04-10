@@ -1,4 +1,3 @@
-using Cysharp.Threading.Tasks;
 using Positron.Client;
 using Positron.Client.Handlers;
 using Positron.Client.Ping;
@@ -10,6 +9,7 @@ using UnityEngine;
 using System;
 using Positron.Client.DataTransferObjects;
 using Positron.Client.Interfaces;
+using Positron.Client.Room;
 
 namespace Positron
 {
@@ -20,6 +20,7 @@ namespace Positron
         private static PositronSettings _settings;
 
         private static PingModel _pingModel;
+        private static NetworkWorld _world;
 
         private static bool _initialized;
         private static bool _connected;
@@ -57,6 +58,11 @@ namespace Positron
                 }
             }
 
+            if (_world != null)
+            {
+                _world.Dispose();
+            }
+
             _client = null;
             _monoHook = null;
             _settings = null;
@@ -64,6 +70,7 @@ namespace Positron
             _initialized = false;
             _connected = false;
             _pending = false;
+            _world = null;
 
             Debug.Log("Positron hooked and handled domain reload");
         }
@@ -79,6 +86,8 @@ namespace Positron
             _settings = settings;
 
             _pingModel = new();
+            _world = new();
+
             _client = new
                 (
                     settings, new MsgPackSerializer(), new WebSocketTransport(), 
@@ -88,8 +97,7 @@ namespace Positron
                 );
 
             _pingModel.Init(_client);
-
-            _pingModel.EstimationLoop().Forget();
+            _world.Init(_client);
 
             _monoHook = new GameObject("PositronMonoHook").AddComponent<MonoHook>();
             GameObject.DontDestroyOnLoad(_monoHook);

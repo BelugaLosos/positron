@@ -23,6 +23,8 @@ namespace Positron.Client.Ping
         {
             _client = client;
             _ctx = new();
+
+            EstimationLoop().Forget();
         }
 
         public void Pong()

@@ -80,7 +80,16 @@ func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.Gam
 
 	for i := range delta {
 		position := delta[i]
-		gameObject := g.searchMap[position.GetObjectId()]
+
+		if position == nil {
+			continue
+		}
+
+		gameObject, exist := g.searchMap[position.GetObjectId()]
+
+		if !exist || gameObject == nil {
+			continue
+		}
 
 		if gameObject.GetOwnerId() == source && util.PointsDistance(position.GetPosition(), gameObject.GetPosition()) > POSITION_DELTA_TO_SYNC {
 			gameObject.Move(position.GetPosition(), position.GetRotation())

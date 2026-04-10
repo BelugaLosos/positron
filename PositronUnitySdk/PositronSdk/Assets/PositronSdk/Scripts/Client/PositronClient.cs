@@ -16,6 +16,7 @@ namespace Positron.Client
 
         public ClientStatus Status { get; private set; }
         public IPositronSerializer Serializer => _serializer;
+        public PositronSettings Settings => _settings;
 
         public event Action connected;
         public event Action disconnected;

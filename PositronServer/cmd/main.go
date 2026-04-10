@@ -18,6 +18,7 @@ func main() {
 	wg := &sync.WaitGroup{}
 	game := gameserver.NewGameServer("127.0.0.1:7070", transport.NewWsTransport(), marshaller.NewMessagePackMarshaller())
 
+	log.Println("Starting positron semi-dedicated server v0.0.1")
 	err := game.Start(wg)
 	defer stop(game)
 
