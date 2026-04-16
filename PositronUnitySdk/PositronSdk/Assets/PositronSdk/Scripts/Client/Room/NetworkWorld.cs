@@ -1,6 +1,7 @@
 using Cysharp.Threading.Tasks;
 using Positron.Client.DataTransferObjects;
 using Positron.Client.Interfaces;
+using Positron.Client.Room.Models;
 using System;
 using System.Threading;
 using UnityEngine;
@@ -12,7 +13,22 @@ namespace Positron.Client.Room
         private IPositronClient _client;
         private CancellationTokenSource _ctx;
 
+        private NetworkGameObjectsModel _gameObjectsModel;
+        private NetworkValuesModel _valuesModel;
+        private RpcsModel _rpcsModel;
+
+        private int _tickRate;
+
+        public uint HostId { get; private set; }
+        public uint LocalClientId { get; private set; }
         public bool InRoom { get; private set; }
+
+        public NetworkWorld()
+        {
+            _gameObjectsModel = new(this);
+            _valuesModel = new();
+            _rpcsModel = new();
+        }
 
         public void Init(IPositronClient client)
         {
@@ -28,6 +44,10 @@ namespace Positron.Client.Room
             }
 
             Leave();
+
+            _gameObjectsModel.Dispose();
+            _valuesModel.Dispose();
+            _rpcsModel.Dispose();
         }
 
         public void Join(JoinRoomResponse dataPacket)
@@ -38,7 +58,13 @@ namespace Positron.Client.Room
                 return;
             }
 
-            // init world, load scene e.g.
+            _tickRate = (int)dataPacket.Tickrate;
+            LocalClientId = dataPacket.SelfId;
+            HostId = dataPacket.Host;
+
+            _gameObjectsModel.CreateObjects(dataPacket.GameObjects);
+            _valuesModel.AddOrModifyValues(dataPacket.Values);
+            _rpcsModel.MultiCall(dataPacket.CachedRpcCalls);
 
             InRoom = true;
             Tick().Forget();
@@ -52,6 +78,9 @@ namespace Positron.Client.Room
                 return;
             }
 
+            _gameObjectsModel.ClearWorld();
+            _valuesModel.ClearWorld();
+
             InRoom = false;
             _ctx.Cancel();
             _ctx.Dispose();
@@ -59,17 +88,18 @@ namespace Positron.Client.Room
 
         public void ProcessReliableTickPacket(GameTickPacket tickPacket)
         {
-            // process world change
-            // OBJ
-            // VAL
-            // RPC
+            _gameObjectsModel.CreateObjects(tickPacket.NewGameObjects);
+            _gameObjectsModel.RemoveObjects(tickPacket.RemovedObjects);
+            _gameObjectsModel.TransferedObjects(tickPacket.TransferedToHostObjects, tickPacket.Host);
+
+            _valuesModel.AddOrModifyValues(tickPacket.ValueModification);
+
+            _rpcsModel.MultiCall(tickPacket.Rpcs);
         }
 
         public void ProcessUnreliableTickPacket(GameUnreliableTick unreliableTickPaclet)
         {
-            // process move
-            // check existance
-            // move
+            _gameObjectsModel.MoveObjects(unreliableTickPaclet.MovedObjects);
         }
 
         private async UniTask Tick()
@@ -78,7 +108,7 @@ namespace Positron.Client.Room
 
             while (InRoom)
             {
-                await UniTask.Delay(1000 / _client.Settings.Tickrate, cancellationToken: _ctx.Token, delayTiming: PlayerLoopTiming.FixedUpdate);
+                await UniTask.Delay(1000 / _tickRate, cancellationToken: _ctx.Token, delayTiming: PlayerLoopTiming.FixedUpdate);
             
                 // collect data
                 // send to server
