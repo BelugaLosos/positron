@@ -15,9 +15,11 @@ import (
 func main() {
 	dbgPort := flag.Int("dp", 6060, "pprof debug port on localhosh:dp")
 	useDbg := flag.Bool("dbg", false, "if set true program starts pprof on -dp port")
+	transportAddr := flag.String("taddr", "127.0.0.1", "main gaming server listening IP address for transport")
 	transportPort := flag.Int("tp", 7070, "main port for gaming server")
 	controllPort := flag.Int("cp", 7071, "port for controll the server (stop ...)")
 	allowStop := flag.Bool("als", true, "allows /term listening")
+	version := flag.String("v", "default - 0.0.1", "server version for filtering incoming client connections and prevent version-dependent bugs")
 	flag.Parse()
 
 	if *useDbg {
@@ -27,9 +29,9 @@ func main() {
 	}
 
 	wg := &sync.WaitGroup{}
-	game := gameserver.NewGameServer("127.0.0.1:"+strconv.Itoa(*transportPort), transport.NewWsTransport(), marshaller.NewMessagePackMarshaller())
+	game := gameserver.NewGameServer(*transportAddr+":"+strconv.Itoa(*transportPort), transport.NewWsTransport(), marshaller.NewMessagePackMarshaller())
 
-	log.Println("Starting positron semi-dedicated server v0.0.1")
+	log.Printf("Starting positron semi-dedicated server v%s", *version)
 	err := game.Start(wg)
 
 	if err != nil {
