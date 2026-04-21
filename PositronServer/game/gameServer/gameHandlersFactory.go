@@ -26,6 +26,7 @@ func (g *gameHandlersFactory) Create() ([]internal.Handler, internal.Handler) {
 	handlers = append(handlers, disconnectionHandler)
 	handlers = append(handlers, gamehandlers.NewGameTickHandler())
 	handlers = append(handlers, gamehandlers.NewGameUnreliableTickHandler())
+	handlers = append(handlers, gamehandlers.NewVersionCheckHandler())
 
 	return handlers, disconnectionHandler
 }

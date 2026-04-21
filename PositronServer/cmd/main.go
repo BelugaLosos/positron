@@ -29,7 +29,7 @@ func main() {
 	}
 
 	wg := &sync.WaitGroup{}
-	game := gameserver.NewGameServer(*transportAddr+":"+strconv.Itoa(*transportPort), transport.NewWsTransport(), marshaller.NewMessagePackMarshaller())
+	game := gameserver.NewGameServer(*transportAddr+":"+strconv.Itoa(*transportPort), transport.NewWsTransport(), marshaller.NewMessagePackMarshaller(), *version)
 
 	log.Printf("Starting positron semi-dedicated server v%s", *version)
 	err := game.Start(wg)

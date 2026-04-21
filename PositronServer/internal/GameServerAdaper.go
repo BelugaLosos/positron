@@ -10,4 +10,5 @@ type GameServerAdaper interface {
 	GetAllRooms() []*room.Room
 	CreateRoom(name string, maxSlots int, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte) string
 	GetMarshaller() MarshalService
+	GetVersion() string
 }

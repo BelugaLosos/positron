@@ -19,6 +19,8 @@ type GameServer struct {
 	handlersFactory internal.HandlersFactory
 	marhaller       internal.MarshalService
 
+	gameVersion string
+
 	rooms map[string]*room.Room
 }
 
@@ -28,7 +30,7 @@ var bufferPool = sync.Pool{
 	},
 }
 
-func NewGameServer(addr string, transport internal.PositronTransportServer, marshaller internal.MarshalService) *GameServer {
+func NewGameServer(addr string, transport internal.PositronTransportServer, marshaller internal.MarshalService, version string) *GameServer {
 	server := &GameServer{
 		mutex:           &sync.RWMutex{},
 		termination:     make(chan interface{}),
@@ -36,6 +38,7 @@ func NewGameServer(addr string, transport internal.PositronTransportServer, mars
 		transport:       transport,
 		handlersFactory: nil,
 		marhaller:       marshaller,
+		gameVersion:     version,
 		rooms:           make(map[string]*room.Room),
 	}
 
@@ -90,6 +93,10 @@ func (g *GameServer) CreateRoom(name string, maxSlots int, ttl time.Duration, sc
 
 func (g *GameServer) GetMarshaller() internal.MarshalService {
 	return g.marhaller
+}
+
+func (g *GameServer) GetVersion() string {
+	return g.gameVersion
 }
 
 func (g *GameServer) filterEmptyRooms() {
