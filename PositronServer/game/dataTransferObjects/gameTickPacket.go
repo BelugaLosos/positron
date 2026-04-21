@@ -30,6 +30,16 @@ func NewTickPacket(host uint32, sourceClient uint32, newObjects []*gameentities.
 	}
 }
 
+func (g *GameTickPacket) ReassignTickPacketData(host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) {
+	g.Host = host
+	g.Client = sourceClient
+	g.NewObjects = newObjects
+	g.RemovedObjects = removedObjects
+	g.TransferedObjects = transferedObjects
+	g.ValueMod = valueMod
+	g.Rpc = rpc
+}
+
 func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.EncodeArrayLen(7)
 	err := enc.EncodeUint(uint64(g.Host))

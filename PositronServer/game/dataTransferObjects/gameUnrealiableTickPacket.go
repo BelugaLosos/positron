@@ -20,6 +20,11 @@ func NewGameUnreliableTickPacket(movedObjects []*gameentities.Tranform, sourceCl
 	}
 }
 
+func (g *GameUnreliableTickPacket) ReassignUnreliableTickPacket(movedObjects []*gameentities.Tranform, sourceClient uint32) {
+	g.SourceClient = sourceClient
+	g.MovedObjects = movedObjects
+}
+
 func (g *GameUnreliableTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.EncodeArrayLen(2)
 	err := enc.EncodeUint(uint64(g.SourceClient))

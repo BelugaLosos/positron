@@ -19,7 +19,7 @@ func main() {
 	transportPort := flag.Int("tp", 7070, "main port for gaming server")
 	controllPort := flag.Int("cp", 7071, "port for controll the server (stop ...)")
 	allowStop := flag.Bool("als", true, "allows /term listening")
-	version := flag.String("v", "default - 0.0.1", "server version for filtering incoming client connections and prevent version-dependent bugs")
+	version := flag.String("v", "0.0.1 -- DEFAULT", "server version for filtering incoming client connections and prevent version-dependent bugs")
 	flag.Parse()
 
 	if *useDbg {

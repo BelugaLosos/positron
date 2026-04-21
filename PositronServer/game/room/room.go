@@ -38,6 +38,9 @@ type Room struct {
 	gameObjectsModel *roommodels.GameObjectsModel
 	netValuesModel   *roommodels.NetValuesModel
 	rpcsModel        *roommodels.RpcsModel
+
+	tickPacketsPool           *sync.Pool
+	unreliableTickPacketsPool *sync.Pool
 }
 
 func clamp(current int, min int, max int) int {
@@ -74,6 +77,16 @@ func NewRoom(name string, maxSlots int, ttl time.Duration, scene uint32, tickrat
 		gameObjectsModel:        roommodels.NewGameObjectsModel(),
 		netValuesModel:          roommodels.NewNetValuesModel(),
 		rpcsModel:               roommodels.NewRpcsModel(),
+		tickPacketsPool: &sync.Pool{
+			New: func() interface{} {
+				return &datatransferobjects.GameTickPacket{}
+			},
+		},
+		unreliableTickPacketsPool: &sync.Pool{
+			New: func() interface{} {
+				return &datatransferobjects.GameUnreliableTickPacket{}
+			},
+		},
 	}
 }
 
@@ -83,7 +96,8 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 
 	worldModAdd, worldModRemove, worldModTransfer := r.gameObjectsModel.GetModification()
 
-	gameTick := datatransferobjects.NewTickPacket( // add packet pool
+	gameTick := r.tickPacketsPool.Get().(*datatransferobjects.GameTickPacket)
+	gameTick.ReassignTickPacketData(
 		r.hostIndex,
 		0,
 		worldModAdd,
@@ -93,12 +107,18 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 		r.rpcsModel.GetCurrentCallBuffer(),
 	)
 
-	gamePositionsTick := datatransferobjects.NewGameUnreliableTickPacket( // add packet pool
+	gamePositionsTick := r.unreliableTickPacketsPool.Get().(*datatransferobjects.GameUnreliableTickPacket)
+	gamePositionsTick.ReassignUnreliableTickPacket(
 		r.gameObjectsModel.GetPositionMod(),
 		0,
 	)
 
 	return gameTick, gamePositionsTick
+}
+
+func (r *Room) ReleaseTickPackets(tick *datatransferobjects.GameTickPacket, unrTick *datatransferobjects.GameUnreliableTickPacket) {
+	r.tickPacketsPool.Put(tick)
+	r.unreliableTickPacketsPool.Put(unrTick)
 }
 
 func (r *Room) ResetTempBuffers() {

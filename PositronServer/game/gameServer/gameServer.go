@@ -157,6 +157,7 @@ func (g *GameServer) roomTick(room *room.Room) {
 			bufferPool.Put(packetMarshallBuffer)
 			bufferPool.Put(packetUnrMarshalled)
 
+			room.ReleaseTickPackets(packet, unreliablePacket)
 			room.ResetTempBuffers()
 
 			time.Sleep((1 * time.Second) / time.Duration(room.GetTickrate()))
