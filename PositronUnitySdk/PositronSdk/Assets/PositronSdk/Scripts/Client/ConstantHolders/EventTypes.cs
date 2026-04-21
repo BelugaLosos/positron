@@ -13,6 +13,8 @@ namespace Positron.Client.ConstantHolders
         JOIN_ROOM = 0x8,
         ROOM_JOINED = 0x9,
         ROOM_LEAVE = 0xA,
-        ROOM_DISCONNECTED = 0xB
+        ROOM_DISCONNECTED = 0xB,
+        VERSION_CHECK_RESPONSE = 0xC,
+        VERSION_CHECK_REQUEST = 0xD
     }
 }

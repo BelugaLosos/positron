@@ -3,6 +3,7 @@ using Positron.Client.ConstantHolders;
 using Positron.Client.Interfaces;
 using Positron.Client.Settings;
 using System;
+using System.Text;
 using UnityEngine;
 
 namespace Positron.Client
@@ -20,6 +21,7 @@ namespace Positron.Client
 
         public event Action connected;
         public event Action disconnected;
+        public event Action<ConnectionResetError> forceConnectionReset;
 
         public PositronClient(PositronSettings settings, IPositronSerializer serializer, IPositronTransport transport, params IPositronHandler[] handlers)
         {
@@ -89,6 +91,12 @@ namespace Positron.Client
 
         private void OnReceiveMessageFromTransport(EventTypes types, byte[] payloadData)
         {
+            if (types == EventTypes.VERSION_CHECK_RESPONSE && payloadData[0] == 0)
+            {
+                forceConnectionReset?.Invoke(ConnectionResetError.VersionMissmatch);
+                return;
+            }
+
             foreach (IPositronHandler handler in _handlers)
             {
                 if (handler.MessageType == types)
@@ -121,13 +129,14 @@ namespace Positron.Client
                 Status = ClientStatus.Connected;
 
                 _transport.onRawMessage += OnReceiveMessageFromTransport;
+                SendRaw(Encoding.UTF8.GetBytes(_settings.Version), EventTypes.VERSION_CHECK_REQUEST, true);
 
                 connected?.Invoke();
             }
             catch (Exception e)
             {
                 Debug.LogException(e);
-                disconnected?.Invoke();
+                forceConnectionReset?.Invoke(ConnectionResetError.TimedOut);
             }
         }
     }
@@ -138,5 +147,11 @@ namespace Positron.Client
         Disconnecing,
         Disconnected,
         Connected
+    }
+
+    public enum ConnectionResetError
+    {
+        VersionMissmatch,
+        TimedOut
     }
 }

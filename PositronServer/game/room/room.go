@@ -117,6 +117,9 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 }
 
 func (r *Room) ReleaseTickPackets(tick *datatransferobjects.GameTickPacket, unrTick *datatransferobjects.GameUnreliableTickPacket) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
 	r.tickPacketsPool.Put(tick)
 	r.unreliableTickPacketsPool.Put(unrTick)
 }

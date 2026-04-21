@@ -30,8 +30,10 @@ namespace Positron
         public static IPositronObservableHandler<RoomListResponse> GetRoomsHandler => _client.GetHandler<GetRoomsHandler>();
         public static IPositronObservableHandler<RoomCreationResponse> RoomCreatedHandler => _client.GetHandler<RoomCreatedHandler>();
 
+        public static event Action connectionRequested;
         public static event Action connected;
         public static event Action disconnected;
+        public static event Action<ConnectionResetError> connectionResetted;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticFileds()
@@ -105,6 +107,7 @@ namespace Positron
             _monoHook.destroyed += Disconnect;
             _client.connected += OnConnected;
             _client.disconnected += OnDisconnected;
+            _client.forceConnectionReset += OnConnectionReset;
 
             _initialized = true;
         }
@@ -126,6 +129,8 @@ namespace Positron
             {
                 return;
             }
+
+            connectionRequested?.Invoke();
 
             Debug.Log("Connecting...");
             _client.Connect();
@@ -193,6 +198,14 @@ namespace Positron
             _pingModel.Dispose();
 
             disconnected?.Invoke();
+        }
+
+        private static void OnConnectionReset(ConnectionResetError resetCause)
+        {
+            Debug.LogError($"Positron critical error -> connection reset in cause '{resetCause}'");
+
+            connectionResetted?.Invoke(resetCause);
+            Disconnect();
         }
     }
 }

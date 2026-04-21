@@ -23,6 +23,11 @@ namespace Positron.Demo.RoomsBrowser.Views
 
         [SerializeField] private RoomCard _roomCardPrefab;
 
+        [Space]
+
+        [SerializeField] private RectTransform _statusWindow;
+        [SerializeField] private TextMeshProUGUI _statusText;
+
         private bool _initialized;
 
         private readonly List<RoomCard> _cards = new();
@@ -57,8 +62,6 @@ namespace Positron.Demo.RoomsBrowser.Views
 
         public void Display(RoomListResponse rooms)
         {
-            Debug.Log($"Display {rooms.List.Length}");
-
             Clear();
 
             foreach (RoomsListElement room in rooms.List)
@@ -69,6 +72,17 @@ namespace Positron.Demo.RoomsBrowser.Views
                 
                 _cards.Add(card);
             }
+        }
+
+        public void DisplayStatus(string status)
+        {
+            _statusWindow.gameObject.SetActive(true);
+            _statusText.text = status;
+        }
+
+        public void HideStatus()
+        {
+            _statusWindow.gameObject.SetActive(false);
         }
 
         private void Clear()

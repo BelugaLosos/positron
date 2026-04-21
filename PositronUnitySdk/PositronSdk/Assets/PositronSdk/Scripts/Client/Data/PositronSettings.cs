@@ -10,6 +10,7 @@ namespace Positron.Client.Settings
         [field: SerializeField] public bool IsSecure { get; private set; }
         [field: SerializeField] public bool Autoconnect { get; private set; }
         [SerializeField][Min(1)] private int _tickrate = 30;
+        [field: SerializeField] public string Version { get; private set; } = "0.0.1 -- DEFAULT";
 
         public int Tickrate => _tickrate;
     }
