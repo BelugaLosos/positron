@@ -343,13 +343,14 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.DataTransferObjects.JoinRoomResponse value, global::MessagePack.MessagePackSerializerOptions options)
         {
             global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
-            writer.WriteArrayHeader(6);
+            writer.WriteArrayHeader(7);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetGameObject[]>(formatterResolver).Serialize(ref writer, value.GameObjects, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetValue[]>(formatterResolver).Serialize(ref writer, value.Values, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.RpcCall[]>(formatterResolver).Serialize(ref writer, value.CachedRpcCalls, options);
             writer.Write(value.Tickrate);
             writer.Write(value.SelfId);
             writer.Write(value.Host);
+            writer.Write(value.Scene);
         }
 
         public global::Positron.Client.DataTransferObjects.JoinRoomResponse Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -385,6 +386,9 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
                         break;
                     case 5:
                         ____result.Host = reader.ReadUInt32();
+                        break;
+                    case 6:
+                        ____result.Scene = reader.ReadUInt32();
                         break;
                     default:
                         reader.Skip();

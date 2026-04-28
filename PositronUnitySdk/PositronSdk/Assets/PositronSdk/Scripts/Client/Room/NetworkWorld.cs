@@ -5,17 +5,23 @@ using Positron.Client.Room.Models;
 using System;
 using System.Threading;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Positron.Client.Room
 {
     public class NetworkWorld : IDisposable
     {
         private IPositronClient _client;
+        private IPositronObservableHandler<JoinRoomResponse> _joinHandler;
         private CancellationTokenSource _ctx;
 
         private NetworkGameObjectsModel _gameObjectsModel;
         private NetworkValuesModel _valuesModel;
         private RpcsModel _rpcsModel;
+
+        private JoinRoomResponse _joinDataPacket;
+        private Action _loadCompleteCallback;
+        private LoadSceneOverrider DoLoadScene;
 
         private int _tickRate;
 
@@ -30,10 +36,13 @@ namespace Positron.Client.Room
             _rpcsModel = new();
         }
 
-        public void Init(IPositronClient client)
+        public void Init(IPositronClient client, IPositronObservableHandler<JoinRoomResponse> joinHandler)
         {
             _client = client;
+            _joinHandler = joinHandler;
             _ctx = new();
+
+            _joinHandler.callback += Join;
         }
 
         public void Dispose()
@@ -44,30 +53,18 @@ namespace Positron.Client.Room
             }
 
             Leave();
+            UnsubCompleteJoin();
 
             _gameObjectsModel.Dispose();
             _valuesModel.Dispose();
             _rpcsModel.Dispose();
+
+            _joinHandler.callback -= Join;
         }
 
-        public void Join(JoinRoomResponse dataPacket)
+        public void OverrideSceneLoader(LoadSceneOverrider sceneLoadFunc)
         {
-            if (InRoom)
-            {
-                Debug.LogError("Critical error -> can`t join another room");
-                return;
-            }
-
-            _tickRate = (int)dataPacket.Tickrate;
-            LocalClientId = dataPacket.SelfId;
-            HostId = dataPacket.Host;
-
-            _gameObjectsModel.CreateObjects(dataPacket.GameObjects);
-            _valuesModel.AddOrModifyValues(dataPacket.Values);
-            _rpcsModel.MultiCall(dataPacket.CachedRpcCalls);
-
-            InRoom = true;
-            Tick().Forget();
+            DoLoadScene = sceneLoadFunc;
         }
 
         public void Leave() 
@@ -86,7 +83,36 @@ namespace Positron.Client.Room
             _ctx.Dispose();
         }
 
-        public void ProcessReliableTickPacket(GameTickPacket tickPacket)
+        private void Join(JoinRoomResponse dataPacket)
+        {
+            if (InRoom)
+            {
+                Debug.LogError("Critical error -> can`t join another room");
+                return;
+            }
+
+            _joinDataPacket = dataPacket;
+
+            if (_joinDataPacket.Scene == 0)
+            {
+                Debug.LogError("Unable to load boot scene via positron!");
+            }
+
+            if (DoLoadScene == null)
+            {
+                SceneManager.LoadScene((int)dataPacket.Scene);
+                Debug.LogWarning("Positron uses own scene load fallback");
+
+                CompleteJoin();
+            }
+            else
+            {
+                _loadCompleteCallback = DoLoadScene(dataPacket.Scene);
+                _loadCompleteCallback += CompleteJoin;
+            }
+        }
+
+        private void ProcessReliableTickPacket(GameTickPacket tickPacket)
         {
             _gameObjectsModel.CreateObjects(tickPacket.NewGameObjects);
             _gameObjectsModel.RemoveObjects(tickPacket.RemovedObjects);
@@ -97,7 +123,7 @@ namespace Positron.Client.Room
             _rpcsModel.MultiCall(tickPacket.Rpcs);
         }
 
-        public void ProcessUnreliableTickPacket(GameUnreliableTick unreliableTickPaclet)
+        private void ProcessUnreliableTickPacket(GameUnreliableTick unreliableTickPaclet)
         {
             _gameObjectsModel.MoveObjects(unreliableTickPaclet.MovedObjects);
         }
@@ -114,5 +140,32 @@ namespace Positron.Client.Room
                 // send to server
             }
         }
+
+        private void CompleteJoin()
+        {
+            _tickRate = (int)_joinDataPacket.Tickrate;
+            LocalClientId = _joinDataPacket.SelfId;
+            HostId = _joinDataPacket.Host;
+
+            _gameObjectsModel.CreateObjects(_joinDataPacket.GameObjects);
+            _valuesModel.AddOrModifyValues(_joinDataPacket.Values);
+            _rpcsModel.MultiCall(_joinDataPacket.CachedRpcCalls);
+
+            InRoom = true;
+            Tick().Forget();
+
+            UnsubCompleteJoin();
+        }
+
+        private void UnsubCompleteJoin()
+        {
+            if (_loadCompleteCallback != null)
+            {
+                _loadCompleteCallback -= CompleteJoin;
+                _loadCompleteCallback = null;
+            }
+        }
+
+        public delegate Action LoadSceneOverrider(uint scene);
     }
 }

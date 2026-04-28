@@ -11,9 +11,10 @@ type JoinRoomResponsePacket struct {
 	Tickrate    uint32
 	SelfId      uint32
 	Host        uint32
+	Scene       uint32
 }
 
-func NewJoinRoomResponsePacket(gameObjects []*gameentities.GameObject, netValues []*gameentities.NetValue, cachedRpcs []*gameentities.RpcCall, tickrate uint32, selfId uint32, host uint32) *JoinRoomResponsePacket {
+func NewJoinRoomResponsePacket(gameObjects []*gameentities.GameObject, netValues []*gameentities.NetValue, cachedRpcs []*gameentities.RpcCall, tickrate uint32, selfId uint32, host uint32, scene uint32) *JoinRoomResponsePacket {
 	return &JoinRoomResponsePacket{
 		GameObjects: gameObjects,
 		NetValues:   netValues,
@@ -21,5 +22,6 @@ func NewJoinRoomResponsePacket(gameObjects []*gameentities.GameObject, netValues
 		Tickrate:    tickrate,
 		SelfId:      selfId,
 		Host:        host,
+		Scene:       scene,
 	}
 }

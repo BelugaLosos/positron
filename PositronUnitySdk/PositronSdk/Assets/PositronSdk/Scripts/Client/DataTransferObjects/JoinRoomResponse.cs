@@ -12,5 +12,6 @@ namespace Positron.Client.DataTransferObjects
         [Key(3)] public uint Tickrate { get; set; }
         [Key(4)] public uint SelfId { get; set; }
         [Key(5)] public uint Host { get; set; }
+        [Key(6)] public uint Scene { get; set; }
     }
 }

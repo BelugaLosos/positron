@@ -40,6 +40,8 @@ func (l *LeaveRoomHandler) PassHandle(packet []byte) {
 
 	if err != nil {
 		log.Println(err)
+	} else {
+		log.Printf("Client %s left room with guid %s", l.uuid, l.room.GetUuid())
 	}
 }
 

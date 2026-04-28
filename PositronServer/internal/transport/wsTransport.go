@@ -297,7 +297,7 @@ func (p *wsPeer) sendPump() {
 
 		if err != nil {
 			p.ClosePeer()
-			log.Println("Can`t get reader")
+			log.Println("Can`t get writer")
 			return
 		}
 

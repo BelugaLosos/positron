@@ -95,11 +95,12 @@ namespace Positron
                     settings, new MsgPackSerializer(), new WebSocketTransport(), 
                     new PingHandler(_pingModel),
                     new GetRoomsHandler(),
-                    new RoomCreatedHandler()
+                    new RoomCreatedHandler(),
+                    new RoomJoinedHandler()
                 );
 
             _pingModel.Init(_client);
-            _world.Init(_client);
+            _world.Init(_client, _client.GetHandler<RoomJoinedHandler>());
 
             _monoHook = new GameObject("PositronMonoHook").AddComponent<MonoHook>();
             GameObject.DontDestroyOnLoad(_monoHook);
@@ -179,6 +180,8 @@ namespace Positron
 
             _client.Send(request, EventTypes.CREATE_ROOM, true);
         }
+
+        public static void OverrideNetworkSceneLoader(NetworkWorld.LoadSceneOverrider overrider) => _world.OverrideSceneLoader(overrider);
 
         private static void OnConnected()
         {
