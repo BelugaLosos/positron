@@ -29,14 +29,9 @@ var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin:     func(r *http.Request) bool { return true },
-	WriteBufferPool: &sync.Pool{},
 }
 
-var bufferPool = sync.Pool{
-	New: func() interface{} {
-		return make([]byte, 4096)
-	},
-}
+const defaultBufferSize = 64 * 1024
 
 func NewWsTransport() *WsTransport {
 	return &WsTransport{
@@ -94,24 +89,31 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 	}
 
 	var targetData []byte
-	var compressionBuffer []byte
 	compressionFlag := 0
-	gotPool := false
+
+	peer.mutex.Lock()
+	defer peer.mutex.Unlock()
 
 	if len(data) > 1000 {
-		compressionBuffer = bufferPool.Get().([]byte)
-		gotPool = true
-
-		compressionBuffer = compressionBuffer[:cap(compressionBuffer)]
-		compressedSize, compressionErr := lz4.CompressBlock(data, compressionBuffer, nil)
-		compressionBuffer = compressionBuffer[:compressedSize]
-
-		if compressionErr != nil {
-			log.Println(compressionErr)
-			targetData = data
+		if cap(peer.compressionBuf) < lz4.CompressBlockBound(len(data)) {
+			tempCompressionBuf := make([]byte, lz4.CompressBlockBound(len(data)))
+			compressedSize, compressionErr := lz4.CompressBlock(data, tempCompressionBuf, nil)
+			if compressionErr != nil {
+				log.Printf("Compression error for peer %s: %v", peerUuid, compressionErr)
+				targetData = data
+			} else {
+				targetData = tempCompressionBuf[:compressedSize]
+				compressionFlag = 1
+			}
 		} else {
-			targetData = compressionBuffer
-			compressionFlag = 1
+			compressedSize, compressionErr := lz4.CompressBlock(data, peer.compressionBuf, nil)
+			if compressionErr != nil {
+				log.Printf("Compression error for peer %s: %v", peerUuid, compressionErr)
+				targetData = data
+			} else {
+				targetData = peer.compressionBuf[:compressedSize]
+				compressionFlag = 1
+			}
 		}
 	} else {
 		targetData = data
@@ -119,23 +121,15 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 
 	totalLen := len(targetData) + 2
 
-	buf := bufferPool.Get().([]byte)
+	buf := make([]byte, totalLen)
 	buf[0] = eventType
 	buf[1] = byte(compressionFlag)
 	copy(buf[2:], targetData)
-
-	buf = buf[:totalLen]
-
-	if gotPool {
-		bufferPool.Put(compressionBuffer)
-	}
 
 	select {
 	case peer.send <- buf:
 		return nil
 	default:
-		buf = buf[:cap(buf)]
-		bufferPool.Put(buf)
 		return errors.New("peer buffer full, packet dropped")
 	}
 }
@@ -144,8 +138,11 @@ func (t *WsTransport) GetPeerHandlers(peerUuid string) []internal.Handler {
 	t.mutex.RLock()
 	defer t.mutex.RUnlock()
 
-	wsConn := t.connections[peerUuid]
-	return t.handlers[wsConn]
+	peer := t.connections[peerUuid]
+	if peer == nil {
+		return nil
+	}
+	return t.handlers[peer]
 }
 
 func (t *WsTransport) KickClient(uuid string) {
@@ -161,50 +158,51 @@ func (t *WsTransport) KickClient(uuid string) {
 
 func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
-	peer := &wsPeer{
-		mutex:    &sync.Mutex{},
-		send:     make(chan []byte, 1024),
-		wsConn:   conn,
-		isClosed: false,
-	}
-
 	if err != nil {
 		log.Println("Upgrade error:", err)
 		return
 	}
 
+	peer := &wsPeer{
+		mutex:            &sync.Mutex{},
+		send:             make(chan []byte, 1024),
+		wsConn:           conn,
+		isClosed:         false,
+		readBuf:          make([]byte, defaultBufferSize),
+		compressionBuf:   make([]byte, defaultBufferSize),
+		decompressionBuf: make([]byte, defaultBufferSize),
+	}
+
 	id := uuid.New().String()
 
 	t.mutex.Lock()
-
 	handlers, disconnectHandler := t.handlersFactory.Create()
-
 	t.connections[id] = peer
 	t.handlers[peer] = handlers
+	t.mutex.Unlock()
 
 	for i := range handlers {
 		if handlers[i] == nil {
-			log.Printf("Handler by id %v is nil of len %v", i, len(handlers))
+			log.Printf("Handler by id %v is nil of len %v for peer %s", i, len(handlers), id)
 			continue
 		}
-
 		handlers[i].Init(t, t.gServer, id)
 	}
-
-	t.mutex.Unlock()
 
 	go peer.sendPump()
 	go t.handleIncoming(id, peer, handlers, disconnectHandler)
 }
 
-func (t *WsTransport) handleIncoming(id string, wsConn *wsPeer, handlers []internal.Handler, closeHandler internal.Handler) {
+func (t *WsTransport) handleIncoming(id string, peer *wsPeer, handlers []internal.Handler, closeHandler internal.Handler) {
 	defer func() {
-		wsConn.ClosePeer()
+		peer.ClosePeer()
 
 		t.mutex.Lock()
 		delete(t.connections, id)
-		delete(t.handlers, wsConn)
+		delete(t.handlers, peer)
 		t.mutex.Unlock()
+
+		closeHandler.PassHandle([]byte{})
 	}()
 
 	for {
@@ -212,75 +210,73 @@ func (t *WsTransport) handleIncoming(id string, wsConn *wsPeer, handlers []inter
 		case <-t.shutdown:
 			return
 		default:
-			_, reader, err := wsConn.wsConn.NextReader()
+			_, reader, err := peer.wsConn.NextReader()
 
 			if err != nil {
 				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-					closeHandler.PassHandle([]byte{})
-					log.Printf("error: %v", err)
+					log.Printf("WebSocket read error for peer %s: %v", id, err)
 				}
+
 				return
 			}
 
-			readBuffer := bufferPool.Get().([]byte)
-			readBuffer = readBuffer[:cap(readBuffer)]
-
-			readedAmount, readErr := reader.Read(readBuffer)
-
-			readBuffer = readBuffer[:readedAmount]
+			readedAmount, readErr := reader.Read(peer.readBuf)
 
 			if readErr != nil {
-				log.Println(readErr)
-				bufferPool.Put(readBuffer)
+				log.Printf("Failed to read from websocket for peer %s: %v", id, readErr)
 				return
 			}
+			packet := peer.readBuf[:readedAmount]
 
-			if len(readBuffer) >= 3 {
-				t.handlePacket(handlers, readBuffer)
+			if len(packet) >= 3 {
+				t.handlePacket(handlers, peer, packet)
 			} else {
-				wsConn.ClosePeer()
+				log.Printf("Received malformed packet (too short) from peer %s, closing connection.", id)
+				return
 			}
-
-			bufferPool.Put(readBuffer)
 		}
 	}
 }
 
-func (t *WsTransport) handlePacket(handlers []internal.Handler, packet []byte) {
+func (t *WsTransport) handlePacket(handlers []internal.Handler, peer *wsPeer, packet []byte) {
 	usedCompression := false
 
-	if packet[1] == 1 {
+	if len(packet) > 1 && packet[1] == 1 {
 		usedCompression = true
 	}
 
 	for i := range handlers {
+		if handlers[i] == nil {
+			log.Printf("Warning: nil handler found at index %d while processing packet from peer %s", i, peer.wsConn.RemoteAddr().String())
+			continue
+		}
+
 		if handlers[i].GetType() == packet[0] {
 			if usedCompression {
-				decpmpress := bufferPool.Get().([]byte)
-				decpmpress = decpmpress[:cap(decpmpress)]
-				decompressedLen, err := lz4.UncompressBlock(packet[2:], decpmpress)
-				decpmpress = decpmpress[:decompressedLen]
+				decompressedLen, err := lz4.UncompressBlock(packet[2:], peer.decompressionBuf)
 
 				if err != nil {
-					bufferPool.Put(decpmpress)
-					log.Println(err)
+					log.Printf("Decompression error for peer %s: %v", peer.wsConn.RemoteAddr().String(), err)
 					continue
 				}
-
-				handlers[i].PassHandle(decpmpress)
-				bufferPool.Put(decpmpress)
+				handlers[i].PassHandle(peer.decompressionBuf[:decompressedLen])
 			} else {
 				handlers[i].PassHandle(packet[2:])
 			}
+
+			break
 		}
 	}
 }
 
 type wsPeer struct {
-	mutex    *sync.Mutex
-	send     chan []byte
-	wsConn   *websocket.Conn
-	isClosed bool
+	mutex            *sync.Mutex
+	send             chan []byte
+	wsConn           *websocket.Conn
+	isClosed         bool
+	readBuf          []byte
+	compressionBuf   []byte
+	decompressionBuf []byte
 }
 
 func (p *wsPeer) sendPump() {
@@ -294,27 +290,23 @@ func (p *wsPeer) sendPump() {
 		}
 
 		writer, err := p.wsConn.NextWriter(websocket.BinaryMessage)
-
 		if err != nil {
+			log.Printf("Peer %s: Can't get writer, closing peer. Error: %v", p.wsConn.RemoteAddr().String(), err)
 			p.ClosePeer()
-			log.Println("Can`t get writer")
 			return
 		}
 
 		_, err = writer.Write(data)
+		if err != nil {
+			log.Printf("Peer %s: Failed to write data. Error: %v", p.wsConn.RemoteAddr().String(), err)
+		}
 
 		err = writer.Close()
-
-		data = data[:cap(data)]
-		bufferPool.Put(data)
-
 		if err != nil {
-			log.Println(err)
+			log.Printf("Peer %s: Failed to close writer. Error: %v", p.wsConn.RemoteAddr().String(), err)
 			corruptions++
-
 			if corruptions > 100 {
-				log.Println("Peer disconnected in cause of massive errors shooting")
-
+				log.Printf("Peer %s disconnected due to massive errors shooting (corruption count: %d)", p.wsConn.RemoteAddr().String(), corruptions)
 				p.ClosePeer()
 				return
 			}
@@ -330,7 +322,11 @@ func (p *wsPeer) ClosePeer() {
 		return
 	}
 
-	p.wsConn.Close()
+	if err := p.wsConn.Close(); err != nil {
+		log.Printf("Error closing WebSocket connection for peer %s: %v", p.wsConn.RemoteAddr().String(), err)
+	}
+
 	close(p.send)
 	p.isClosed = true
+	log.Printf("Peer %s connection closed.", p.wsConn.RemoteAddr().String())
 }

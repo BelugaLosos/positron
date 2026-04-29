@@ -96,11 +96,13 @@ namespace Positron
                     new PingHandler(_pingModel),
                     new GetRoomsHandler(),
                     new RoomCreatedHandler(),
-                    new RoomJoinedHandler()
+                    new RoomJoinedHandler(),
+                    new GameTickHandler(),
+                    new GameUnreliableTickHandler()
                 );
 
             _pingModel.Init(_client);
-            _world.Init(_client, _client.GetHandler<RoomJoinedHandler>());
+            _world.Init(_client, _client.GetHandler<RoomJoinedHandler>(), _client.GetHandler<GameTickHandler>(), _client.GetHandler<GameUnreliableTickHandler>());
 
             _monoHook = new GameObject("PositronMonoHook").AddComponent<MonoHook>();
             GameObject.DontDestroyOnLoad(_monoHook);

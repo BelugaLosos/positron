@@ -28,6 +28,11 @@ namespace Positron.Demo.RoomsBrowser.Views
         [SerializeField] private RectTransform _statusWindow;
         [SerializeField] private TextMeshProUGUI _statusText;
 
+        [Space]
+
+        [SerializeField][Min(1)] private int _playerCapOffset = 1;
+        [SerializeField][Min(1)] private int _levelOffset = 1;
+
         private bool _initialized;
 
         private readonly List<RoomCard> _cards = new();
@@ -103,7 +108,7 @@ namespace Positron.Demo.RoomsBrowser.Views
 
         private void OnClickRoomCreation()
         {
-            pressCreate?.Invoke(_roomNameField.text, _playersCap.value, _level.value);
+            pressCreate?.Invoke(_roomNameField.text, _playersCap.value + _playerCapOffset, _level.value + _levelOffset);
         }
 
         private void OnClickRefrash()

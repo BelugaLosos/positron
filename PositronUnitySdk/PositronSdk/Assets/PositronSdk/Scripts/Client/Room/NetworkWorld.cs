@@ -6,6 +6,7 @@ using System;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Positron.Client.ConstantHolders;
 
 namespace Positron.Client.Room
 {
@@ -13,6 +14,9 @@ namespace Positron.Client.Room
     {
         private IPositronClient _client;
         private IPositronObservableHandler<JoinRoomResponse> _joinHandler;
+        private IPositronObservableHandler<GameTickPacket> _gameTickHandler;
+        private IPositronObservableHandler<GameUnreliableTick> _unreliableTickHandler;
+        
         private CancellationTokenSource _ctx;
 
         private NetworkGameObjectsModel _gameObjectsModel;
@@ -36,13 +40,21 @@ namespace Positron.Client.Room
             _rpcsModel = new();
         }
 
-        public void Init(IPositronClient client, IPositronObservableHandler<JoinRoomResponse> joinHandler)
+        public void Init(
+            IPositronClient client, 
+            IPositronObservableHandler<JoinRoomResponse> joinHandler,
+            IPositronObservableHandler<GameTickPacket> gameTickHandler,
+            IPositronObservableHandler<GameUnreliableTick> unreliableTickHandler)
         {
             _client = client;
             _joinHandler = joinHandler;
+            _gameTickHandler = gameTickHandler;
+            _unreliableTickHandler = unreliableTickHandler;
             _ctx = new();
 
             _joinHandler.callback += Join;
+            _gameTickHandler.callback += ProcessReliableTickPacket;
+            _unreliableTickHandler.callback += ProcessUnreliableTickPacket;
         }
 
         public void Dispose()
@@ -60,6 +72,8 @@ namespace Positron.Client.Room
             _rpcsModel.Dispose();
 
             _joinHandler.callback -= Join;
+            _gameTickHandler.callback -= ProcessReliableTickPacket;
+            _unreliableTickHandler.callback -= ProcessUnreliableTickPacket;
         }
 
         public void OverrideSceneLoader(LoadSceneOverrider sceneLoadFunc)
@@ -135,9 +149,22 @@ namespace Positron.Client.Room
             while (InRoom)
             {
                 await UniTask.Delay(1000 / _tickRate, cancellationToken: _ctx.Token, delayTiming: PlayerLoopTiming.FixedUpdate);
-            
-                // collect data
-                // send to server
+
+                GameTickPacket tickPacket = new();
+                tickPacket.Host = HostId;
+                tickPacket.Client = LocalClientId;
+                tickPacket.NewGameObjects = new GameEntities.NetGameObject[0];
+                tickPacket.RemovedObjects = new uint[0];
+                tickPacket.TransferedToHostObjects = new uint[0];
+                tickPacket.ValueModification = new GameEntities.NetValue[0];
+                tickPacket.Rpcs = new GameEntities.RpcCall[0];
+
+                GameUnreliableTick unreliableTick = new();
+                unreliableTick.ClientId = LocalClientId;
+                unreliableTick.MovedObjects = new GameEntities.NetTransform[0];
+
+                _client.Send(tickPacket, EventTypes.TICK, true);
+                _client.Send(unreliableTick, EventTypes.UNRELIABLE_TICK, false);
             }
         }
 

@@ -439,7 +439,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 1 Level
+  m_text: Garage
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -2205,6 +2205,8 @@ MonoBehaviour:
   _roomCardPrefab: {fileID: 8980341954162469880, guid: 83f657b99db6f204e9950f9262a08c17, type: 3}
   _statusWindow: {fileID: 5601415010307832585}
   _statusText: {fileID: 5413136395105993168}
+  _playerCapOffset: 1
+  _levelOffset: 1
 --- !u!1 &3773070415632150565
 GameObject:
   m_ObjectHideFlags: 0
@@ -3577,7 +3579,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.00011634827, y: 0.00030416067}
+  m_AnchoredPosition: {x: -0.000118255615, y: 0.00030517578}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &7302071734583904670
@@ -3922,7 +3924,7 @@ MonoBehaviour:
   m_MultiSelect: 0
   m_Options:
     m_Options:
-    - m_Text: 1 Level
+    - m_Text: Garage
       m_Image: {fileID: 0}
       m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_OnValueChanged:
@@ -4140,7 +4142,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 2584671225791080061}
   m_Direction: 2
   m_Value: 0
-  m_Size: 0.99977696
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
