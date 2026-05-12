@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Positron.Client.GameEntities;
 using System;
 
@@ -5,7 +6,10 @@ namespace Positron.Client.Room.Models
 {
     public sealed class NetworkGameObjectsModel : IDisposable
     {
-        private NetworkWorld _world;
+        private readonly NetworkWorld _world;
+        private readonly List<NetGameObject> _creationDelta = new(128);
+        private readonly List<NetTransform> _moveDelta = new(128);
+        private readonly List<uint> _destroyDelta = new(128);
 
         public NetworkGameObjectsModel(NetworkWorld world)
         {
@@ -58,9 +62,25 @@ namespace Positron.Client.Room.Models
 
         }
 
-        public NetTransform[] GetMoveDiff()
+        public GameObjectsDelta GetActionsDelta() => new GameObjectsDelta(_creationDelta.ToArray(), _destroyDelta.ToArray());
+        public NetTransform[] GetMoveDelta() => _moveDelta.ToArray();
+        public void ClearDelta()
         {
-            return default;
+            _creationDelta.Clear();
+            _destroyDelta.Clear();
+            _moveDelta.Clear();
+        }
+
+        public struct GameObjectsDelta
+        {
+            public NetGameObject[] NewGameOgjects;
+            public uint[] RemovedGameObjectIds;
+            
+            public GameObjectsDelta(NetGameObject[] gos, uint[] destruction)
+            {
+                NewGameOgjects = gos;
+                RemovedGameObjectIds = destruction;
+            }
         }
     }
 }

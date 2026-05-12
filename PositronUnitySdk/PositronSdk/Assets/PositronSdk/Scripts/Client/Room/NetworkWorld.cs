@@ -33,6 +33,8 @@ namespace Positron.Client.Room
         public uint LocalClientId { get; private set; }
         public bool InRoom { get; private set; }
 
+        public event Action hostChanged;
+
         public NetworkWorld()
         {
             _gameObjectsModel = new(this);
@@ -128,6 +130,12 @@ namespace Positron.Client.Room
 
         private void ProcessReliableTickPacket(GameTickPacket tickPacket)
         {
+            if (HostId != tickPacket.Host)
+            {
+                HostId = tickPacket.Host;
+                hostChanged?.Invoke();
+            }
+
             _gameObjectsModel.CreateObjects(tickPacket.NewGameObjects);
             _gameObjectsModel.RemoveObjects(tickPacket.RemovedObjects);
             _gameObjectsModel.TransferedObjects(tickPacket.TransferedToHostObjects, tickPacket.Host);
@@ -153,18 +161,27 @@ namespace Positron.Client.Room
                 GameTickPacket tickPacket = new();
                 tickPacket.Host = HostId;
                 tickPacket.Client = LocalClientId;
-                tickPacket.NewGameObjects = new GameEntities.NetGameObject[0];
-                tickPacket.RemovedObjects = new uint[0];
-                tickPacket.TransferedToHostObjects = new uint[0];
-                tickPacket.ValueModification = new GameEntities.NetValue[0];
-                tickPacket.Rpcs = new GameEntities.RpcCall[0];
+
+                NetworkGameObjectsModel.GameObjectsDelta reliableGameObjectsDelta = _gameObjectsModel.GetActionsDelta();
+
+                tickPacket.NewGameObjects = reliableGameObjectsDelta.NewGameOgjects;
+                tickPacket.RemovedObjects = reliableGameObjectsDelta.RemovedGameObjectIds;
+                tickPacket.TransferedToHostObjects = new uint[0]; // Unused in case CLIENT --> SERVER
+
+                tickPacket.ValueModification = _valuesModel.GetValuesDelta();
+                tickPacket.Rpcs = _rpcsModel.GetCurrentDelta();
 
                 GameUnreliableTick unreliableTick = new();
                 unreliableTick.ClientId = LocalClientId;
-                unreliableTick.MovedObjects = new GameEntities.NetTransform[0];
+
+                unreliableTick.MovedObjects = _gameObjectsModel.GetMoveDelta();
 
                 _client.Send(tickPacket, EventTypes.TICK, true);
                 _client.Send(unreliableTick, EventTypes.UNRELIABLE_TICK, false);
+
+                _gameObjectsModel.ClearDelta();
+                _valuesModel.ClearDelta();
+                _rpcsModel.ClearDelta();
             }
         }
 
