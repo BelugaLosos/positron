@@ -7,6 +7,7 @@ using System.Threading;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Positron.Client.ConstantHolders;
+using Positron.Client.Settings;
 
 namespace Positron.Client.Room
 {
@@ -35,9 +36,9 @@ namespace Positron.Client.Room
 
         public event Action hostChanged;
 
-        public NetworkWorld()
+        public NetworkWorld(PositronSettings settings)
         {
-            _gameObjectsModel = new(this);
+            _gameObjectsModel = new(this, settings);
             _valuesModel = new();
             _rpcsModel = new();
         }

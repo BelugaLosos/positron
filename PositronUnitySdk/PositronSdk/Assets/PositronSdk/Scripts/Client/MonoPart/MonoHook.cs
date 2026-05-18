@@ -1,12 +1,15 @@
 using System;
 using UnityEngine;
 
-public class MonoHook : MonoBehaviour
+namespace Positron.Client.Mono
 {
-    public event Action destroyed;
-
-    private void OnDestroy()
+    public class MonoHook : MonoBehaviour
     {
-        destroyed?.Invoke();
+        public event Action destroyed;
+
+        private void OnDestroy()
+        {
+            destroyed?.Invoke();
+        }
     }
 }

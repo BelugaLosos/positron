@@ -10,6 +10,7 @@ using System;
 using Positron.Client.DataTransferObjects;
 using Positron.Client.Interfaces;
 using Positron.Client.Room;
+using Positron.Client.Mono;
 
 namespace Positron
 {
@@ -29,6 +30,7 @@ namespace Positron
         public static IReadOnlyPingModel PingModel => _pingModel;
         public static IPositronObservableHandler<RoomListResponse> GetRoomsHandler => _client.GetHandler<GetRoomsHandler>();
         public static IPositronObservableHandler<RoomCreationResponse> RoomCreatedHandler => _client.GetHandler<RoomCreatedHandler>();
+        public static NetworkWorld World => _world;
 
         public static event Action connectionRequested;
         public static event Action connected;
@@ -88,7 +90,7 @@ namespace Positron
             _settings = settings;
 
             _pingModel = new();
-            _world = new();
+            _world = new(settings);
 
             _client = new
                 (
