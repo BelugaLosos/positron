@@ -17,6 +17,7 @@ namespace Positron.Client.Mono
         public bool IsHost => PositronFacade.World.HostId == OwnerClientId || !PositronFacade.World.InRoom;
 
         public event Action<PositronNetworkIdentity> completeInitialize;
+        public event Action<PositronNetworkIdentity> transfered;
 
         public void LocalInit(ulong creationId, uint owner)
         {
@@ -47,6 +48,18 @@ namespace Positron.Client.Mono
             _isLocallyInited = true;
 
             completeInitialize?.Invoke(this);
+        }
+
+        public void Transfer(uint actualOwner)
+        {
+            if (!IsFullyInitialized)
+            {
+                Debug.LogError($"Positron critical error -> unable to transfer object that not inited yet {gameObject.name}", gameObject);
+                return;
+            }
+
+            OwnerClientId = actualOwner;
+            transfered?.Invoke(this);
         }
     }
 }

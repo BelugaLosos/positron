@@ -18,8 +18,9 @@ namespace Positron.Client.Room.Models
 
         private readonly Dictionary<PositronNetworkIdentity, ulong> _indexedAssets = new();
         private readonly Dictionary<ulong, PositronNetworkIdentity> _reverseAssetsIndex = new();
-        private readonly Dictionary<ulong, PositronNetworkIdentity> _localCreationMapping = new();
 
+        private readonly Dictionary<ulong, PositronNetworkIdentity> _localCreationMapping = new();
+        private readonly List<ulong> _localCreationBlacklist = new();
         private readonly Dictionary<uint, PositronNetworkIdentity> _currentGameObjectsOnScene = new();
 
         private ulong _lastCrationId;
@@ -44,7 +45,13 @@ namespace Positron.Client.Room.Models
 
         public void ClearWorld()
         {
+            foreach (KeyValuePair<uint, PositronNetworkIdentity> obj in _currentGameObjectsOnScene)
+            {
+                GameObject.Destroy(obj.Value);
+            }
 
+            _currentGameObjectsOnScene.Clear();
+            ClearDelta();
         }
 
         public void CreateLocalObjectAndSendToServer(PositronNetworkIdentity prefab, Vector3 position, Quaternion rotation)
@@ -72,6 +79,45 @@ namespace Positron.Client.Room.Models
             _localCreationMapping.Add(networkObject.CreationId, created);
         }
 
+        public void DeleteObjectAndSendToServer(PositronNetworkIdentity instance)
+        {
+            if (!_localCreationMapping.ContainsKey(instance.CreationId) && !_currentGameObjectsOnScene.ContainsKey(instance.ObjectId))
+            {
+                Debug.LogError($"Positron error -> object instance {instance.gameObject} is not found in current approved network objects or network objects local mapping!");
+                return;
+            }
+
+            if (_localCreationMapping.ContainsKey(instance.CreationId))
+            {
+                int findIndex = -1;
+
+                for (int i = 0; i < _creationDelta.Count; i++)
+                {
+                    if (_creationDelta[i].CreationId == instance.CreationId)
+                    {
+                        findIndex = i;
+                        break;
+                    }
+                }
+
+                if (findIndex == -1)
+                {
+                    _localCreationBlacklist.Add(instance.CreationId);
+                }
+                else
+                {
+                    _creationDelta.RemoveAt(findIndex);
+                    _localCreationMapping.Remove(instance.CreationId);
+                }
+
+                GameObject.Destroy(instance);
+                return;
+            }
+
+            _destroyDelta.Add(instance.ObjectId);
+            GameObject.Destroy(instance);
+        }
+
         public void CreateObjects(NetGameObject[] objs)
         {
             foreach (NetGameObject obj in objs)
@@ -84,11 +130,34 @@ namespace Positron.Client.Room.Models
         {
             if (obj.OwnerClientId == _world.LocalClientId && _localCreationMapping.TryGetValue(obj.CreationId, out PositronNetworkIdentity localCopy))
             {
+                if (_localCreationBlacklist.Contains(obj.CreationId))
+                {
+                    _destroyDelta.Add(obj.ObjectId);
+                    return;
+                }
+
+                if (localCopy == null)
+                {
+                    Debug.LogError("Positron unexpected error -> local copy is null!");
+                    return;
+                }
+
                 localCopy.NetworkInit(obj);
+
+                _currentGameObjectsOnScene.Add(obj.ObjectId, localCopy);
             }
             else
             {
-                // spawn from scratch
+                if (!_reverseAssetsIndex.ContainsKey(obj.AssetIndex))
+                {
+                    Debug.LogError($"Critical error -> received from network creation of obj with asset index '{obj.AssetIndex}' that not exists!!! Check version missmatch");
+                    return;
+                }
+
+                PositronNetworkIdentity created = GameObject.Instantiate(_reverseAssetsIndex[obj.AssetIndex], obj.Position.ToUnity(), Quaternion.Euler(obj.Rotation.ToUnity()));
+                created.NetworkInit(obj);
+
+                _currentGameObjectsOnScene.Add(obj.ObjectId, created);
             }
         }
 
@@ -102,12 +171,22 @@ namespace Positron.Client.Room.Models
 
         public void DestyroyObject(uint obj)
         {
-
+            if (_currentGameObjectsOnScene.ContainsKey(obj))
+            {
+                GameObject.Destroy(_currentGameObjectsOnScene[obj]);
+                _currentGameObjectsOnScene.Remove(obj);
+            }
         }
 
         public void TransferedObjects(uint[] objs, uint actualHost)
         {
-
+            foreach(uint objId in objs)
+            {
+                if (_currentGameObjectsOnScene.TryGetValue(objId, out PositronNetworkIdentity instance))
+                {
+                    instance.Transfer(actualHost);
+                }
+            }
         }
 
         public void MoveObjects(NetTransform[] objs)
