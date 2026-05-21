@@ -130,9 +130,12 @@ namespace Positron.Client.Room.Models
         {
             if (obj.OwnerClientId == _world.LocalClientId && _localCreationMapping.TryGetValue(obj.CreationId, out PositronNetworkIdentity localCopy))
             {
+                _localCreationMapping.Remove(obj.CreationId);
+
                 if (_localCreationBlacklist.Contains(obj.CreationId))
                 {
                     _destroyDelta.Add(obj.ObjectId);
+                    _localCreationBlacklist.Remove(obj.CreationId);
                     return;
                 }
 
@@ -173,8 +176,9 @@ namespace Positron.Client.Room.Models
         {
             if (_currentGameObjectsOnScene.ContainsKey(obj))
             {
-                GameObject.Destroy(_currentGameObjectsOnScene[obj]);
+                GameObject sceneObj = _currentGameObjectsOnScene[obj].gameObject;
                 _currentGameObjectsOnScene.Remove(obj);
+                GameObject.Destroy(sceneObj);
             }
         }
 
@@ -189,9 +193,14 @@ namespace Positron.Client.Room.Models
             }
         }
 
+        public void CollectCurrentObjectsMoveDeltas()
+        {
+            // collect and record move deltas of objects on scene
+        }
+
         public void MoveObjects(NetTransform[] objs)
         {
-
+            // resolve data from server. put data to network indentities!
         }
 
         public GameObjectsDelta GetActionsDelta() => new GameObjectsDelta(_creationDelta.ToArray(), _destroyDelta.ToArray());
