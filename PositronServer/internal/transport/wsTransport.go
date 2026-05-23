@@ -126,6 +126,10 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 	buf[1] = byte(compressionFlag)
 	copy(buf[2:], targetData)
 
+	if peer.isClosed {
+		return errors.New("send to closed peer")
+	}
+
 	select {
 	case peer.send <- buf:
 		return nil
@@ -154,6 +158,15 @@ func (t *WsTransport) KickClient(uuid string) {
 	if ok {
 		peer.ClosePeer()
 	}
+}
+
+func (t *WsTransport) HasPeer(uuid string) bool {
+	t.mutex.RLock()
+	defer t.mutex.RUnlock()
+
+	_, ok := t.connections[uuid]
+
+	return ok
 }
 
 func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {

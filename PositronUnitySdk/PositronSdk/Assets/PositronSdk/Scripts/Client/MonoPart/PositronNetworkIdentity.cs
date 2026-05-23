@@ -6,6 +6,8 @@ namespace Positron.Client.Mono
 {
     public class PositronNetworkIdentity : MonoBehaviour
     {
+        [SerializeField] private bool _doFullServerAuthoruty = false;
+
         private Vector3 _previousPosition;
         private Quaternion _previousRotation;
 
@@ -15,6 +17,7 @@ namespace Positron.Client.Mono
         public uint ObjectId { get; private set; }
         public uint OwnerClientId { get; private set; }
         public bool IsFullyInitialized { get; private set; }
+        public bool DoFullServerAuthority => _doFullServerAuthoruty;
 
         public bool IsMine => PositronFacade.World.LocalClientId == OwnerClientId || !PositronFacade.World.InRoom;
         public bool IsHost => PositronFacade.World.HostId == OwnerClientId || !PositronFacade.World.InRoom;

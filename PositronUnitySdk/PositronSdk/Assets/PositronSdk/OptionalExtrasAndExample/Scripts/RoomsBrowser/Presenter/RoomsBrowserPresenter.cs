@@ -1,10 +1,10 @@
 using Positron.Client;
 using Positron.Client.DataTransferObjects;
-using Positron.Demo.RoomsBrowser.Model;
-using Positron.Demo.RoomsBrowser.Views;
+using Positron.Extras.RoomsBrowser.Model;
+using Positron.Extras.RoomsBrowser.Views;
 using System;
 
-namespace Positron.Demo.RoomsBrowser.Presenter
+namespace Positron.Extras.RoomsBrowser.Presenter
 {
     public sealed class RoomsBrowserPresenter : IDisposable
     {

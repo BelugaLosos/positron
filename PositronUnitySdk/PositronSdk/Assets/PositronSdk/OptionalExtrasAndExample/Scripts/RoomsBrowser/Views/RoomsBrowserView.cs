@@ -5,7 +5,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Positron.Demo.RoomsBrowser.Views
+namespace Positron.Extras.RoomsBrowser.Views
 {
     public sealed class RoomsBrowserView : MonoBehaviour
     {

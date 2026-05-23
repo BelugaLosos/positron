@@ -64,6 +64,12 @@ namespace Positron.Client.Room.Models
 
         public void CreateLocalObjectAndSendToServer(PositronNetworkIdentity prefab, Vector3 position, Quaternion rotation)
         {
+            if (prefab == null)
+            {
+                Debug.LogError("Positron error -> can`t spawn null prefab");
+                return;
+            }
+
             if (!_indexedAssets.TryGetValue(prefab, out ulong assetIndex))
             {
                 Debug.LogError("Critical positron error -> unable to create network object while it is no registred in settings!!!", prefab);
@@ -89,6 +95,18 @@ namespace Positron.Client.Room.Models
 
         public void DeleteObjectAndSendToServer(PositronNetworkIdentity instance)
         {
+            if(instance == null)
+            {
+                Debug.LogError("Positron error -> can`t destroy null object");
+                return;
+            }
+
+            if (instance.OwnerClientId != _world.LocalClientId)
+            {
+                Debug.LogError($"Positron critical error -> can`t destroy not local owned object OBJ: '{instance}' OWNED_BY: '{instance.OwnerClientId}' LOCAL_ID: '{_world.LocalClientId}'");
+                return;
+            }
+
             if (!_localCreationMapping.ContainsKey(instance.CreationId) && !_currentGameObjectsOnScene.ContainsKey(instance.ObjectId))
             {
                 Debug.LogError($"Positron error -> object instance {instance.gameObject} is not found in current approved network objects or network objects local mapping!");
@@ -118,12 +136,12 @@ namespace Positron.Client.Room.Models
                     _localCreationMapping.Remove(instance.CreationId);
                 }
 
-                GameObject.Destroy(instance);
+                GameObject.Destroy(instance.gameObject);
                 return;
             }
 
             _destroyDelta.Add(instance.ObjectId);
-            GameObject.Destroy(instance);
+            GameObject.Destroy(instance.gameObject);
         }
 
         public void CreateObjects(NetGameObject[] objs)
@@ -182,9 +200,14 @@ namespace Positron.Client.Room.Models
 
         public void DestyroyObject(uint obj)
         {
-            if (_currentGameObjectsOnScene.ContainsKey(obj))
+            if (_currentGameObjectsOnScene.TryGetValue(obj, out PositronNetworkIdentity localInstance))
             {
-                GameObject sceneObj = _currentGameObjectsOnScene[obj].gameObject;
+                if (localInstance == null)
+                {
+                    return;
+                }
+
+                GameObject sceneObj = localInstance.gameObject;
                 _currentGameObjectsOnScene.Remove(obj);
                 GameObject.Destroy(sceneObj);
             }
@@ -196,6 +219,11 @@ namespace Positron.Client.Room.Models
             {
                 if (_currentGameObjectsOnScene.TryGetValue(objId, out PositronNetworkIdentity instance))
                 {
+                    if (instance == null)
+                    {
+                        continue;
+                    }
+
                     instance.Transfer(actualHost);
                 }
             }
@@ -205,6 +233,11 @@ namespace Positron.Client.Room.Models
         {
             foreach (KeyValuePair<uint, PositronNetworkIdentity> networkObjectPair in _currentGameObjectsOnScene)
             {
+                if (networkObjectPair.Value == null)
+                {
+                    continue;
+                }
+
                 if (networkObjectPair.Value.CheckForMoved())
                 {
                     NetTransform deltaData = new();
@@ -225,6 +258,16 @@ namespace Positron.Client.Room.Models
             {
                 if (_currentGameObjectsOnScene.TryGetValue(transform.ObjectId, out PositronNetworkIdentity networkObject))
                 {
+                    if (networkObject == null)
+                    {
+                        continue;
+                    }
+
+                    if (!networkObject.DoFullServerAuthority && networkObject.OwnerClientId == _world.LocalClientId)
+                    {
+                        continue;
+                    }
+
                     networkObject.SetTransform(transform);
                 }
             }

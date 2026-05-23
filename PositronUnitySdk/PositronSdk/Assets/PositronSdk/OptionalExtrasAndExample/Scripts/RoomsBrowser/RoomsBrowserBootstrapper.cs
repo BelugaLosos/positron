@@ -1,9 +1,9 @@
-using Positron.Demo.RoomsBrowser.Model;
-using Positron.Demo.RoomsBrowser.Presenter;
-using Positron.Demo.RoomsBrowser.Views;
+using Positron.Extras.RoomsBrowser.Model;
+using Positron.Extras.RoomsBrowser.Presenter;
+using Positron.Extras.RoomsBrowser.Views;
 using UnityEngine;
 
-namespace Positron.Demo.RoomsBrowser
+namespace Positron.Extras.RoomsBrowser
 {
     public sealed class RoomsBrowserBootstrapper : MonoBehaviour
     {

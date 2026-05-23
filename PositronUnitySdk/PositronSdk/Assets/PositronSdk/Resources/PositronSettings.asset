@@ -18,3 +18,5 @@ MonoBehaviour:
   <Autoconnect>k__BackingField: 1
   _tickrate: 30
   <Version>k__BackingField: 0.0.1 -- DEFAULT
+  <SpawnableObjects>k__BackingField:
+  - {fileID: 330245913734207282, guid: 31010728a1cb0c24db0e36ca0c47a3e0, type: 3}

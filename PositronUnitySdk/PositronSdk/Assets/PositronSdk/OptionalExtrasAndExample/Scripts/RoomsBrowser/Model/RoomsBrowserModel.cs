@@ -2,7 +2,7 @@ using Positron.Client.DataTransferObjects;
 using System;
 using UnityEngine;
 
-namespace Positron.Demo.RoomsBrowser.Model
+namespace Positron.Extras.RoomsBrowser.Model
 {
     public sealed class RoomsBrowserModel : IDisposable
     {

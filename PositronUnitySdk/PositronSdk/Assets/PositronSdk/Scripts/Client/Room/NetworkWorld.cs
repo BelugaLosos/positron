@@ -123,9 +123,10 @@ namespace Positron.Client.Room
             if (DoLoadScene == null)
             {
                 SceneManager.LoadScene((int)dataPacket.Scene);
+#pragma warning disable UDR0005 // Domain Reload Analyzer
+                SceneManager.sceneLoaded += OnSceneLoaded;
+#pragma warning restore UDR0005 // Domain Reload Analyzer
                 Debug.LogWarning("Positron uses own scene load fallback");
-
-                CompleteJoin();
             }
             else
             {
@@ -190,6 +191,12 @@ namespace Positron.Client.Room
                 _valuesModel.ClearDelta();
                 _rpcsModel.ClearDelta();
             }
+        }
+
+        private void OnSceneLoaded(Scene s, LoadSceneMode m)
+        {
+            CompleteJoin();
+            SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
         private void CompleteJoin()
