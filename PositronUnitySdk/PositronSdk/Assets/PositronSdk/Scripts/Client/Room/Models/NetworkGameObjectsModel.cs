@@ -50,7 +50,15 @@ namespace Positron.Client.Room.Models
                 GameObject.Destroy(obj.Value);
             }
 
+            foreach (KeyValuePair<ulong, PositronNetworkIdentity> obj in _localCreationMapping)
+            {
+                GameObject.Destroy(obj.Value);
+            }
+            
+            _localCreationMapping.Clear();  
+            _localCreationBlacklist.Clear();
             _currentGameObjectsOnScene.Clear();
+
             ClearDelta();
         }
 
@@ -195,12 +203,31 @@ namespace Positron.Client.Room.Models
 
         public void CollectCurrentObjectsMoveDeltas()
         {
-            // collect and record move deltas of objects on scene
+            foreach (KeyValuePair<uint, PositronNetworkIdentity> networkObjectPair in _currentGameObjectsOnScene)
+            {
+                if (networkObjectPair.Value.CheckForMoved())
+                {
+                    NetTransform deltaData = new();
+                    deltaData.ObjectId = networkObjectPair.Key;
+                    deltaData.Position = new(networkObjectPair.Value.transform.position);
+                    deltaData.Rotation = new(networkObjectPair.Value.transform.eulerAngles);
+
+                    _moveDelta.Add(deltaData);
+
+                    networkObjectPair.Value.RecordPreviousTransform();
+                }
+            }
         }
 
         public void MoveObjects(NetTransform[] objs)
         {
-            // resolve data from server. put data to network indentities!
+            foreach (NetTransform transform in objs)
+            {
+                if (_currentGameObjectsOnScene.TryGetValue(transform.ObjectId, out PositronNetworkIdentity networkObject))
+                {
+                    networkObject.SetTransform(transform);
+                }
+            }
         }
 
         public GameObjectsDelta GetActionsDelta() => new GameObjectsDelta(_creationDelta.ToArray(), _destroyDelta.ToArray());

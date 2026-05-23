@@ -6,6 +6,9 @@ namespace Positron.Client.Mono
 {
     public class PositronNetworkIdentity : MonoBehaviour
     {
+        private Vector3 _previousPosition;
+        private Quaternion _previousRotation;
+
         private bool _isLocallyInited;
 
         public ulong CreationId { get; private set; }
@@ -18,6 +21,8 @@ namespace Positron.Client.Mono
 
         public event Action<PositronNetworkIdentity> completeInitialize;
         public event Action<PositronNetworkIdentity> transfered;
+
+        private const float DISTANCE_TO_SYNC = 0.05f;
 
         public void LocalInit(ulong creationId, uint owner)
         {
@@ -60,6 +65,19 @@ namespace Positron.Client.Mono
 
             OwnerClientId = actualOwner;
             transfered?.Invoke(this);
+        }
+
+        public void RecordPreviousTransform()
+        {
+            _previousPosition = transform.position;
+            _previousRotation = transform.rotation;
+        }
+
+        public bool CheckForMoved() => Vector3.Distance(transform.position, _previousPosition) > DISTANCE_TO_SYNC || transform.rotation != _previousRotation;
+
+        public void SetTransform(NetTransform netTransform)
+        {
+            transform.SetPositionAndRotation(netTransform.Position.ToUnity(), Quaternion.Euler(netTransform.Rotation.ToUnity()));
         }
     }
 }

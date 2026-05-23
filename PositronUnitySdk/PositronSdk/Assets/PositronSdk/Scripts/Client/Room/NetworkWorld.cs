@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Positron.Client.ConstantHolders;
 using Positron.Client.Settings;
+using Positron.Client.Mono;
 
 namespace Positron.Client.Room
 {
@@ -99,6 +100,10 @@ namespace Positron.Client.Room
             _ctx.Cancel();
             _ctx.Dispose();
         }
+
+        public void SpawnObject(PositronNetworkIdentity prefab, Vector3 position, Quaternion rotation) => 
+            _gameObjectsModel.CreateLocalObjectAndSendToServer(prefab, position, rotation);
+        public void Destroy(PositronNetworkIdentity instance) => _gameObjectsModel.DeleteObjectAndSendToServer(instance);
 
         private void Join(JoinRoomResponse dataPacket)
         {

@@ -91,7 +91,10 @@ func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.Gam
 			continue
 		}
 
-		if gameObject.GetOwnerId() == source && util.PointsDistance(position.GetPosition(), gameObject.GetPosition()) > POSITION_DELTA_TO_SYNC {
+		if gameObject.GetOwnerId() == source &&
+			(util.PointsDistance(position.GetPosition(), gameObject.GetPosition()) > POSITION_DELTA_TO_SYNC ||
+				!util.VetorsEquals(position.GetRotation(), gameObject.GetRotation())) {
+
 			gameObject.Move(position.GetPosition(), position.GetRotation())
 			position.Move(position.GetPosition(), position.GetRotation())
 

@@ -17,6 +17,13 @@ namespace Positron.Client.GameEntities.Premitive
             Z = z;
         }
 
+        public NetVector3(Vector3 unityVector)
+        {
+            X = unityVector.x;
+            Y = unityVector.y;
+            Z = unityVector.z;
+        }
+
         public Vector3 ToUnity() => new(X, Y, Z);
     }
 }

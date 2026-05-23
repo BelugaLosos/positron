@@ -25,3 +25,19 @@ func TestDistanceVector(t *testing.T) {
 		t.Errorf("Distance not valid: %v", dist)
 	}
 }
+
+func TestVectorEquals(t *testing.T) {
+	a := gameentities.NewVector(1, 2, 3)
+	b := gameentities.NewVector(6, 5, 4)
+
+	if util.VetorsEquals(*a, *b) == true {
+		t.Error("Math is broken")
+	}
+
+	a = gameentities.NewVector(1, 2, 3)
+	b = gameentities.NewVector(1, 2, 3)
+
+	if util.VetorsEquals(*a, *b) == false {
+		t.Error("Math is broken")
+	}
+}
