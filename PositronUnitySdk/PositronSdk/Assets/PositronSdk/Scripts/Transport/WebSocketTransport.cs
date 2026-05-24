@@ -1,11 +1,11 @@
 using Cysharp.Threading.Tasks;
+using K4os.Compression.LZ4;
 using NativeWebSocket;
 using Positron.Client.ConstantHolders;
 using Positron.Client.Interfaces;
 using Positron.Client.Settings;
 using System;
 using System.Threading;
-using UnityEngine;
 
 namespace Positron.Transport
 {
@@ -43,7 +43,9 @@ namespace Positron.Transport
 
                 if (isCompressed)
                 {
-                    payload = lz4.Decompress(payload.ToArray());   
+                    Span<byte> decompressBuffer = new(new byte[20000]);
+                    int readedAmount = LZ4Codec.Decode(payload, decompressBuffer);
+                    payload = decompressBuffer.Slice(0, readedAmount);
                 }
 
                 onRawMessage?.Invoke(type, payload.ToArray());
@@ -80,7 +82,9 @@ namespace Positron.Transport
 
             if (rawMessage.Length > 1000)
             {
-                resultiveMessage = lz4.Compress(rawMessage.ToArray());
+                Span<byte> compressBuffer = new(new byte[20000]);
+                int compressedMessageSize = LZ4Codec.Encode(rawMessage, compressBuffer);
+                resultiveMessage = compressBuffer.Slice(0, compressedMessageSize);
                 isCompressed = 1;
             }
             else
