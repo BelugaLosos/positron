@@ -7,16 +7,20 @@ namespace Positron.Client.Mono
     public class PositronNetworkIdentity : MonoBehaviour
     {
         [SerializeField] private bool _syncTransform = true;
-        [SerializeField] private float _syncMoveSpeed = 10f;
 
         private Vector3 _previousPosition;
         private Quaternion _previousRotation;
 
         private bool _isLocallyInited;
-        private bool _isReceivedTransformSync;
+
+        private float _previousSyncFrameTime;
+        private float _currentSyncFrameTime;
 
         private Vector3 _targetPosition;
+        private Vector3 _startPosition;
+
         private Quaternion _targetRotation;
+        private Quaternion _startRotation;
 
         public ulong CreationId { get; private set; }
         public uint ObjectId { get; private set; }
@@ -40,18 +44,13 @@ namespace Positron.Client.Mono
                 return;
             }
 
-            if (!_isReceivedTransformSync)
-            {
-                return;
-            }
+            float estamted = Time.time - _previousSyncFrameTime;
+            float duration = _currentSyncFrameTime - _previousSyncFrameTime + 0.0001f;
 
-            transform.position = Vector3.MoveTowards(transform.position, _targetPosition, _syncMoveSpeed * Time.deltaTime);
-            transform.rotation = Quaternion.RotateTowards(transform.rotation, _targetRotation, _syncMoveSpeed * Time.deltaTime);
+            float percent = Mathf.Clamp01(estamted / duration);
 
-            if (Vector3.Distance(transform.position, _targetPosition) < 0.05f && Quaternion.Angle(transform.rotation, _targetRotation) < 0.05f)
-            {
-                _isReceivedTransformSync = false;
-            }
+            transform.position = Vector3.Lerp(_startPosition, _targetPosition, percent);
+            transform.rotation = Quaternion.Slerp(_startRotation, _targetRotation, percent);
         }
 
         public void LocalInit(ulong creationId, uint owner)
@@ -112,15 +111,26 @@ namespace Positron.Client.Mono
 
         public void SetTransform(NetTransform netTransform)
         {
+            _startPosition = transform.position;
             _targetPosition = netTransform.Position.ToUnity();
+
+            _startRotation = transform.rotation;
             _targetRotation = Quaternion.Euler(netTransform.Rotation.ToUnity());
-            _isReceivedTransformSync = true;
+
+            _previousSyncFrameTime = _currentSyncFrameTime;
+            _currentSyncFrameTime = Time.time;
         }
 
         private void InitTransformTargets()
         {
+            _startPosition = transform.position;
             _targetPosition = transform.position;
+
+            _startRotation = transform.rotation;
             _targetRotation = transform.rotation;
+
+            _previousSyncFrameTime = Time.time;
+            _currentSyncFrameTime = Time.time;
         }
     }
 }
