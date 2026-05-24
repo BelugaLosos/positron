@@ -5,6 +5,7 @@ using Positron.Client.Interfaces;
 using Positron.Client.Settings;
 using System;
 using System.Threading;
+using UnityEngine;
 
 namespace Positron.Transport
 {
@@ -42,7 +43,7 @@ namespace Positron.Transport
 
                 if (isCompressed)
                 {
-                    payload = lz4.Decompress(payload.ToArray());
+                    payload = lz4.Decompress(payload.ToArray());   
                 }
 
                 onRawMessage?.Invoke(type, payload.ToArray());

@@ -238,7 +238,7 @@ namespace Positron.Client.Room.Models
                     continue;
                 }
 
-                if (networkObjectPair.Value.CheckForMoved())
+                if (networkObjectPair.Value.CheckForMoved() && networkObjectPair.Value.IsNeedSyncTransform)
                 {
                     NetTransform deltaData = new();
                     deltaData.ObjectId = networkObjectPair.Key;
@@ -258,12 +258,7 @@ namespace Positron.Client.Room.Models
             {
                 if (_currentGameObjectsOnScene.TryGetValue(transform.ObjectId, out PositronNetworkIdentity networkObject))
                 {
-                    if (networkObject == null)
-                    {
-                        continue;
-                    }
-
-                    if (!networkObject.DoFullServerAuthority && networkObject.OwnerClientId == _world.LocalClientId)
+                    if (networkObject == null || !networkObject.IsNeedSyncTransform || networkObject.IsMine)
                     {
                         continue;
                     }
