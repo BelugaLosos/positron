@@ -141,10 +141,6 @@ func (g *GameServer) roomTick(room *room.Room) {
 			unrErr := g.marhaller.MarshalNonAlloc(packetUnrMarshalled, unreliablePacket)
 
 			for i := range peers {
-				if !g.transport.HasPeer(peers[i]) {
-					continue
-				}
-
 				if err == nil {
 					g.transport.SendToPeer(packetMarshallBuffer.Bytes(), eventtypes.TICK, peers[i], true)
 				} else {

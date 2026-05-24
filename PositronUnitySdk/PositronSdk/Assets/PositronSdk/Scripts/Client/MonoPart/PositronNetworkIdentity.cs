@@ -7,11 +7,16 @@ namespace Positron.Client.Mono
     public class PositronNetworkIdentity : MonoBehaviour
     {
         [SerializeField] private bool _syncTransform = true;
+        [SerializeField] private float _syncMoveSpeed = 10f;
 
         private Vector3 _previousPosition;
         private Quaternion _previousRotation;
 
         private bool _isLocallyInited;
+        private bool _isReceivedTransformSync;
+
+        private Vector3 _targetPosition;
+        private Quaternion _targetRotation;
 
         public ulong CreationId { get; private set; }
         public uint ObjectId { get; private set; }
@@ -28,6 +33,27 @@ namespace Positron.Client.Mono
 
         private const float DISTANCE_TO_SYNC = 0.05f;
 
+        private void Update()
+        {
+            if (IsMine)
+            {
+                return;
+            }
+
+            if (!_isReceivedTransformSync)
+            {
+                return;
+            }
+
+            transform.position = Vector3.MoveTowards(transform.position, _targetPosition, _syncMoveSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, _targetRotation, _syncMoveSpeed * Time.deltaTime);
+
+            if (Vector3.Distance(transform.position, _targetPosition) < 0.05f && Quaternion.Angle(transform.rotation, _targetRotation) < 0.05f)
+            {
+                _isReceivedTransformSync = false;
+            }
+        }
+
         public void LocalInit(ulong creationId, uint owner)
         {
             if (_isLocallyInited)
@@ -38,6 +64,9 @@ namespace Positron.Client.Mono
 
             CreationId = creationId;
             OwnerClientId = owner;
+
+            InitTransformTargets();
+
             _isLocallyInited = true;
         }
 
@@ -52,6 +81,8 @@ namespace Positron.Client.Mono
             CreationId = 0;
             ObjectId = networkData.ObjectId;
             OwnerClientId = networkData.OwnerClientId;
+
+            InitTransformTargets();
 
             IsFullyInitialized = true;
             _isLocallyInited = true;
@@ -81,7 +112,15 @@ namespace Positron.Client.Mono
 
         public void SetTransform(NetTransform netTransform)
         {
-            transform.SetPositionAndRotation(netTransform.Position.ToUnity(), Quaternion.Euler(netTransform.Rotation.ToUnity()));
+            _targetPosition = netTransform.Position.ToUnity();
+            _targetRotation = Quaternion.Euler(netTransform.Rotation.ToUnity());
+            _isReceivedTransformSync = true;
+        }
+
+        private void InitTransformTargets()
+        {
+            _targetPosition = transform.position;
+            _targetRotation = transform.rotation;
         }
     }
 }

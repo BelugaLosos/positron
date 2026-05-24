@@ -84,8 +84,8 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 	peer, ok := t.connections[peerUuid]
 	t.mutex.RUnlock()
 
-	if !ok || peer == nil {
-		return errors.New("peer not found")
+	if !ok || peer == nil || peer.isClosed {
+		return errors.New("peer not found or closed")
 	}
 
 	var targetData []byte
@@ -158,15 +158,6 @@ func (t *WsTransport) KickClient(uuid string) {
 	if ok {
 		peer.ClosePeer()
 	}
-}
-
-func (t *WsTransport) HasPeer(uuid string) bool {
-	t.mutex.RLock()
-	defer t.mutex.RUnlock()
-
-	_, ok := t.connections[uuid]
-
-	return ok
 }
 
 func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
