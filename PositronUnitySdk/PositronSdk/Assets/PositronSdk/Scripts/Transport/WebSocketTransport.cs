@@ -5,7 +5,9 @@ using Positron.Client.ConstantHolders;
 using Positron.Client.Interfaces;
 using Positron.Client.Settings;
 using System;
+using System.Buffers;
 using System.Threading;
+using UnityEngine;
 
 namespace Positron.Transport
 {
@@ -20,6 +22,12 @@ namespace Positron.Transport
         {
             await UniTask.SwitchToMainThread();
 
+            if (_dispatchCancellationToken != null)
+            {
+                _dispatchCancellationToken.Cancel();
+                _dispatchCancellationToken.Dispose();
+            }
+
             _dispatchCancellationToken = new();
             _webSokcet = new($"{(settings.IsSecure ? "wss" : "ws")}://{settings.Address}:{settings.Port}");
 
@@ -28,9 +36,8 @@ namespace Positron.Transport
             _webSokcet.OnOpen += () => connectTcs.TrySetResult();
             _webSokcet.OnError += (e) => connectTcs.TrySetException(new(e));
             _webSokcet.OnClose += (e) => 
-            { 
-                _dispatchCancellationToken.Cancel(); 
-                _webSokcet.Close();
+            {
+                _dispatchCancellationToken?.Cancel(); 
             };
 
             _webSokcet.OnMessage += (data) =>
@@ -43,12 +50,31 @@ namespace Positron.Transport
 
                 if (isCompressed)
                 {
-                    Span<byte> decompressBuffer = new(new byte[20000]);
-                    int readedAmount = LZ4Codec.Decode(payload, decompressBuffer);
-                    payload = decompressBuffer.Slice(0, readedAmount);
-                }
+                    byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(ushort.MaxValue * 2); // THIS SHIT MUST BE RPLACED TO SERVER-SIDE PACKET SIZE OF SOURCE DATA
 
-                onRawMessage?.Invoke(type, payload.ToArray());
+                    try
+                    {
+                        Span<byte> decompressBuffer = sharedBuffer;
+                        int readedAmount = LZ4Codec.Decode(payload, decompressBuffer);
+
+                        if (readedAmount <= 0)
+                        {
+                            throw new Exception("LZ4Decompress fault");
+                        }
+
+                        payload = decompressBuffer.Slice(0, readedAmount);
+
+                        onRawMessage?.Invoke(type, payload.ToArray()); // this data can be copied by pointers deeper in call chain. It is MUST BE ALLOCATED IN COPY!
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(sharedBuffer);
+                    }
+                }
+                else
+                {
+                    onRawMessage?.Invoke(type, payload.ToArray());
+                }
             };
 
 
@@ -66,40 +92,68 @@ namespace Positron.Transport
             {
                 await _webSokcet.Close();
             }
-
-            _dispatchCancellationToken.Cancel();
         }
 
         public void Send(Span<byte> rawMessage, EventTypes type, bool isReliable)
         {
-            if (_webSokcet.State != WebSocketState.Open)
+            if (_webSokcet == null || _webSokcet.State != WebSocketState.Open)
             {
                 return;
             }
 
-            byte isCompressed = 0;
-            Span<byte> resultiveMessage;
-
             if (rawMessage.Length > 1000)
             {
-                Span<byte> compressBuffer = new(new byte[20000]);
-                int compressedMessageSize = LZ4Codec.Encode(rawMessage, compressBuffer);
-                resultiveMessage = compressBuffer.Slice(0, compressedMessageSize);
-                isCompressed = 1;
+                int maxLen = LZ4Codec.MaximumOutputSize(rawMessage.Length);
+                byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(maxLen);
+                byte[] sendBuffer = ArrayPool<byte>.Shared.Rent(maxLen + 2);
+
+                try
+                {
+                    Span<byte> compressionBuffer = new(sharedBuffer);
+                    int compressedLength = LZ4Codec.Encode(rawMessage, compressionBuffer);
+                    compressionBuffer = compressionBuffer.Slice(0, compressedLength);
+
+                    Span<byte> socketMsg = new(sendBuffer);
+                    socketMsg[0] = (byte)type;
+                    socketMsg[1] = 1;
+                    
+                    compressionBuffer.CopyTo(socketMsg.Slice(2));
+
+                    _webSokcet.Send(socketMsg.Slice(0, compressedLength + 2).ToArray()); // this shit does not allow usage of array segment or smth like that. IT FORCES ME TO DO ALLOC!!!
+                }
+                catch(Exception e)
+                {
+                    Debug.LogException(e);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(sharedBuffer);
+                    ArrayPool<byte>.Shared.Return(sendBuffer);
+                }
             }
             else
             {
-                resultiveMessage = rawMessage;
+                byte[] sendBuffer = ArrayPool<byte>.Shared.Rent(rawMessage.Length + 2);
+
+                try
+                {
+                    Span<byte> socketMsg = new(sendBuffer);
+                    socketMsg[0] = (byte)type;
+                    socketMsg[1] = 0;
+
+                    rawMessage.CopyTo(socketMsg.Slice(2));
+
+                    _webSokcet.Send(socketMsg.Slice(0, rawMessage.Length + 2).ToArray()); // this shit does not allow usage of array segment or smth like that. IT FORCES ME TO DO ALLOC!!!
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(sendBuffer);
+                }
             }
-
-            Span<byte> socketMessage = stackalloc byte[2 + resultiveMessage.Length];
-
-            socketMessage[0] = (byte)type;
-            socketMessage[1] = isCompressed;
-
-            resultiveMessage.CopyTo(socketMessage.Slice(2));
-
-            _webSokcet.Send(socketMessage.ToArray());
         }
 
         private async UniTask DispathLoop()
@@ -108,8 +162,14 @@ namespace Positron.Transport
 
             while (!_dispatchCancellationToken.IsCancellationRequested)
             {
+                if (_webSokcet == null || _webSokcet.State != WebSocketState.Open)
+                {
+                    break;
+                }
+
                 _webSokcet.DispatchMessageQueue();
-                await UniTask.Yield(PlayerLoopTiming.Update, _dispatchCancellationToken.Token);
+                bool cancelled = await UniTask.Yield(PlayerLoopTiming.Update, _dispatchCancellationToken.Token).SuppressCancellationThrow();
+                if (cancelled) break;
             }
         }
     }

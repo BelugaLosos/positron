@@ -25,6 +25,16 @@ namespace Positron.Extras.HandTests.Object
                 PositronNetworkIdentity obj = Hitscan();
                 PositronFacade.World.Destroy(obj);
             }
+
+            if (Input.GetMouseButton(2))
+            {
+                PositronNetworkIdentity obj = Hitscan();
+                
+                if (obj != null)
+                {
+                    obj.transform.Translate(Input.mousePositionDelta * 50 * Time.deltaTime);
+                }
+            }
         }
 
         private PositronNetworkIdentity Hitscan()
