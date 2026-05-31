@@ -604,10 +604,10 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
                 switch (i)
                 {
                     case 0:
-                        ____result.AssetIndex = reader.ReadUInt64();
+                        ____result.AssetIndex = reader.ReadUInt16();
                         break;
                     case 1:
-                        ____result.CreationId = reader.ReadUInt64();
+                        ____result.CreationId = reader.ReadUInt16();
                         break;
                     case 2:
                         ____result.ObjectId = reader.ReadUInt32();
@@ -686,7 +686,7 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.GameEntities.NetValue value, global::MessagePack.MessagePackSerializerOptions options)
         {
             writer.WriteArrayHeader(5);
-            writer.Write(value.CreationId);
+            writer.Write(value.ValueId);
             writer.Write(value.ParentObjectId);
             writer.Write(value.SubObjectId);
             writer.Write(value.Deleting);
@@ -709,7 +709,7 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
                 switch (i)
                 {
                     case 0:
-                        ____result.CreationId = reader.ReadUInt64();
+                        ____result.ValueId = reader.ReadUInt16();
                         break;
                     case 1:
                         ____result.ParentObjectId = reader.ReadUInt32();

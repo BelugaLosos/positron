@@ -16,20 +16,20 @@ namespace Positron.Client.Room.Models
         private readonly List<NetTransform> _moveDelta = new(128);
         private readonly List<uint> _destroyDelta = new(128);
 
-        private readonly Dictionary<PositronNetworkIdentity, ulong> _indexedAssets = new();
-        private readonly Dictionary<ulong, PositronNetworkIdentity> _reverseAssetsIndex = new();
+        private readonly Dictionary<PositronNetworkIdentity, ushort> _indexedAssets = new();
+        private readonly Dictionary<ushort, PositronNetworkIdentity> _reverseAssetsIndex = new();
 
-        private readonly Dictionary<ulong, PositronNetworkIdentity> _localCreationMapping = new();
-        private readonly List<ulong> _localCreationBlacklist = new();
+        private readonly Dictionary<ushort, PositronNetworkIdentity> _localCreationMapping = new();
+        private readonly List<ushort> _localCreationBlacklist = new();
         private readonly Dictionary<uint, PositronNetworkIdentity> _currentGameObjectsOnScene = new();
 
-        private ulong _lastCrationId;
+        private ushort _lastCrationId;
 
         public NetworkGameObjectsModel(NetworkWorld world, PositronSettings settings)
         {
             _world = world;
 
-            for (uint i = 0; i < settings.SpawnableObjects.Length; i++)
+            for (ushort i = 0; i < settings.SpawnableObjects.Length; i++)
             {
                 _indexedAssets.Add(settings.SpawnableObjects[i], i);
                 _reverseAssetsIndex.Add(i, settings.SpawnableObjects[i]);
@@ -50,7 +50,7 @@ namespace Positron.Client.Room.Models
                 GameObject.Destroy(obj.Value);
             }
 
-            foreach (KeyValuePair<ulong, PositronNetworkIdentity> obj in _localCreationMapping)
+            foreach (KeyValuePair<ushort, PositronNetworkIdentity> obj in _localCreationMapping)
             {
                 GameObject.Destroy(obj.Value);
             }
@@ -70,7 +70,7 @@ namespace Positron.Client.Room.Models
                 return;
             }
 
-            if (!_indexedAssets.TryGetValue(prefab, out ulong assetIndex))
+            if (!_indexedAssets.TryGetValue(prefab, out ushort assetIndex))
             {
                 Debug.LogError("Critical positron error -> unable to create network object while it is no registred in settings!!!", prefab);
                 return;

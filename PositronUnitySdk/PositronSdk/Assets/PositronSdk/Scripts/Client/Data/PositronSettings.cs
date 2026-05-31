@@ -1,4 +1,5 @@
 using Positron.Client.Mono;
+using System.Linq;
 using UnityEngine;
 
 namespace Positron.Client.Settings
@@ -15,5 +16,14 @@ namespace Positron.Client.Settings
         [field: SerializeField] public PositronNetworkIdentity[] SpawnableObjects { get; private set; }
 
         public int Tickrate => _tickrate;
+
+        private void OnValidate()
+        {
+            if (SpawnableObjects.Length > ushort.MaxValue)
+            {
+                SpawnableObjects = SpawnableObjects.Take(ushort.MaxValue).ToArray();
+                Debug.LogError("Too many objects to spawn");
+            }
+        }
     }
 }

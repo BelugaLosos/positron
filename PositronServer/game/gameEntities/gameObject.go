@@ -9,20 +9,20 @@ import (
 type GameObject struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	AssetIndex uint64
-	CreationId uint64
 	Id         uint32
 	Owner      uint32
+	AssetIndex uint16
+	CreationId uint16
 	Positron   Vector3
 	Rotation   Vector3
 }
 
-func NewGameObject(id uint32, ownerPeer uint32, assetIndex uint64, creationId uint64, position Vector3, rotation Vector3) *GameObject {
+func NewGameObject(id uint32, ownerPeer uint32, assetIndex uint16, creationId uint16, position Vector3, rotation Vector3) *GameObject {
 	return &GameObject{
-		AssetIndex: assetIndex,
-		CreationId: creationId,
 		Id:         id,
 		Owner:      ownerPeer,
+		AssetIndex: assetIndex,
+		CreationId: creationId,
 		Positron:   position,
 		Rotation:   rotation,
 	}
@@ -30,13 +30,13 @@ func NewGameObject(id uint32, ownerPeer uint32, assetIndex uint64, creationId ui
 
 func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.EncodeArrayLen(6)
-	err := enc.EncodeUint(g.AssetIndex)
+	err := enc.EncodeUint(uint64(g.AssetIndex))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint(g.CreationId)
+	err = enc.EncodeUint(uint64(g.CreationId))
 
 	if err != nil {
 		return err
@@ -105,8 +105,8 @@ func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	g.AssetIndex = uint64(assetIndex)
-	g.CreationId = uint64(CreationId)
+	g.AssetIndex = uint16(assetIndex)
+	g.CreationId = uint16(CreationId)
 	g.Id = uint32(Id)
 	g.Owner = uint32(Owner)
 	g.Positron = position
@@ -115,7 +115,7 @@ func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
 	return nil
 }
 
-func (o *GameObject) GetCreationId() uint64 {
+func (o *GameObject) GetCreationId() uint16 {
 	return o.CreationId
 }
 
@@ -127,7 +127,7 @@ func (o *GameObject) GetOwnerId() uint32 {
 	return o.Owner
 }
 
-func (o *GameObject) GetAssetIndex() uint64 {
+func (o *GameObject) GetAssetIndex() uint16 {
 	return o.AssetIndex
 }
 

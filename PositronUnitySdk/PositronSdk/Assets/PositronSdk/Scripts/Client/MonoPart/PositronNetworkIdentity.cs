@@ -22,7 +22,7 @@ namespace Positron.Client.Mono
         private Quaternion _targetRotation;
         private Quaternion _startRotation;
 
-        public ulong CreationId { get; private set; }
+        public ushort CreationId { get; private set; }
         public uint ObjectId { get; private set; }
         public ushort SubObjectId { get; private set; }
         public uint OwnerClientId { get; private set; }
@@ -53,7 +53,7 @@ namespace Positron.Client.Mono
             transform.rotation = Quaternion.Slerp(_startRotation, _targetRotation, percent);
         }
 
-        public void LocalInit(ulong creationId, uint owner)
+        public void LocalInit(ushort creationId, uint owner)
         {
             if (_isLocallyInited)
             {

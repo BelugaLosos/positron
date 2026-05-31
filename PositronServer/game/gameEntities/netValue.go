@@ -5,16 +5,16 @@ import "github.com/vmihailenco/msgpack/v5"
 type NetValue struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	ValueId        uint64
 	ParentObjectId uint32
 	SubObjectId    uint16
+	ValueId        uint16
 	Deleting       bool
 	Payload        []byte
 }
 
 func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.EncodeArrayLen(5)
-	err := enc.EncodeUint(n.ValueId)
+	err := enc.EncodeUint(uint64(n.ValueId))
 
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	paylpad, err := dec.DecodeBytes()
 
-	n.ValueId = uint64(valueId)
+	n.ValueId = uint16(valueId)
 	n.ParentObjectId = uint32(parentObjectId)
 	n.SubObjectId = uint16(subObjectId)
 	n.Deleting = isDeleting
@@ -84,7 +84,7 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 	return err
 }
 
-func (n *NetValue) GetValueId() uint64 {
+func (n *NetValue) GetValueId() uint16 {
 	return n.ValueId
 }
 
