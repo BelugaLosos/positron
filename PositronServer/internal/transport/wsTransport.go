@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"positron/internal"
+	"positron/util"
 	"sync"
 
 	"github.com/google/uuid"
@@ -88,11 +89,11 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 		return errors.New("peer not found or closed")
 	}
 
-	var targetData []byte
-	compressionFlag := 0
-
 	peer.mutex.Lock()
 	defer peer.mutex.Unlock()
+
+	var targetData []byte
+	compressionFlag := false
 
 	if len(data) > 1000 {
 		if cap(peer.compressionBuf) < lz4.CompressBlockBound(len(data)) {
@@ -103,7 +104,7 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 				targetData = data
 			} else {
 				targetData = tempCompressionBuf[:compressedSize]
-				compressionFlag = 1
+				compressionFlag = true
 			}
 		} else {
 			compressedSize, compressionErr := lz4.CompressBlock(data, peer.compressionBuf, nil)
@@ -112,19 +113,14 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 				targetData = data
 			} else {
 				targetData = peer.compressionBuf[:compressedSize]
-				compressionFlag = 1
+				compressionFlag = false
 			}
 		}
 	} else {
 		targetData = data
 	}
 
-	totalLen := len(targetData) + 2
-
-	buf := make([]byte, totalLen)
-	buf[0] = eventType
-	buf[1] = byte(compressionFlag)
-	copy(buf[2:], targetData)
+	buf := util.GlueDataToOptions(eventType, compressionFlag, uint32(len(data)), targetData)
 
 	if peer.isClosed {
 		return errors.New("send to closed peer")
@@ -243,11 +239,7 @@ func (t *WsTransport) handleIncoming(id string, peer *wsPeer, handlers []interna
 }
 
 func (t *WsTransport) handlePacket(handlers []internal.Handler, peer *wsPeer, packet []byte) {
-	usedCompression := false
-
-	if len(packet) > 1 && packet[1] == 1 {
-		usedCompression = true
-	}
+	eventT, isCompressed, sourceDataLen, data := util.DeconstructPacket(packet)
 
 	for i := range handlers {
 		if handlers[i] == nil {
@@ -255,17 +247,23 @@ func (t *WsTransport) handlePacket(handlers []internal.Handler, peer *wsPeer, pa
 			continue
 		}
 
-		if handlers[i].GetType() == packet[0] {
-			if usedCompression {
-				decompressedLen, err := lz4.UncompressBlock(packet[2:], peer.decompressionBuf)
+		if handlers[i].GetType() == eventT {
+			if isCompressed {
+				if sourceDataLen > uint32(cap(peer.decompressionBuf)) {
+					expand := make([]byte, int(sourceDataLen-uint32(cap(peer.decompressionBuf)+1)))
+					peer.compressionBuf = append(peer.compressionBuf, expand...)
+				}
+
+				decompressedLen, err := lz4.UncompressBlock(data, peer.decompressionBuf)
 
 				if err != nil {
 					log.Printf("Decompression error for peer %s: %v", peer.wsConn.RemoteAddr().String(), err)
 					continue
 				}
+
 				handlers[i].PassHandle(peer.decompressionBuf[:decompressedLen])
 			} else {
-				handlers[i].PassHandle(packet[2:])
+				handlers[i].PassHandle(data)
 			}
 
 			break
