@@ -4,6 +4,7 @@ using NativeWebSocket;
 using Positron.Client.ConstantHolders;
 using Positron.Client.Interfaces;
 using Positron.Client.Settings;
+using Positron.Transport.Utility;
 using System;
 using System.Buffers;
 using System.Threading;
@@ -42,29 +43,25 @@ namespace Positron.Transport
 
             _webSokcet.OnMessage += (data) =>
             {
-                Span<byte> packet = data;
-                EventTypes type = (EventTypes)packet[0];
-                bool isCompressed = data[1] == 1;
+                PacketData packetData = PacketUtility.DeconstructPacket(data);
 
-                Span<byte> payload = packet.Slice(2);
-
-                if (isCompressed)
+                if (packetData.IsCompressed)
                 {
-                    byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(ushort.MaxValue * 2); // THIS SHIT MUST BE RPLACED TO SERVER-SIDE PACKET SIZE OF SOURCE DATA
+                    byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent((int)packetData.SourceSize);
 
                     try
                     {
                         Span<byte> decompressBuffer = sharedBuffer;
-                        int readedAmount = LZ4Codec.Decode(payload, decompressBuffer);
+                        int readedAmount = LZ4Codec.Decode(packetData.Data, decompressBuffer);
 
                         if (readedAmount <= 0)
                         {
                             throw new Exception("LZ4Decompress fault");
                         }
 
-                        payload = decompressBuffer.Slice(0, readedAmount);
+                        packetData.Data = decompressBuffer.Slice(0, readedAmount);
 
-                        onRawMessage?.Invoke(type, payload.ToArray()); // this data can be copied by pointers deeper in call chain. It is MUST BE ALLOCATED IN COPY!
+                        onRawMessage?.Invoke(packetData.Event, packetData.Data.ToArray()); // this data can be copied by pointers deeper in call chain. It is MUST BE ALLOCATED IN COPY!
                     }
                     finally
                     {
@@ -73,7 +70,7 @@ namespace Positron.Transport
                 }
                 else
                 {
-                    onRawMessage?.Invoke(type, payload.ToArray());
+                    onRawMessage?.Invoke(packetData.Event, packetData.Data.ToArray());
                 }
             };
 
@@ -105,7 +102,7 @@ namespace Positron.Transport
             {
                 int maxLen = LZ4Codec.MaximumOutputSize(rawMessage.Length);
                 byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(maxLen);
-                byte[] sendBuffer = ArrayPool<byte>.Shared.Rent(maxLen + 2);
+                byte[] sendBuffer = ArrayPool<byte>.Shared.Rent(maxLen + PacketUtility.PROTOCOL_HEADER_MAX_OFFSET);
 
                 try
                 {
@@ -113,13 +110,8 @@ namespace Positron.Transport
                     int compressedLength = LZ4Codec.Encode(rawMessage, compressionBuffer);
                     compressionBuffer = compressionBuffer.Slice(0, compressedLength);
 
-                    Span<byte> socketMsg = new(sendBuffer);
-                    socketMsg[0] = (byte)type;
-                    socketMsg[1] = 1;
-                    
-                    compressionBuffer.CopyTo(socketMsg.Slice(2));
-
-                    _webSokcet.Send(socketMsg.Slice(0, compressedLength + 2).ToArray()); // this shit does not allow usage of array segment or smth like that. IT FORCES ME TO DO ALLOC!!!
+                    Span<byte> constructedPacket = PacketUtility.GlueDataToOptions(type, true, (uint)rawMessage.Length, compressionBuffer, sendBuffer);
+                    _webSokcet.Send(constructedPacket.ToArray()); // this shit does not allow usage of array segment or smth like that. IT FORCES ME TO DO ALLOC!!!
                 }
                 catch(Exception e)
                 {
@@ -133,17 +125,12 @@ namespace Positron.Transport
             }
             else
             {
-                byte[] sendBuffer = ArrayPool<byte>.Shared.Rent(rawMessage.Length + 2);
+                byte[] sendBuffer = ArrayPool<byte>.Shared.Rent(rawMessage.Length + PacketUtility.PROTOCOL_HEADER_MAX_OFFSET);
 
                 try
                 {
-                    Span<byte> socketMsg = new(sendBuffer);
-                    socketMsg[0] = (byte)type;
-                    socketMsg[1] = 0;
-
-                    rawMessage.CopyTo(socketMsg.Slice(2));
-
-                    _webSokcet.Send(socketMsg.Slice(0, rawMessage.Length + 2).ToArray()); // this shit does not allow usage of array segment or smth like that. IT FORCES ME TO DO ALLOC!!!
+                    Span<byte> constructedPacket = PacketUtility.GlueDataToOptions(type, false, 0, rawMessage, sendBuffer);
+                    _webSokcet.Send(constructedPacket.ToArray()); // this shit does not allow usage of array segment or smth like that. IT FORCES ME TO DO ALLOC!!!
                 }
                 catch (Exception e)
                 {

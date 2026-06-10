@@ -99,6 +99,7 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 		if cap(peer.compressionBuf) < lz4.CompressBlockBound(len(data)) {
 			tempCompressionBuf := make([]byte, lz4.CompressBlockBound(len(data)))
 			compressedSize, compressionErr := lz4.CompressBlock(data, tempCompressionBuf, nil)
+
 			if compressionErr != nil {
 				log.Printf("Compression error for peer %s: %v", peerUuid, compressionErr)
 				targetData = data
@@ -113,7 +114,7 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 				targetData = data
 			} else {
 				targetData = peer.compressionBuf[:compressedSize]
-				compressionFlag = false
+				compressionFlag = true
 			}
 		}
 	} else {
