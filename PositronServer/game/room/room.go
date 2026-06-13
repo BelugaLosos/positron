@@ -25,8 +25,7 @@ type Room struct {
 
 	lastClientId uint32
 
-	currentConnectedClients int
-	maxClientsSlots         int
+	maxClientsSlots int32
 
 	lastLeaveTime time.Time
 	ttl           time.Duration
@@ -55,28 +54,27 @@ func clamp(current int, min int, max int) int {
 	return current
 }
 
-func NewRoom(name string, maxSlots int, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte) *Room {
+func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte) *Room {
 	log.Printf("Created room with params N: %v P_CAP: %v TTL: %v SC: %v T_RATE: %v DATA_SEGMENT: %v", name, maxSlots, ttl, scene, tickrate, externalData)
 
 	return &Room{
-		mutex:                   &sync.RWMutex{},
-		Termination:             make(chan struct{}),
-		name:                    name,
-		uuid:                    uuid.New().String(),
-		connectedPeers:          make(map[uint32]string),
-		peerUuids:               make([]string, 0),
-		hostIndex:               0,
-		lastClientId:            0,
-		currentConnectedClients: 0,
-		maxClientsSlots:         maxSlots,
-		lastLeaveTime:           time.Now().UTC(),
-		ttl:                     ttl,
-		tickrate:                clamp(int(tickrate), 1, 256),
-		scene:                   scene,
-		ExternalData:            externalData,
-		gameObjectsModel:        roommodels.NewGameObjectsModel(),
-		netValuesModel:          roommodels.NewNetValuesModel(),
-		rpcsModel:               roommodels.NewRpcsModel(),
+		mutex:            &sync.RWMutex{},
+		Termination:      make(chan struct{}),
+		name:             name,
+		uuid:             uuid.New().String(),
+		connectedPeers:   make(map[uint32]string),
+		peerUuids:        make([]string, 0),
+		hostIndex:        0,
+		lastClientId:     0,
+		maxClientsSlots:  maxSlots,
+		lastLeaveTime:    time.Now().UTC(),
+		ttl:              ttl,
+		tickrate:         clamp(int(tickrate), 1, 256),
+		scene:            scene,
+		ExternalData:     externalData,
+		gameObjectsModel: roommodels.NewGameObjectsModel(),
+		netValuesModel:   roommodels.NewNetValuesModel(),
+		rpcsModel:        roommodels.NewRpcsModel(),
 		tickPacketsPool: &sync.Pool{
 			New: func() interface{} {
 				return &datatransferobjects.GameTickPacket{}
@@ -249,7 +247,7 @@ func (r *Room) AddPeer(uuid string) (uint32, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	if r.currentConnectedClients >= r.maxClientsSlots {
+	if r.GetCurrentConnectedPeersCount() >= r.maxClientsSlots {
 		return 0, errors.New("Max cleints exeeted")
 	}
 

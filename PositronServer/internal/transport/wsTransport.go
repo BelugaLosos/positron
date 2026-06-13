@@ -33,6 +33,7 @@ var upgrader = websocket.Upgrader{
 }
 
 const defaultBufferSize = 64 * 1024
+const MAX_DATA_SIZE_LIMIT = 256 * 1024 * 1024
 
 func NewWsTransport() *WsTransport {
 	return &WsTransport{
@@ -242,6 +243,10 @@ func (t *WsTransport) handleIncoming(id string, peer *wsPeer, handlers []interna
 func (t *WsTransport) handlePacket(handlers []internal.Handler, peer *wsPeer, packet []byte) {
 	eventT, isCompressed, sourceDataLen, data := util.DeconstructPacket(packet)
 
+	if sourceDataLen > MAX_DATA_SIZE_LIMIT {
+		log.Printf("Max data limit exceeded %v", MAX_DATA_SIZE_LIMIT)
+	}
+
 	for i := range handlers {
 		if handlers[i] == nil {
 			log.Printf("Warning: nil handler found at index %d while processing packet from peer %s", i, peer.wsConn.RemoteAddr().String())
@@ -251,8 +256,10 @@ func (t *WsTransport) handlePacket(handlers []internal.Handler, peer *wsPeer, pa
 		if handlers[i].GetType() == eventT {
 			if isCompressed {
 				if sourceDataLen > uint32(cap(peer.decompressionBuf)) {
-					expand := make([]byte, int(sourceDataLen-uint32(cap(peer.decompressionBuf)+1)))
-					peer.compressionBuf = append(peer.compressionBuf, expand...)
+					newCap := sourceDataLen * 2
+					peer.decompressionBuf = make([]byte, sourceDataLen, newCap)
+				} else {
+					peer.decompressionBuf = peer.decompressionBuf[:sourceDataLen]
 				}
 
 				decompressedLen, err := lz4.UncompressBlock(data, peer.decompressionBuf)

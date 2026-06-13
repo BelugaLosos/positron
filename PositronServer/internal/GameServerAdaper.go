@@ -8,7 +8,7 @@ import (
 type GameServerAdaper interface {
 	GetRoom(roomUuid string) *room.Room
 	GetAllRooms() []*room.Room
-	CreateRoom(name string, maxSlots int, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte) string
+	CreateRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte) string
 	GetMarshaller() MarshalService
 	GetVersion() string
 }

@@ -62,15 +62,29 @@ func TestValueMod(t *testing.T) {
 
 func TestValueDeletion(t *testing.T) {
 	model := roommodels.NewNetValuesModel()
-	model.AddOrModify(&gameentities.NetValue{})
+
+	for i := range uint16(10) {
+		model.AddOrModify(&gameentities.NetValue{
+			ParentObjectId: 0,
+			ValueId:        i,
+		})
+	}
+
+	for i := range uint16(10) {
+		model.AddOrModify(&gameentities.NetValue{
+			ParentObjectId: 1,
+			ValueId:        i,
+		})
+	}
+
 	model.ResetTempBuffers()
 
 	model.RemoveAllValuesFromObject(0)
 
 	mod := model.GetTempMod()
 
-	if len(mod) != 1 {
-		t.Error("Deletion mod is not collected")
+	if len(mod) != 10 {
+		t.Errorf("Deletion mod is not collected %v", len(mod))
 	} else if mod[0].GetIsDeleting() == false {
 		t.Error("Delete is not efficient")
 	}

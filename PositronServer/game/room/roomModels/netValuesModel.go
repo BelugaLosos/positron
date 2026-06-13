@@ -70,15 +70,17 @@ func (n *NetValuesModel) RemoveAllValuesFromObject(objectUuid uint32) {
 		val := n.netValues[i]
 
 		if val.GetParentObjectId() == objectUuid {
-			n.netValues[i] = n.netValues[0]
-			n.netValues = n.netValues[1:]
-
 			delete(n.searchMap, n.getKeyOfValue(val))
-
 			val.MarkAsDeleting()
 
 			n.tempModificationBuffer = append(n.tempModificationBuffer, val)
 		}
+	}
+
+	n.netValues = n.netValues[:0]
+
+	for _, val := range n.searchMap {
+		n.netValues = append(n.netValues, val)
 	}
 }
 
@@ -92,7 +94,7 @@ func (n *NetValuesModel) addValue(value *gameentities.NetValue) {
 func (n *NetValuesModel) modifyValue(value *gameentities.NetValue, currentValue *gameentities.NetValue) {
 	currentValue.ModifyPayload(value.GetPayload())
 
-	n.tempModificationBuffer = append(n.tempModificationBuffer, value)
+	n.tempModificationBuffer = append(n.tempModificationBuffer, currentValue)
 }
 
 func (n *NetValuesModel) getKeyOfValue(value *gameentities.NetValue) string {
