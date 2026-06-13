@@ -75,6 +75,31 @@ func TestUnmarshalling(t *testing.T) {
 	}
 }
 
+func TestBufferRace(t *testing.T) {
+	rpcCall := gameentities.NewRpcCall(1, 2, 3, 4, "JJjjopa", []byte("A"))
+	marshalled, _ := marshaller.NewMessagePackMarshaller().Marshal(rpcCall)
+	var rpcCopy gameentities.RpcCall
+
+	err := marshaller.NewMessagePackMarshaller().Unmarshal(marshalled, &rpcCopy)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	for i := range marshalled {
+		marshalled[i] = 0
+	}
+
+	if rpcCall.ObjectId != 1 ||
+		rpcCall.TargetClient != 2 ||
+		rpcCall.SubObjectId != 3 ||
+		rpcCall.RpcType != 4 ||
+		rpcCall.MethodName != "JJjjopa" ||
+		(len(rpcCall.Args) != 1 || rpcCall.Args[0] != []byte("A")[0]) {
+		t.Error("Data corrupted!")
+	}
+}
+
 func TestUnreliable(t *testing.T) {
 	for range 100_000 {
 		tick := datatransferobjects.NewGameUnreliableTickPacket([]*gameentities.Tranform{gameentities.NewTransform(gameentities.NewGameObject(1, 2, 3, 4, *gameentities.NewVector(5, 6, 7), *gameentities.NewVector(8, 9, 10)))}, 1)
