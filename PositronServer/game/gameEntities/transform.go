@@ -1,10 +1,12 @@
 package gameentities
 
-import "github.com/vmihailenco/msgpack/v5"
+import (
+	"errors"
+
+	"github.com/vmihailenco/msgpack/v5"
+)
 
 type Tranform struct {
-	_msgpack struct{} `msgpack:",as_array"`
-
 	ObjectId uint32
 	Position Vector3
 	Rotation Vector3
@@ -19,8 +21,12 @@ func NewTransform(gameObject *GameObject) *Tranform {
 }
 
 func (t *Tranform) EncodeMsgpack(enc *msgpack.Encoder) error {
-	enc.EncodeArrayLen(3)
+	arrErr := enc.EncodeArrayLen(3)
 	err := enc.EncodeUint(uint64(t.ObjectId))
+
+	if arrErr != nil {
+		return arrErr
+	}
 
 	if err != nil {
 		return err
@@ -38,8 +44,16 @@ func (t *Tranform) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (t *Tranform) DecodeMsgpack(dec *msgpack.Decoder) error {
-	dec.DecodeArrayLen()
-	objectId, err := dec.DecodeUint()
+	arrLen, arrErr := dec.DecodeArrayLen()
+	objectId, err := dec.DecodeUint32()
+
+	if arrErr != nil {
+		return arrErr
+	}
+
+	if arrLen != 3 {
+		return errors.New("Transform arr invalid!")
+	}
 
 	if err != nil {
 		return err
@@ -55,7 +69,7 @@ func (t *Tranform) DecodeMsgpack(dec *msgpack.Decoder) error {
 	var rotation Vector3
 	err = dec.Decode(&rotation)
 
-	t.ObjectId = uint32(objectId)
+	t.ObjectId = objectId
 	t.Position = position
 	t.Rotation = rotation
 

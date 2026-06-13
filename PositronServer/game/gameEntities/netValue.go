@@ -1,10 +1,12 @@
 package gameentities
 
-import "github.com/vmihailenco/msgpack/v5"
+import (
+	"errors"
+
+	"github.com/vmihailenco/msgpack/v5"
+)
 
 type NetValue struct {
-	_msgpack struct{} `msgpack:",as_array"`
-
 	ParentObjectId uint32
 	SubObjectId    uint16
 	ValueId        uint16
@@ -13,8 +15,12 @@ type NetValue struct {
 }
 
 func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
-	enc.EncodeArrayLen(5)
+	arrErr := enc.EncodeArrayLen(5)
 	err := enc.EncodeUint(uint64(n.ValueId))
+
+	if arrErr != nil {
+		return arrErr
+	}
 
 	if err != nil {
 		return err
@@ -48,20 +54,28 @@ func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
-	dec.DecodeArrayLen()
-	valueId, err := dec.DecodeUint()
+	arrLen, arrErr := dec.DecodeArrayLen()
+	valueId, err := dec.DecodeUint16()
+
+	if arrErr != nil {
+		return arrErr
+	}
+
+	if arrLen != 5 {
+		return errors.New("Net value arr len invalid!")
+	}
 
 	if err != nil {
 		return err
 	}
 
-	parentObjectId, err := dec.DecodeUint()
+	parentObjectId, err := dec.DecodeUint32()
 
 	if err != nil {
 		return err
 	}
 
-	subObjectId, err := dec.DecodeUint()
+	subObjectId, err := dec.DecodeUint16()
 
 	if err != nil {
 		return err
@@ -75,9 +89,9 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	paylpad, err := dec.DecodeBytes()
 
-	n.ValueId = uint16(valueId)
-	n.ParentObjectId = uint32(parentObjectId)
-	n.SubObjectId = uint16(subObjectId)
+	n.ValueId = valueId
+	n.ParentObjectId = parentObjectId
+	n.SubObjectId = subObjectId
 	n.Deleting = isDeleting
 	n.Payload = paylpad
 

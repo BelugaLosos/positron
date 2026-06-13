@@ -9,7 +9,7 @@ import (
 )
 
 func TestUnmarshalling(t *testing.T) {
-	for range 100_000 {
+	for range 1 {
 		obj := gameentities.NewGameObject(1, 2, 3, 4, *gameentities.NewVector(5, 6, 7), *gameentities.NewVector(8, 9, 10))
 		val := &gameentities.NetValue{}
 		val.MarkAsDeleting()

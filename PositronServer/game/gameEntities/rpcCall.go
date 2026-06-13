@@ -1,10 +1,12 @@
 package gameentities
 
-import "github.com/vmihailenco/msgpack/v5"
+import (
+	"errors"
+
+	"github.com/vmihailenco/msgpack/v5"
+)
 
 type RpcCall struct {
-	_msgpack struct{} `msgpack:",as_array"`
-
 	ObjectId     uint32
 	TargetClient uint32
 	SubObjectId  uint16
@@ -25,8 +27,12 @@ func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType 
 }
 
 func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
-	enc.EncodeArrayLen(6)
+	arrErr := enc.EncodeArrayLen(6)
 	err := enc.EncodeUint(uint64(r.ObjectId))
+
+	if arrErr != nil {
+		return arrErr
+	}
 
 	if err != nil {
 		return err
@@ -62,26 +68,34 @@ func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (r *RpcCall) DecodeMsgpack(dec *msgpack.Decoder) error {
-	dec.DecodeArrayLen()
-	id, err := dec.DecodeUint()
+	arrLen, arrErr := dec.DecodeArrayLen()
+	id, err := dec.DecodeUint32()
+
+	if arrErr != nil {
+		return arrErr
+	}
+
+	if arrLen != 6 {
+		return errors.New("Rpc call arr invalid")
+	}
 
 	if err != nil {
 		return err
 	}
 
-	clientId, err := dec.DecodeUint()
+	clientId, err := dec.DecodeUint32()
 
 	if err != nil {
 		return err
 	}
 
-	subId, err := dec.DecodeUint()
+	subId, err := dec.DecodeUint16()
 
 	if err != nil {
 		return err
 	}
 
-	typeId, err := dec.DecodeUint()
+	typeId, err := dec.DecodeUint8()
 
 	if err != nil {
 		return err
@@ -95,10 +109,10 @@ func (r *RpcCall) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	args, err := dec.DecodeBytes()
 
-	r.ObjectId = uint32(id)
-	r.TargetClient = uint32(clientId)
-	r.SubObjectId = uint16(subId)
-	r.RpcType = uint8(typeId)
+	r.ObjectId = id
+	r.TargetClient = clientId
+	r.SubObjectId = subId
+	r.RpcType = typeId
 	r.MethodName = method
 	r.Args = args
 

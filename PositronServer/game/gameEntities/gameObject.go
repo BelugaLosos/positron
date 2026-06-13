@@ -1,14 +1,13 @@
 package gameentities
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/vmihailenco/msgpack/v5"
 )
 
 type GameObject struct {
-	_msgpack struct{} `msgpack:",as_array"`
-
 	Id         uint32
 	Owner      uint32
 	AssetIndex uint16
@@ -29,8 +28,12 @@ func NewGameObject(id uint32, ownerPeer uint32, assetIndex uint16, creationId ui
 }
 
 func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
-	enc.EncodeArrayLen(6)
+	arrErr := enc.EncodeArrayLen(6)
 	err := enc.EncodeUint(uint64(g.AssetIndex))
+
+	if arrErr != nil {
+		return arrErr
+	}
 
 	if err != nil {
 		return err
@@ -66,26 +69,34 @@ func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
-	dec.DecodeArrayLen()
-	assetIndex, err := dec.DecodeUint()
+	arrlen, arrErr := dec.DecodeArrayLen()
+	assetIndex, err := dec.DecodeUint16()
+
+	if arrErr != nil {
+		return arrErr
+	}
+
+	if arrlen != 6 {
+		return errors.New("Arrat len of game object is incorrect!")
+	}
 
 	if err != nil {
 		return err
 	}
 
-	CreationId, err := dec.DecodeUint()
+	CreationId, err := dec.DecodeUint16()
 
 	if err != nil {
 		return err
 	}
 
-	Id, err := dec.DecodeUint()
+	Id, err := dec.DecodeUint32()
 
 	if err != nil {
 		return err
 	}
 
-	Owner, err := dec.DecodeUint()
+	Owner, err := dec.DecodeUint32()
 
 	if err != nil {
 		return err
@@ -105,10 +116,10 @@ func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	g.AssetIndex = uint16(assetIndex)
-	g.CreationId = uint16(CreationId)
-	g.Id = uint32(Id)
-	g.Owner = uint32(Owner)
+	g.AssetIndex = assetIndex
+	g.CreationId = CreationId
+	g.Id = Id
+	g.Owner = Owner
 	g.Positron = position
 	g.Rotation = rotation
 
@@ -150,8 +161,6 @@ func (o *GameObject) Move(position Vector3, rotation Vector3) {
 }
 
 type Vector3 struct {
-	_msgpack struct{} `msgpack:",as_array"`
-
 	X float32
 	Y float32
 	Z float32
