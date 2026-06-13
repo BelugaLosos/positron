@@ -15,6 +15,8 @@ type NetValue struct {
 }
 
 func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.UseCompactInts(true)
+	enc.UseCompactFloats(true)
 	arrErr := enc.EncodeArrayLen(5)
 	err := enc.EncodeUint(uint64(n.ValueId))
 

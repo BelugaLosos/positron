@@ -1,14 +1,13 @@
 package datatransferobjects
 
 import (
+	"errors"
 	gameentities "positron/game/gameEntities"
 
 	"github.com/vmihailenco/msgpack/v5"
 )
 
 type GameTickPacket struct {
-	_msgpack struct{} `msgpack:",as_array"`
-
 	Host              uint32
 	Client            uint32
 	NewObjects        []*gameentities.GameObject
@@ -41,10 +40,16 @@ func (g *GameTickPacket) ReassignTickPacketData(host uint32, sourceClient uint32
 }
 
 func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
-	enc.EncodeArrayLen(7)
+	enc.UseCompactInts(true)
+	enc.UseCompactFloats(true)
+	arrErr := enc.EncodeArrayLen(7)
 	err := enc.EncodeUint(uint64(g.Host))
 	err = enc.EncodeUint(uint64(g.Client))
 	err = enc.EncodeArrayLen(len(g.NewObjects))
+
+	if arrErr != nil {
+		return arrErr
+	}
 
 	for i := range g.NewObjects {
 		err := enc.Encode(g.NewObjects[i])
@@ -98,24 +103,32 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
-	dec.DecodeArrayLen()
-	host, err := dec.DecodeUint()
+	arrLen, arrErr := dec.DecodeArrayLen()
+	host, err := dec.DecodeUint32()
+
+	if arrErr != nil {
+		return arrErr
+	}
+
+	if arrLen != 7 {
+		return errors.New("Tick packet arr invalid!")
+	}
 
 	if err != nil {
 		return err
 	}
 
-	i.Host = uint32(host)
+	i.Host = host
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-	client, err := dec.DecodeUint()
+	client, err := dec.DecodeUint32()
 
 	if err != nil {
 		return err
 	}
 
-	i.Client = uint32(client)
+	i.Client = client
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -151,13 +164,13 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	removedObjsArray := make([]uint32, removedObjectsLen)
 
 	for i := range removedObjsArray {
-		removeId, err := dec.DecodeUint()
+		removeId, err := dec.DecodeUint32()
 
 		if err != nil {
 			return err
 		}
 
-		removedObjsArray[i] = uint32(removeId)
+		removedObjsArray[i] = removeId
 	}
 
 	i.RemovedObjects = removedObjsArray
@@ -173,13 +186,13 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	transferedObjects := make([]uint32, transferedObjsLen)
 
 	for i := range transferedObjsLen {
-		transferedId, err := dec.DecodeUint()
+		transferedId, err := dec.DecodeUint32()
 
 		if err != nil {
 			return err
 		}
 
-		transferedObjects[i] = uint32(transferedId)
+		transferedObjects[i] = transferedId
 	}
 
 	i.TransferedObjects = transferedObjects

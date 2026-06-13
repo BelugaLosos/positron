@@ -27,6 +27,8 @@ func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType 
 }
 
 func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.UseCompactInts(true)
+	enc.UseCompactFloats(true)
 	arrErr := enc.EncodeArrayLen(6)
 	err := enc.EncodeUint(uint64(r.ObjectId))
 

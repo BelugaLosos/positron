@@ -21,6 +21,8 @@ func NewTransform(gameObject *GameObject) *Tranform {
 }
 
 func (t *Tranform) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.UseCompactInts(true)
+	enc.UseCompactFloats(true)
 	arrErr := enc.EncodeArrayLen(3)
 	err := enc.EncodeUint(uint64(t.ObjectId))
 

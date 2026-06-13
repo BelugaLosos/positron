@@ -1,14 +1,13 @@
 package datatransferobjects
 
 import (
+	"errors"
 	gameentities "positron/game/gameEntities"
 
 	"github.com/vmihailenco/msgpack/v5"
 )
 
 type GameUnreliableTickPacket struct {
-	_msgpack struct{} `msgpack:",as_array"`
-
 	SourceClient uint32
 	MovedObjects []*gameentities.Tranform
 }
@@ -26,8 +25,14 @@ func (g *GameUnreliableTickPacket) ReassignUnreliableTickPacket(movedObjects []*
 }
 
 func (g *GameUnreliableTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
-	enc.EncodeArrayLen(2)
+	enc.UseCompactInts(true)
+	enc.UseCompactFloats(true)
+	arrErr := enc.EncodeArrayLen(2)
 	err := enc.EncodeUint(uint64(g.SourceClient))
+
+	if arrErr != nil {
+		return arrErr
+	}
 
 	if err != nil {
 		return err
@@ -47,8 +52,16 @@ func (g *GameUnreliableTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (g *GameUnreliableTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
-	dec.DecodeArrayLen()
-	sourceId, err := dec.DecodeUint()
+	arrLen, arrErr := dec.DecodeArrayLen()
+	sourceId, err := dec.DecodeUint32()
+
+	if arrErr != nil {
+		return arrErr
+	}
+
+	if arrLen != 2 {
+		return errors.New("UnreliableTick arr invalid!")
+	}
 
 	if err != nil {
 		return err
@@ -68,7 +81,7 @@ func (g *GameUnreliableTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		moved[i] = &obj
 	}
 
-	g.SourceClient = uint32(sourceId)
+	g.SourceClient = sourceId
 	g.MovedObjects = moved
 
 	return err

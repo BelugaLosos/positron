@@ -28,6 +28,8 @@ func NewGameObject(id uint32, ownerPeer uint32, assetIndex uint16, creationId ui
 }
 
 func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.UseCompactInts(true)
+	enc.UseCompactFloats(true)
 	arrErr := enc.EncodeArrayLen(6)
 	err := enc.EncodeUint(uint64(g.AssetIndex))
 
@@ -175,6 +177,8 @@ func NewVector(x float32, y float32, z float32) *Vector3 {
 }
 
 func (v *Vector3) EncodeMsgpack(enc *msgpack.Encoder) error {
+	enc.UseCompactInts(true)
+	enc.UseCompactFloats(true)
 	enc.EncodeArrayLen(3)
 	err := enc.EncodeFloat32(v.X)
 
