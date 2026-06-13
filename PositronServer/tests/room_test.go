@@ -1,9 +1,13 @@
 package tests
 
 import (
+	"bytes"
+	"log"
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
 	"positron/game/room"
+	"positron/internal/marshaller"
+	"sync"
 	"testing"
 	"time"
 )
@@ -125,4 +129,63 @@ func TestTick(t *testing.T) {
 	} else if worldObjects[0].GetId() != 1 || worldObjects[0].GetCreationId() != 1 || worldObjects[0].GetAssetIndex() != 1 {
 		t.Error("World data corrupt")
 	}
+}
+
+func TestRaceInTick(t *testing.T) { // ADD MOCK TRANSPORT e.g. TO TEST REAL gameServer.go HERE !!!
+	m := marshaller.NewMessagePackMarshaller()
+	r := room.NewRoom("t", 64, time.Hour, 0, 60, nil)
+
+	cid, err := r.AddPeer("peer-uuid")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stop := make(chan struct{})
+	wg := &sync.WaitGroup{}
+
+	for w := 0; w < 8; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+					pkt := datatransferobjects.NewTickPacket(
+						0, cid,
+						[]*gameentities.GameObject{gameentities.NewGameObject(0, cid, 1, 1, gameentities.Vector3{}, gameentities.Vector3{})},
+						nil, nil,
+						[]*gameentities.NetValue{{ParentObjectId: 1, Payload: []byte{1, 2, 3}}},
+						[]*gameentities.RpcCall{gameentities.NewRpcCall(1, 0, 0, 0, "m", []byte{1})},
+					)
+					r.ProcessTick(pkt)
+				}
+			}
+		}()
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		buf := &bytes.Buffer{}
+		ubuf := &bytes.Buffer{}
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+				packet, unrel := r.CreateTickPackets()
+				_ = m.MarshalNonAlloc(buf, packet)
+				_ = m.MarshalNonAlloc(ubuf, unrel)
+				r.ReleaseTickPackets(packet, unrel)
+				r.ResetTempBuffers()
+			}
+		}
+	}()
+
+	time.Sleep(800 * time.Millisecond)
+	close(stop)
+	wg.Wait()
+	log.Println("done, no panic")
 }
