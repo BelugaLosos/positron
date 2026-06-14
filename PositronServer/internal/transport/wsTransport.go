@@ -207,6 +207,8 @@ func (t *WsTransport) handleIncoming(id string, peer *wsPeer, handlers []interna
 		closeHandler.PassHandle([]byte{})
 	}()
 
+	log.Printf("Upstream setupped succesfully for peer %s", peer.wsConn.RemoteAddr())
+
 	for {
 		select {
 		case <-t.shutdown:
@@ -292,6 +294,8 @@ type wsPeer struct {
 
 func (p *wsPeer) sendPump() {
 	corruptions := 0
+
+	log.Printf("Downstream setupped successfully for peer %s", p.wsConn.RemoteAddr())
 
 	for {
 		data, ok := <-p.send
