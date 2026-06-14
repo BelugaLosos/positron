@@ -245,6 +245,7 @@ func (t *WsTransport) handlePacket(handlers []internal.Handler, peer *wsPeer, pa
 
 	if sourceDataLen > MAX_DATA_SIZE_LIMIT {
 		log.Printf("Max data limit exceeded %v", MAX_DATA_SIZE_LIMIT)
+		return
 	}
 
 	for i := range handlers {
@@ -256,8 +257,8 @@ func (t *WsTransport) handlePacket(handlers []internal.Handler, peer *wsPeer, pa
 		if handlers[i].GetType() == eventT {
 			if isCompressed {
 				if sourceDataLen > uint32(cap(peer.decompressionBuf)) {
-					newCap := sourceDataLen * 2
-					peer.decompressionBuf = make([]byte, sourceDataLen, newCap)
+					newCap := sourceDataLen
+					peer.decompressionBuf = make([]byte, newCap)
 				} else {
 					peer.decompressionBuf = peer.decompressionBuf[:sourceDataLen]
 				}
