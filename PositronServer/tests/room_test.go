@@ -175,11 +175,15 @@ func TestRaceInTick(t *testing.T) { // ADD MOCK TRANSPORT e.g. TO TEST REAL game
 			case <-stop:
 				return
 			default:
+				r.Lock()
+
 				packet, unrel := r.CreateTickPackets()
 				_ = m.MarshalNonAlloc(buf, packet)
 				_ = m.MarshalNonAlloc(ubuf, unrel)
 				r.ReleaseTickPackets(packet, unrel)
 				r.ResetTempBuffers()
+
+				r.Unlock()
 			}
 		}
 	}()

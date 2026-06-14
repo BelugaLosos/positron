@@ -88,10 +88,15 @@ func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickr
 	}
 }
 
-func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatransferobjects.GameUnreliableTickPacket) {
+func (r *Room) Lock() {
 	r.mutex.Lock()
-	defer r.mutex.Unlock()
+}
 
+func (r *Room) Unlock() {
+	r.mutex.Unlock()
+}
+
+func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatransferobjects.GameUnreliableTickPacket) {
 	worldModAdd, worldModRemove, worldModTransfer := r.gameObjectsModel.GetModification()
 
 	gameTick := r.tickPacketsPool.Get().(*datatransferobjects.GameTickPacket)
@@ -115,17 +120,11 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 }
 
 func (r *Room) ReleaseTickPackets(tick *datatransferobjects.GameTickPacket, unrTick *datatransferobjects.GameUnreliableTickPacket) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	r.tickPacketsPool.Put(tick)
 	r.unreliableTickPacketsPool.Put(unrTick)
 }
 
 func (r *Room) ResetTempBuffers() {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	r.gameObjectsModel.ResetTempBuffers()
 	r.netValuesModel.ResetTempBuffers()
 	r.rpcsModel.ResetTempBuffers()
@@ -216,9 +215,6 @@ func (r *Room) GetCurrentConnectedPeersCount() int32 {
 }
 
 func (r *Room) GetAllConnectedPeers() []string {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-
 	return r.peerUuids
 }
 

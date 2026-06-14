@@ -128,6 +128,8 @@ func (g *GameServer) roomTick(room *room.Room) {
 			log.Printf("Room %s disposed", room.GetUuid())
 			return
 		default:
+			room.Lock()
+
 			packet, unreliablePacket := room.CreateTickPackets()
 			peers := room.GetAllConnectedPeers()
 
@@ -139,6 +141,11 @@ func (g *GameServer) roomTick(room *room.Room) {
 
 			err := g.marhaller.MarshalNonAlloc(packetMarshallBuffer, packet)
 			unrErr := g.marhaller.MarshalNonAlloc(packetUnrMarshalled, unreliablePacket)
+
+			room.ReleaseTickPackets(packet, unreliablePacket)
+			room.ResetTempBuffers()
+
+			room.Unlock()
 
 			for i := range peers {
 				if err == nil {
@@ -156,9 +163,6 @@ func (g *GameServer) roomTick(room *room.Room) {
 
 			bufferPool.Put(packetMarshallBuffer)
 			bufferPool.Put(packetUnrMarshalled)
-
-			room.ReleaseTickPackets(packet, unreliablePacket)
-			room.ResetTempBuffers()
 
 			time.Sleep((1 * time.Second) / time.Duration(room.GetTickrate()))
 		}
