@@ -131,7 +131,7 @@ func TestTick(t *testing.T) {
 	}
 }
 
-func TestRaceInTick(t *testing.T) { // ADD MOCK TRANSPORT e.g. TO TEST REAL gameServer.go HERE !!!
+func TestRaceInTick(t *testing.T) {
 	m := marshaller.NewMessagePackMarshaller()
 	r := room.NewRoom("t", 64, time.Hour, 0, 60, nil)
 
@@ -192,4 +192,38 @@ func TestRaceInTick(t *testing.T) { // ADD MOCK TRANSPORT e.g. TO TEST REAL game
 	close(stop)
 	wg.Wait()
 	log.Println("done, no panic")
+}
+
+func TestRoomTicker(t *testing.T) {
+	passTickrate(t, 30)
+	passTickrate(t, 60)
+	passTickrate(t, 128)
+}
+
+func passTickrate(t *testing.T, tickrate uint32) {
+	room := room.NewRoom("", 1, time.Hour, 1, tickrate, nil)
+	ticked := 0
+	wg := &sync.WaitGroup{}
+	shutdown := make(chan struct{})
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+
+		for {
+			select {
+			case <-shutdown:
+				return
+			case <-room.Ticker.C:
+				ticked++
+			}
+		}
+	}()
+
+	time.Sleep(1001 * time.Millisecond)
+	close(shutdown)
+
+	if ticked != int(tickrate) {
+		t.Errorf("Inaccurate ticks! %v(EXPECTED) != %v(REAL TICKED BY SECOND)", tickrate, ticked)
+	}
 }

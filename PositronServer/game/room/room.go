@@ -40,6 +40,8 @@ type Room struct {
 
 	tickPacketsPool           *sync.Pool
 	unreliableTickPacketsPool *sync.Pool
+
+	Ticker *time.Ticker
 }
 
 func clamp(current int, min int, max int) int {
@@ -85,6 +87,7 @@ func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickr
 				return &datatransferobjects.GameUnreliableTickPacket{}
 			},
 		},
+		Ticker: time.NewTicker((1 * time.Second) / time.Duration(tickrate)),
 	}
 }
 

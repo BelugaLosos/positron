@@ -127,7 +127,7 @@ func (g *GameServer) roomTick(room *room.Room) {
 		case <-room.Termination:
 			log.Printf("Room %s disposed", room.GetUuid())
 			return
-		default:
+		case <-room.Ticker.C:
 			room.Lock()
 
 			packet, unreliablePacket := room.CreateTickPackets()
@@ -163,8 +163,6 @@ func (g *GameServer) roomTick(room *room.Room) {
 
 			bufferPool.Put(packetMarshallBuffer)
 			bufferPool.Put(packetUnrMarshalled)
-
-			time.Sleep((1 * time.Second) / time.Duration(room.GetTickrate()))
 		}
 	}
 }
