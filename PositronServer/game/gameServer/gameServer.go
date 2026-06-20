@@ -122,6 +122,8 @@ func (g *GameServer) filterEmptyRooms() {
 }
 
 func (g *GameServer) roomTick(room *room.Room) {
+	room.RecordStartupTimeOnClock()
+
 	for {
 		select {
 		case <-room.Termination:

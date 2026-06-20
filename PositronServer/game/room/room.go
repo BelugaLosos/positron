@@ -37,6 +37,7 @@ type Room struct {
 	gameObjectsModel *roommodels.GameObjectsModel
 	netValuesModel   *roommodels.NetValuesModel
 	rpcsModel        *roommodels.RpcsModel
+	clock            *RoomClock
 
 	tickPacketsPool           *sync.Pool
 	unreliableTickPacketsPool *sync.Pool
@@ -77,6 +78,7 @@ func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickr
 		gameObjectsModel: roommodels.NewGameObjectsModel(),
 		netValuesModel:   roommodels.NewNetValuesModel(),
 		rpcsModel:        roommodels.NewRpcsModel(),
+		clock:            NewRoomClock(tickrate),
 		tickPacketsPool: &sync.Pool{
 			New: func() interface{} {
 				return &datatransferobjects.GameTickPacket{}
@@ -91,6 +93,10 @@ func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickr
 	}
 }
 
+func (r *Room) RecordStartupTimeOnClock() {
+	r.clock.RecordNewStartupTime()
+}
+
 func (r *Room) Lock() {
 	r.mutex.Lock()
 }
@@ -101,9 +107,10 @@ func (r *Room) Unlock() {
 
 func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatransferobjects.GameUnreliableTickPacket) {
 	worldModAdd, worldModRemove, worldModTransfer := r.gameObjectsModel.GetModification()
+	//ticksSinceStartup := r.clock.GetTicksAmountSinceStartup()
 
 	gameTick := r.tickPacketsPool.Get().(*datatransferobjects.GameTickPacket)
-	gameTick.ReassignTickPacketData(
+	gameTick.ReassignTickPacketData( // add tick here
 		r.hostIndex,
 		0,
 		worldModAdd,
@@ -114,7 +121,7 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 	)
 
 	gamePositionsTick := r.unreliableTickPacketsPool.Get().(*datatransferobjects.GameUnreliableTickPacket)
-	gamePositionsTick.ReassignUnreliableTickPacket(
+	gamePositionsTick.ReassignUnreliableTickPacket( // add tick here
 		r.gameObjectsModel.GetPositionMod(),
 		0,
 	)
