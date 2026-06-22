@@ -107,10 +107,11 @@ func (r *Room) Unlock() {
 
 func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatransferobjects.GameUnreliableTickPacket) {
 	worldModAdd, worldModRemove, worldModTransfer := r.gameObjectsModel.GetModification()
-	//ticksSinceStartup := r.clock.GetTicksAmountSinceStartup()
+	ticksSinceStartup := r.clock.GetTicksAmountSinceStartup()
 
 	gameTick := r.tickPacketsPool.Get().(*datatransferobjects.GameTickPacket)
-	gameTick.ReassignTickPacketData( // add tick here
+	gameTick.ReassignTickPacketData(
+		ticksSinceStartup,
 		r.hostIndex,
 		0,
 		worldModAdd,
@@ -121,7 +122,8 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 	)
 
 	gamePositionsTick := r.unreliableTickPacketsPool.Get().(*datatransferobjects.GameUnreliableTickPacket)
-	gamePositionsTick.ReassignUnreliableTickPacket( // add tick here
+	gamePositionsTick.ReassignUnreliableTickPacket(
+		ticksSinceStartup,
 		r.gameObjectsModel.GetPositionMod(),
 		0,
 	)

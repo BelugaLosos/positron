@@ -17,7 +17,7 @@ func TestUnmarshalling(t *testing.T) {
 
 		rpc := gameentities.NewRpcCall(11, 12, 13, 14, "sraka", []byte("fff"))
 
-		testData := datatransferobjects.NewTickPacket(15, 16, []*gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []*gameentities.NetValue{val}, []*gameentities.RpcCall{rpc})
+		testData := datatransferobjects.NewTickPacket(1, 15, 16, []*gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []*gameentities.NetValue{val}, []*gameentities.RpcCall{rpc})
 
 		buf := &bytes.Buffer{}
 		err := marshaller.NewMessagePackMarshaller().MarshalNonAlloc(buf, testData)
@@ -34,7 +34,8 @@ func TestUnmarshalling(t *testing.T) {
 			t.Error(err)
 		}
 
-		if testData.GetHost() != unmarshalled.GetHost() ||
+		if testData.GetTick() != unmarshalled.GetTick() ||
+			testData.GetHost() != unmarshalled.GetHost() ||
 			testData.GetSourceClient() != unmarshalled.GetSourceClient() ||
 			testData.GetNewObjects()[0].GetId() != unmarshalled.GetNewObjects()[0].GetId() ||
 			testData.GetNewObjects()[0].GetOwnerId() != unmarshalled.GetNewObjects()[0].GetOwnerId() ||
@@ -67,7 +68,7 @@ func TestUnmarshalling(t *testing.T) {
 			t.Error("Data corrupt")
 		}
 
-		if len(marshalled) > 50 {
+		if len(marshalled) > 51 {
 			t.Errorf("Too big %v", len(marshalled))
 		}
 
@@ -102,7 +103,7 @@ func TestBufferRace(t *testing.T) {
 
 func TestUnreliable(t *testing.T) {
 	for range 100_000 {
-		tick := datatransferobjects.NewGameUnreliableTickPacket([]*gameentities.Tranform{gameentities.NewTransform(gameentities.NewGameObject(1, 2, 3, 4, *gameentities.NewVector(5, 6, 7), *gameentities.NewVector(8, 9, 10)))}, 1)
+		tick := datatransferobjects.NewGameUnreliableTickPacket(0, []*gameentities.Tranform{gameentities.NewTransform(gameentities.NewGameObject(1, 2, 3, 4, *gameentities.NewVector(5, 6, 7), *gameentities.NewVector(8, 9, 10)))}, 1)
 
 		buf := &bytes.Buffer{}
 		err := marshaller.NewMessagePackMarshaller().MarshalNonAlloc(buf, tick)
@@ -119,7 +120,8 @@ func TestUnreliable(t *testing.T) {
 			t.Error(err)
 		}
 
-		if unmarshalled.GetSourceClient() != tick.GetSourceClient() ||
+		if unmarshalled.GetTick() != tick.GetTick() ||
+			unmarshalled.GetSourceClient() != tick.GetSourceClient() ||
 			unmarshalled.GetMovedObjects()[0].GetObjectId() != tick.GetMovedObjects()[0].GetObjectId() ||
 			unmarshalled.GetMovedObjects()[0].GetPosition().X != tick.GetMovedObjects()[0].GetPosition().X ||
 			unmarshalled.GetMovedObjects()[0].GetPosition().Y != tick.GetMovedObjects()[0].GetPosition().Y ||

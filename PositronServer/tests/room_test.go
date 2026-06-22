@@ -92,6 +92,7 @@ func TestTick(t *testing.T) {
 	room.ProcessTick(datatransferobjects.NewTickPacket(
 		1,
 		1,
+		1,
 		[]*gameentities.GameObject{gameentities.NewGameObject(0, 1, 1, 1, *gameentities.NewVector(1, 1, 1), *gameentities.NewVector(1, 1, 1))},
 		[]uint32{},
 		[]uint32{},
@@ -153,6 +154,7 @@ func TestRaceInTick(t *testing.T) {
 					return
 				default:
 					pkt := datatransferobjects.NewTickPacket(
+						1,
 						0, cid,
 						[]*gameentities.GameObject{gameentities.NewGameObject(0, cid, 1, 1, gameentities.Vector3{}, gameentities.Vector3{})},
 						nil, nil,

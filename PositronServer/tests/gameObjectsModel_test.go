@@ -95,7 +95,7 @@ func TestMove(t *testing.T) {
 	move := make([]*gameentities.Tranform, 0)
 	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, *gameentities.NewVector(1, 1, 1), *gameentities.NewVector(1, 1, 1))))
 
-	movePacket := datatransferobjects.NewGameUnreliableTickPacket(move, 1)
+	movePacket := datatransferobjects.NewGameUnreliableTickPacket(0, move, 1)
 	model.MoveGameObjects(movePacket)
 
 	mod := model.GetPositionMod()
@@ -112,7 +112,7 @@ func TestMove(t *testing.T) {
 	move = make([]*gameentities.Tranform, 0)
 	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, *gameentities.NewVector(1, 1, 1), *gameentities.NewVector(1, 1, 1))))
 
-	movePacket = datatransferobjects.NewGameUnreliableTickPacket(move, 1)
+	movePacket = datatransferobjects.NewGameUnreliableTickPacket(0, move, 1)
 	model.MoveGameObjects(movePacket)
 
 	mod = model.GetPositionMod()
@@ -126,7 +126,7 @@ func TestMove(t *testing.T) {
 	move = make([]*gameentities.Tranform, 0)
 	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, *gameentities.NewVector(1, 2, 1), *gameentities.NewVector(1, 2, 1))))
 
-	movePacket = datatransferobjects.NewGameUnreliableTickPacket(move, 1)
+	movePacket = datatransferobjects.NewGameUnreliableTickPacket(0, move, 1)
 	model.MoveGameObjects(movePacket)
 
 	mod = model.GetPositionMod()

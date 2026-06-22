@@ -8,6 +8,7 @@ import (
 )
 
 type GameTickPacket struct {
+	Tick              uint32
 	Host              uint32
 	Client            uint32
 	NewObjects        []*gameentities.GameObject
@@ -17,8 +18,9 @@ type GameTickPacket struct {
 	Rpc               []*gameentities.RpcCall
 }
 
-func NewTickPacket(host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
+func NewTickPacket(tick uint32, host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
 	return &GameTickPacket{
+		Tick:              tick,
 		Host:              host,
 		Client:            sourceClient,
 		NewObjects:        newObjects,
@@ -29,7 +31,8 @@ func NewTickPacket(host uint32, sourceClient uint32, newObjects []*gameentities.
 	}
 }
 
-func (g *GameTickPacket) ReassignTickPacketData(host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) {
+func (g *GameTickPacket) ReassignTickPacketData(tick uint32, host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) {
+	g.Tick = tick
 	g.Host = host
 	g.Client = sourceClient
 	g.NewObjects = newObjects
@@ -42,8 +45,9 @@ func (g *GameTickPacket) ReassignTickPacketData(host uint32, sourceClient uint32
 func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
-	arrErr := enc.EncodeArrayLen(7)
-	err := enc.EncodeUint(uint64(g.Host))
+	arrErr := enc.EncodeArrayLen(8)
+	err := enc.EncodeUint(uint64(g.Tick))
+	err = enc.EncodeUint(uint64(g.Host))
 	err = enc.EncodeUint(uint64(g.Client))
 	err = enc.EncodeArrayLen(len(g.NewObjects))
 
@@ -104,13 +108,19 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 
 func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	arrLen, arrErr := dec.DecodeArrayLen()
+	tick, err := dec.DecodeUint32()
+
+	if err != nil {
+		return err
+	}
+
 	host, err := dec.DecodeUint32()
 
 	if arrErr != nil {
 		return arrErr
 	}
 
-	if arrLen != 7 {
+	if arrLen != 8 {
 		return errors.New("Tick packet arr invalid!")
 	}
 
@@ -118,6 +128,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
+	i.Tick = tick
 	i.Host = host
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -244,6 +255,10 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	i.Rpc = rpcBuffer
 
 	return nil
+}
+
+func (g *GameTickPacket) GetTick() uint32 {
+	return g.Tick
 }
 
 func (g *GameTickPacket) GetHost() uint32 {
