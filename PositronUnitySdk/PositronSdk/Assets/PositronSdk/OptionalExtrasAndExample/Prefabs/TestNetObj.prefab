@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 8921696056303758404}
   - component: {fileID: 5521413978508829212}
   - component: {fileID: 330245913734207282}
+  - component: {fileID: -5932626248168418175}
   m_Layer: 0
   m_Name: TestNetObj
   m_TagString: Untagged
@@ -125,3 +126,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e6390f8783427e439c0db3e19760bd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Positron.Client.Mono.PositronNetworkIdentity
+--- !u!114 &-5932626248168418175
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5530767020830599098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d059ef507ca870d42a5eda148a9eb904, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Positron.Client.Mono.Syncers.PositronTransformSync

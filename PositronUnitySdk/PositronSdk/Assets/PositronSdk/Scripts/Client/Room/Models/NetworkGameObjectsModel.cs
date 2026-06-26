@@ -5,6 +5,7 @@ using Positron.Client.Settings;
 using UnityEngine;
 using Positron.Client.Mono;
 using Positron.Client.GameEntities.Premitive;
+using Positron.Client.Mono.Syncers;
 
 namespace Positron.Client.Room.Models
 {
@@ -238,7 +239,8 @@ namespace Positron.Client.Room.Models
                     continue;
                 }
 
-                if (networkObjectPair.Value.CheckForMoved() && networkObjectPair.Value.IsNeedSyncTransform)
+                if (networkObjectPair.Value.TryGetSyncer(out PositronTransformSync transformSyncer) && 
+                    transformSyncer.CheckForMoved())
                 {
                     NetTransform deltaData = new();
                     deltaData.ObjectId = networkObjectPair.Key;
@@ -247,23 +249,25 @@ namespace Positron.Client.Room.Models
 
                     _moveDelta.Add(deltaData);
 
-                    networkObjectPair.Value.RecordPreviousTransform();
+                    transformSyncer.RecordPreviousTransform();
                 }
             }
         }
 
-        public void MoveObjects(NetTransform[] objs)
+        public void MoveObjects(NetTransform[] objs, uint tickIndex)
         {
             foreach (NetTransform transform in objs)
             {
                 if (_currentGameObjectsOnScene.TryGetValue(transform.ObjectId, out PositronNetworkIdentity networkObject))
                 {
-                    if (networkObject == null || !networkObject.IsNeedSyncTransform || networkObject.IsMine)
+                    bool hasTransformSyncer = networkObject.TryGetSyncer(out PositronTransformSync syncer);
+
+                    if (networkObject == null || !hasTransformSyncer || networkObject.IsMine)
                     {
                         continue;
                     }
 
-                    networkObject.SetTransform(transform);
+                    syncer.SetTransform(transform);
                 }
             }
         }

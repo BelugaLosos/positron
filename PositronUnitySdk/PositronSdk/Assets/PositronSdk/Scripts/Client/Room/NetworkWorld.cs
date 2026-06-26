@@ -154,7 +154,7 @@ namespace Positron.Client.Room
 
         private void ProcessUnreliableTickPacket(GameUnreliableTick unreliableTickPaclet)
         {
-            _gameObjectsModel.MoveObjects(unreliableTickPaclet.MovedObjects);
+            _gameObjectsModel.MoveObjects(unreliableTickPaclet.MovedObjects, unreliableTickPaclet.Tick);
         }
 
         private async UniTask Tick()
