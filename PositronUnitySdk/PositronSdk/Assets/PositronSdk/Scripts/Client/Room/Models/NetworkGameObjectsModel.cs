@@ -25,6 +25,7 @@ namespace Positron.Client.Room.Models
         private readonly Dictionary<uint, PositronNetworkIdentity> _currentGameObjectsOnScene = new();
 
         private ushort _lastCrationId;
+        private uint _recentTick;
 
         public NetworkGameObjectsModel(NetworkWorld world, PositronSettings settings)
         {
@@ -256,6 +257,13 @@ namespace Positron.Client.Room.Models
 
         public void MoveObjects(NetTransform[] objs, uint tickIndex)
         {
+            if (tickIndex < _recentTick)
+            {
+                return;
+            }
+
+            _recentTick = tickIndex;
+
             foreach (NetTransform transform in objs)
             {
                 if (_currentGameObjectsOnScene.TryGetValue(transform.ObjectId, out PositronNetworkIdentity networkObject))
@@ -267,13 +275,14 @@ namespace Positron.Client.Room.Models
                         continue;
                     }
 
-                    syncer.SetTransform(transform);
+                    syncer.SetTransform(transform, tickIndex);
                 }
             }
         }
 
         public GameObjectsDelta GetActionsDelta() => new GameObjectsDelta(_creationDelta.ToArray(), _destroyDelta.ToArray());
         public NetTransform[] GetMoveDelta() => _moveDelta.ToArray();
+
         public void ClearDelta()
         {
             _creationDelta.Clear();

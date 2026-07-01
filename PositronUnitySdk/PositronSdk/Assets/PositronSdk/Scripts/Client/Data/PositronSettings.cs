@@ -13,6 +13,7 @@ namespace Positron.Client.Settings
         [field: SerializeField] public bool Autoconnect { get; private set; }
         [SerializeField][Min(1)] private int _tickrate = 30;
         [field: SerializeField] public string Version { get; private set; } = "0.0.1 -- DEFAULT";
+        [field: SerializeField] public double TickOffset { get; private set; } = 2d;
         [field: SerializeField] public PositronNetworkIdentity[] SpawnableObjects { get; private set; }
 
         public int Tickrate => _tickrate;

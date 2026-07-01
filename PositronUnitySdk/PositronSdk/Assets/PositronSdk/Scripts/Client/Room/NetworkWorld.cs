@@ -14,6 +14,8 @@ namespace Positron.Client.Room
 {
     public class NetworkWorld : IDisposable
     {
+        private NetworkClock _clock;
+
         private IPositronClient _client;
         private IPositronObservableHandler<JoinRoomResponse> _joinHandler;
         private IPositronObservableHandler<GameTickPacket> _gameTickHandler;
@@ -34,6 +36,7 @@ namespace Positron.Client.Room
         public uint HostId { get; private set; }
         public uint LocalClientId { get; private set; }
         public bool InRoom { get; private set; }
+        public double NetworkTime => _clock.ClientTimeWithPastOffset;
 
         public event Action hostChanged;
 
@@ -42,6 +45,7 @@ namespace Positron.Client.Room
             _gameObjectsModel = new(this, settings);
             _valuesModel = new();
             _rpcsModel = new();
+            _clock = new(settings.TickOffset, settings.Tickrate);
         }
 
         public void Init(
@@ -71,6 +75,7 @@ namespace Positron.Client.Room
             Leave();
             UnsubCompleteJoin();
 
+            _clock.Dispose();
             _gameObjectsModel.Dispose();
             _valuesModel.Dispose();
             _rpcsModel.Dispose();
@@ -93,6 +98,7 @@ namespace Positron.Client.Room
                 return;
             }
 
+            _clock.Dispose();
             _gameObjectsModel.ClearWorld();
             _valuesModel.ClearWorld();
 
@@ -104,6 +110,7 @@ namespace Positron.Client.Room
         public void SpawnObject(PositronNetworkIdentity prefab, Vector3 position, Quaternion rotation) => 
             _gameObjectsModel.CreateLocalObjectAndSendToServer(prefab, position, rotation);
         public void Destroy(PositronNetworkIdentity instance) => _gameObjectsModel.DeleteObjectAndSendToServer(instance);
+        public double TickToSeconds(uint tick) => _clock.TickToSeconds(tick);
 
         private void Join(JoinRoomResponse dataPacket)
         {
@@ -113,6 +120,7 @@ namespace Positron.Client.Room
                 return;
             }
 
+            _clock.Reset();
             _joinDataPacket = dataPacket;
 
             if (_joinDataPacket.Scene == 0)
@@ -123,9 +131,11 @@ namespace Positron.Client.Room
             if (DoLoadScene == null)
             {
                 SceneManager.LoadScene((int)dataPacket.Scene);
+
 #pragma warning disable UDR0005 // Domain Reload Analyzer
                 SceneManager.sceneLoaded += OnSceneLoaded;
 #pragma warning restore UDR0005 // Domain Reload Analyzer
+
                 Debug.LogWarning("Positron uses own scene load fallback");
             }
             else
@@ -142,6 +152,9 @@ namespace Positron.Client.Room
                 HostId = tickPacket.Host;
                 hostChanged?.Invoke();
             }
+
+            _clock.TryInitTime(tickPacket.Tick);
+            _clock.UpdateServerTime(tickPacket.Tick);
 
             _gameObjectsModel.CreateObjects(tickPacket.NewGameObjects);
             _gameObjectsModel.RemoveObjects(tickPacket.RemovedObjects);
