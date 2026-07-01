@@ -173,6 +173,17 @@ namespace Positron
             _client.Send(request, EventTypes.JOIN_ROOM, true);
         }
 
+        public static void LeaveRoom()
+        {
+            if (!_world.InRoom)
+            {
+                throw new InvalidOperationException("Positron error -> unable to leave room outside room!");
+            }
+
+            JoinRoomRequest request = new(); // arbage request, it will be ignored on the server side
+            _client.Send(request, EventTypes.ROOM_LEAVE, true);
+        }
+
         public static void CreateRoom(string name, int playerCap, int level, byte[] externalData)
         {
             CreateRoomPacket request = new();
