@@ -136,6 +136,10 @@ func (r *RpcCall) GetObjectId() uint32 {
 	return r.ObjectId
 }
 
+func (r *RpcCall) SetObjectId(oid uint32) {
+	r.ObjectId = oid
+}
+
 func (r *RpcCall) GetTargetClient() uint32 {
 	return r.TargetClient
 }
@@ -154,16 +158,16 @@ func (r *RpcCall) GetMethodName() string {
 
 func (r *RpcCall) GetArgs() []byte {
 	if r.Args[0] == 1 {
-		return r.Args[5:]
+		return r.Args[3:]
 	}
 
 	return r.Args[1:]
 }
 
-func (r *RpcCall) TryGetCreationId() (bool, uint32) {
+func (r *RpcCall) TryGetCreationId() (bool, uint16) {
 	if r.Args[0] == 1 {
-		encoded := r.Args[1:5]
-		return true, binary.BigEndian.Uint32(encoded)
+		encoded := r.Args[1:3]
+		return true, binary.BigEndian.Uint16(encoded)
 	}
 
 	return false, 0

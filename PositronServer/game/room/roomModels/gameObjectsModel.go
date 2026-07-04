@@ -72,10 +72,17 @@ func (g *GameObjectsModel) ResetTempBuffers() {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
+	clear(g.tempAdd)
+	clear(g.tempRemove)
+	clear(g.tempTransfer)
+	clear(g.tempPositionMod)
+
 	g.tempAdd = g.tempAdd[:0]
 	g.tempRemove = g.tempRemove[:0]
 	g.tempTransfer = g.tempTransfer[:0]
 	g.tempPositionMod = g.tempPositionMod[:0]
+
+	g.updateStructuredCache()
 }
 
 func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.GameUnreliableTickPacket) {

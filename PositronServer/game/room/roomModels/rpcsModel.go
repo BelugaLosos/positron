@@ -39,12 +39,25 @@ func (r *RpcsModel) ResetTempBuffers() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
+	clear(r.callBuffer)
 	r.callBuffer = r.callBuffer[:0]
 }
 
 func (r *RpcsModel) Call(call *gameentities.RpcCall, gameObjectsAddMod []*gameentities.GameObject) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
+
+	isCallForFreshObject, creationId := call.TryGetCreationId()
+
+	if isCallForFreshObject {
+		for i := range gameObjectsAddMod {
+			if gameObjectsAddMod[i].GetCreationId() == creationId {
+				call.SetObjectId(gameObjectsAddMod[i].GetId())
+
+				break
+			}
+		}
+	}
 
 	r.callBuffer = append(r.callBuffer, call)
 	target := call.GetTarget()

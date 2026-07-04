@@ -42,6 +42,7 @@ func (n *NetValuesModel) ResetTempBuffers() {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
+	clear(n.tempModificationBuffer)
 	n.tempModificationBuffer = n.tempModificationBuffer[:0]
 }
 
@@ -77,6 +78,7 @@ func (n *NetValuesModel) RemoveAllValuesFromObject(objectUuid uint32) {
 		}
 	}
 
+	clear(n.netValues)
 	n.netValues = n.netValues[:0]
 
 	for _, val := range n.searchMap {

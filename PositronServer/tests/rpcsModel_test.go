@@ -62,13 +62,13 @@ func TestBufferedCall(t *testing.T) {
 }
 
 func TestRpcDto(t *testing.T) {
-	rpc := gameentities.NewRpcCall(1, 2, 3, 4, "someFunc", []byte{0x1, 0x12, 0x34, 0x56, 0x78, 0x22, 0x22}, true)
+	rpc := gameentities.NewRpcCall(1, 2, 3, 4, "someFunc", []byte{0x1, 0x12, 0x34, 0x22, 0x22}, true)
 
 	if rpc.GetArgs()[0] != 0x22 || rpc.GetArgs()[1] != 0x22 || len(rpc.GetArgs()) != 2 {
 		t.Errorf("corrupting of args RAW %v PROCESSED %v", rpc.Args, rpc.GetArgs())
 	}
 
-	if has, id := rpc.TryGetCreationId(); has != true || id != 0x12345678 {
+	if has, id := rpc.TryGetCreationId(); has != true || id != 0x1234 {
 		t.Errorf("Corrupted the creation id %v %v", id, has)
 	}
 
