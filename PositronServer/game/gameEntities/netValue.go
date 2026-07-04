@@ -8,7 +8,6 @@ import (
 
 type NetValue struct {
 	ParentObjectId uint32
-	SubObjectId    uint16
 	ValueId        uint16
 	Deleting       bool
 	Payload        []byte
@@ -17,7 +16,7 @@ type NetValue struct {
 func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
-	arrErr := enc.EncodeArrayLen(5)
+	arrErr := enc.EncodeArrayLen(4)
 	err := enc.EncodeUint(uint64(n.ValueId))
 
 	if arrErr != nil {
@@ -29,12 +28,6 @@ func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 	}
 
 	err = enc.EncodeUint(uint64(n.ParentObjectId))
-
-	if err != nil {
-		return err
-	}
-
-	err = enc.EncodeUint(uint64(n.SubObjectId))
 
 	if err != nil {
 		return err
@@ -63,7 +56,7 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return arrErr
 	}
 
-	if arrLen != 5 {
+	if arrLen != 4 {
 		return errors.New("Net value arr len invalid!")
 	}
 
@@ -72,12 +65,6 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 	}
 
 	parentObjectId, err := dec.DecodeUint32()
-
-	if err != nil {
-		return err
-	}
-
-	subObjectId, err := dec.DecodeUint16()
 
 	if err != nil {
 		return err
@@ -93,7 +80,6 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	n.ValueId = valueId
 	n.ParentObjectId = parentObjectId
-	n.SubObjectId = subObjectId
 	n.Deleting = isDeleting
 	n.Payload = paylpad
 
@@ -106,10 +92,6 @@ func (n *NetValue) GetValueId() uint16 {
 
 func (n *NetValue) GetParentObjectId() uint32 {
 	return n.ParentObjectId
-}
-
-func (n *NetValue) GetSubObjectId() uint16 {
-	return n.SubObjectId
 }
 
 func (n *NetValue) GetPayload() []byte {

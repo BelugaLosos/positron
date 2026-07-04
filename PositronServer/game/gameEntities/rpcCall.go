@@ -1,28 +1,39 @@
 package gameentities
 
 import (
+	"encoding/binary"
 	"errors"
 
 	"github.com/vmihailenco/msgpack/v5"
 )
 
 type RpcCall struct {
-	ObjectId     uint32
 	TargetClient uint32
+	ObjectId     uint32
 	SubObjectId  uint16
 	RpcType      uint8
 	MethodName   string
 	Args         []byte
 }
 
-func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType uint8, methodName string, agrs []byte) *RpcCall {
+func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType uint8, methodName string, agrs []byte, useRawArgs bool) *RpcCall {
+	var argsBuf []byte
+
+	if useRawArgs {
+		argsBuf = agrs
+	} else {
+		argsBuf = make([]byte, len(agrs)+1)
+		argsBuf[0] = 0
+		copy(argsBuf[1:], agrs)
+	}
+
 	return &RpcCall{
 		ObjectId:     objId,
 		TargetClient: targetClient,
 		SubObjectId:  subObjectsId,
 		RpcType:      rpcType,
 		MethodName:   methodName,
-		Args:         agrs,
+		Args:         argsBuf,
 	}
 }
 
@@ -142,5 +153,18 @@ func (r *RpcCall) GetMethodName() string {
 }
 
 func (r *RpcCall) GetArgs() []byte {
-	return r.Args
+	if r.Args[0] == 1 {
+		return r.Args[5:]
+	}
+
+	return r.Args[1:]
+}
+
+func (r *RpcCall) TryGetCreationId() (bool, uint32) {
+	if r.Args[0] == 1 {
+		encoded := r.Args[1:5]
+		return true, binary.BigEndian.Uint32(encoded)
+	}
+
+	return false, 0
 }

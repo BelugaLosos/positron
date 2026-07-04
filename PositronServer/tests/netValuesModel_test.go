@@ -13,7 +13,7 @@ func TestAddValue(t *testing.T) {
 
 	if len(mod) != 1 {
 		t.Error("No any mod while expected")
-	} else if mod[0].GetIsDeleting() == true || mod[0].GetValueId() != 0 || mod[0].GetParentObjectId() != 0 || mod[0].GetSubObjectId() != 0 {
+	} else if mod[0].GetIsDeleting() == true || mod[0].GetValueId() != 0 || mod[0].GetParentObjectId() != 0 {
 		t.Errorf("Mod content error %v", mod[0])
 	}
 }

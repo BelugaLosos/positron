@@ -54,6 +54,13 @@ func (g *GameObjectsModel) GetModification() ([]*gameentities.GameObject, []uint
 	return g.tempAdd, g.tempRemove, g.tempTransfer
 }
 
+func (g *GameObjectsModel) GetSpecificAddModification() []*gameentities.GameObject {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	return g.tempAdd
+}
+
 func (g *GameObjectsModel) GetPositionMod() []*gameentities.Tranform {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()

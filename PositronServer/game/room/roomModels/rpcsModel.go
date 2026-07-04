@@ -42,7 +42,7 @@ func (r *RpcsModel) ResetTempBuffers() {
 	r.callBuffer = r.callBuffer[:0]
 }
 
-func (r *RpcsModel) Call(call *gameentities.RpcCall) {
+func (r *RpcsModel) Call(call *gameentities.RpcCall, gameObjectsAddMod []*gameentities.GameObject) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 

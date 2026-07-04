@@ -165,8 +165,10 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket) {
 		r.netValuesModel.AddOrModify(packet.GetValueMod()[i])
 	}
 
+	addMod := r.gameObjectsModel.GetSpecificAddModification()
+
 	for i := range packet.GetRpcs() {
-		r.rpcsModel.Call(packet.GetRpcs()[i])
+		r.rpcsModel.Call(packet.GetRpcs()[i], addMod)
 	}
 }
 

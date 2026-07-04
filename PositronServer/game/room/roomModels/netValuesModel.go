@@ -51,7 +51,7 @@ func (n *NetValuesModel) AddOrModify(value *gameentities.NetValue) {
 
 	gettenValue, isExist := n.searchMap[n.getKeyOfValue(value)]
 
-	if isExist && value.GetIsDeleting() {
+	if isExist && gettenValue.GetIsDeleting() {
 		return
 	}
 
@@ -98,9 +98,8 @@ func (n *NetValuesModel) modifyValue(value *gameentities.NetValue, currentValue 
 }
 
 func (n *NetValuesModel) getKeyOfValue(value *gameentities.NetValue) string {
-	left := strconv.FormatUint(uint64(value.GetValueId()), 10)
-	mid := strconv.FormatUint(uint64(value.GetParentObjectId()), 10)
-	right := strconv.FormatUint(uint64(value.GetSubObjectId()), 10)
+	vid := strconv.FormatUint(uint64(value.GetValueId()), 10)
+	oid := strconv.FormatUint(uint64(value.GetParentObjectId()), 10)
 
-	return left + mid + right
+	return oid + vid
 }
