@@ -49,12 +49,24 @@ namespace Positron.Client.Room.Models
         {
             foreach (KeyValuePair<uint, PositronNetworkIdentity> obj in _currentGameObjectsOnScene)
             {
-                GameObject.Destroy(obj.Value);
+                if (obj.Value == null || obj.Value.gameObject == null)
+                {
+                    Debug.LogError($"Unexpected not critical error -> obj with id: {obj.Key} is null (Remote replicated instance)");
+                    continue;
+                }
+
+                GameObject.Destroy(obj.Value.gameObject);
             }
 
             foreach (KeyValuePair<ushort, PositronNetworkIdentity> obj in _localCreationMapping)
             {
-                GameObject.Destroy(obj.Value);
+                if (obj.Value == null || obj.Value.gameObject == null)
+                {
+                    Debug.LogError($"Unexpected not critical error -> obj with id: {obj.Key} is null (Local instance)");
+                    continue;
+                }
+
+                GameObject.Destroy(obj.Value.gameObject);
             }
             
             _localCreationMapping.Clear();  
@@ -68,14 +80,14 @@ namespace Positron.Client.Room.Models
         {
             if (prefab == null)
             {
-                Debug.LogError("Positron error -> can`t spawn null prefab");
-                return;
+                throw new ArgumentNullException("Positron error -> can`t spawn null prefab");
             }
 
             if (!_indexedAssets.TryGetValue(prefab, out ushort assetIndex))
             {
-                Debug.LogError("Critical positron error -> unable to create network object while it is no registred in settings!!!", prefab);
-                return;
+                Debug.LogError("This message is additional info for exception below!", prefab);
+
+                throw new ArgumentException("Critical positron error -> unable to create network object while it is no registred in settings!!!");
             }
 
             _lastCrationId++;
@@ -99,20 +111,17 @@ namespace Positron.Client.Room.Models
         {
             if(instance == null)
             {
-                Debug.LogError("Positron error -> can`t destroy null object");
-                return;
+                throw new ArgumentNullException("Positron error -> can`t destroy null object");
             }
 
             if (instance.OwnerClientId != _world.LocalClientId)
             {
-                Debug.LogError($"Positron critical error -> can`t destroy not local owned object OBJ: '{instance}' OWNED_BY: '{instance.OwnerClientId}' LOCAL_ID: '{_world.LocalClientId}'");
-                return;
+                throw new ArgumentException($"Positron critical error -> can`t destroy not local owned object OBJ: '{instance}' OWNED_BY: '{instance.OwnerClientId}' LOCAL_ID: '{_world.LocalClientId}'");
             }
 
             if (!_localCreationMapping.ContainsKey(instance.CreationId) && !_currentGameObjectsOnScene.ContainsKey(instance.ObjectId))
             {
-                Debug.LogError($"Positron error -> object instance {instance.gameObject} is not found in current approved network objects or network objects local mapping!");
-                return;
+                throw new ArgumentException($"Positron error -> object instance {instance.gameObject} is not found in current approved network objects or network objects local mapping!");
             }
 
             if (_localCreationMapping.ContainsKey(instance.CreationId))
@@ -204,13 +213,14 @@ namespace Positron.Client.Room.Models
         {
             if (_currentGameObjectsOnScene.TryGetValue(obj, out PositronNetworkIdentity localInstance))
             {
+                _currentGameObjectsOnScene.Remove(obj);
+
                 if (localInstance == null)
                 {
                     return;
                 }
 
                 GameObject sceneObj = localInstance.gameObject;
-                _currentGameObjectsOnScene.Remove(obj);
                 GameObject.Destroy(sceneObj);
             }
         }

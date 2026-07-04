@@ -230,6 +230,7 @@ func (t *WsTransport) handleIncoming(id string, peer *wsPeer, handlers []interna
 				log.Printf("Failed to read from websocket for peer %s: %v", id, readErr)
 				return
 			}
+
 			packet := peer.readBuf[:readedAmount]
 
 			if len(packet) >= 3 {

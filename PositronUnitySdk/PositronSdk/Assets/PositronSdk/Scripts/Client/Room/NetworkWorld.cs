@@ -9,6 +9,7 @@ using UnityEngine.SceneManagement;
 using Positron.Client.ConstantHolders;
 using Positron.Client.Settings;
 using Positron.Client.Mono;
+using Positron.Client.Handlers;
 
 namespace Positron.Client.Room
 {
@@ -17,6 +18,7 @@ namespace Positron.Client.Room
         private NetworkClock _clock;
 
         private IPositronClient _client;
+        private RoomLeaveHandler _leaveHandler;
         private IPositronObservableHandler<JoinRoomResponse> _joinHandler;
         private IPositronObservableHandler<GameTickPacket> _gameTickHandler;
         private IPositronObservableHandler<GameUnreliableTick> _unreliableTickHandler;
@@ -30,6 +32,7 @@ namespace Positron.Client.Room
         private JoinRoomResponse _joinDataPacket;
         private Action _loadCompleteCallback;
         private LoadSceneOverrider DoLoadScene;
+        private Action DoLoadMainMenuScene;
 
         private int _tickRate;
 
@@ -39,6 +42,7 @@ namespace Positron.Client.Room
         public double NetworkTime => _clock.ClientTimeWithPastOffset;
 
         public event Action hostChanged;
+        public event Action roomLeaved;
 
         public NetworkWorld(PositronSettings settings)
         {
@@ -49,18 +53,21 @@ namespace Positron.Client.Room
         }
 
         public void Init(
-            IPositronClient client, 
+            IPositronClient client,
+            RoomLeaveHandler leaveRoomHandler,
             IPositronObservableHandler<JoinRoomResponse> joinHandler,
             IPositronObservableHandler<GameTickPacket> gameTickHandler,
             IPositronObservableHandler<GameUnreliableTick> unreliableTickHandler)
         {
             _client = client;
+            _leaveHandler = leaveRoomHandler;
             _joinHandler = joinHandler;
             _gameTickHandler = gameTickHandler;
             _unreliableTickHandler = unreliableTickHandler;
             _ctx = new();
 
             _joinHandler.callback += Join;
+            _leaveHandler.leaveConfirmed += Leave;
             _gameTickHandler.callback += ProcessReliableTickPacket;
             _unreliableTickHandler.callback += ProcessUnreliableTickPacket;
         }
@@ -81,44 +88,78 @@ namespace Positron.Client.Room
             _rpcsModel.Dispose();
 
             _joinHandler.callback -= Join;
+            _leaveHandler.leaveConfirmed -= Leave;
             _gameTickHandler.callback -= ProcessReliableTickPacket;
             _unreliableTickHandler.callback -= ProcessUnreliableTickPacket;
         }
-
+        
         public void OverrideSceneLoader(LoadSceneOverrider sceneLoadFunc)
         {
             DoLoadScene = sceneLoadFunc;
+        }
+
+        public void OverrideLoadMainMenu(Action mainMenuLoadFunc)
+        {
+            DoLoadMainMenuScene = mainMenuLoadFunc;
         }
 
         public void Leave() 
         {
             if (!InRoom)
             {
-                Debug.LogError("Critical error -> can`t leave outside room");
-                return;
+                throw new InvalidOperationException("Critical error -> can`t leave outside room");
             }
 
-            _clock.Dispose();
+            _clock.StopTime();
             _gameObjectsModel.ClearWorld();
             _valuesModel.ClearWorld();
 
             InRoom = false;
             _ctx.Cancel();
             _ctx.Dispose();
+
+            roomLeaved?.Invoke();
+
+            if (DoLoadMainMenuScene == null)
+            {
+                SceneManager.LoadScene(0);
+            }
+            else
+            {
+                DoLoadMainMenuScene();
+            }
         }
 
-        public void SpawnObject(PositronNetworkIdentity prefab, Vector3 position, Quaternion rotation) => 
+        public void SpawnObject(PositronNetworkIdentity prefab, Vector3 position, Quaternion rotation)
+        {
+            if (!InRoom)
+            {
+                throw new InvalidOperationException("Critical error -> can`t create objects not in room");
+            }
+
             _gameObjectsModel.CreateLocalObjectAndSendToServer(prefab, position, rotation);
-        public void Destroy(PositronNetworkIdentity instance) => _gameObjectsModel.DeleteObjectAndSendToServer(instance);
+        }
+            
+        public void Destroy(PositronNetworkIdentity instance)
+        {
+            if (!InRoom)
+            {
+                throw new InvalidOperationException("Critical error -> can`t destroy objects not in room");
+            }
+
+            _gameObjectsModel.DeleteObjectAndSendToServer(instance);
+        }
+
         public double TickToSeconds(uint tick) => _clock.TickToSeconds(tick);
 
         private void Join(JoinRoomResponse dataPacket)
         {
             if (InRoom)
             {
-                Debug.LogError("Critical error -> can`t join another room");
-                return;
+                throw new InvalidOperationException("Critical error -> can`t join another room");
             }
+
+            _ctx = new();
 
             _clock.Reset();
             _joinDataPacket = dataPacket;

@@ -47,8 +47,7 @@ namespace Positron.Client.Room
                 return;
             }
 
-            _ctx.Cancel();
-            _running = false;
+            StopTime();
         }
 
         public void TryInitTime(uint currentTick)
@@ -65,7 +64,15 @@ namespace Positron.Client.Room
             _running = true;
             UpdateLoopHook().Forget();
 
+            Debug.Log("Network clock stopped");
+
             _isInitialized = true;
+        }
+
+        public void StopTime()
+        {
+            _ctx.Cancel();
+            _running = false;
         }
 
         public void UpdateServerTime(uint tick)
@@ -102,8 +109,6 @@ namespace Positron.Client.Room
                 
                 await UniTask.Yield(PlayerLoopTiming.Update, cancellationToken: _ctx.Token);
             }
-
-            Debug.Log("Network clock stopped");
         }
 
         private void UpdateClientTimeToServer()

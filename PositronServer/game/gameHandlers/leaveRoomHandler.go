@@ -43,6 +43,12 @@ func (l *LeaveRoomHandler) PassHandle(packet []byte) {
 	} else {
 		log.Printf("Client %s left room with guid %s", l.uuid, l.room.GetUuid())
 	}
+
+	allHandlers := l.transport.GetPeerHandlers(l.uuid)
+
+	for i := range allHandlers {
+		allHandlers[i].SetRoom(nil, 0)
+	}
 }
 
 func (l *LeaveRoomHandler) SetRoom(room *room.Room, inRoomId uint32) {

@@ -35,6 +35,11 @@ namespace Positron.Extras.HandTests.Object
                     obj.transform.Translate(Input.mousePositionDelta * 50 * Time.deltaTime);
                 }
             }
+
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                PositronFacade.LeaveRoom();
+            }
         }
 
         private PositronNetworkIdentity Hitscan()
