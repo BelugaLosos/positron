@@ -110,8 +110,6 @@ func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.Gam
 				!util.VetorsEquals(position.GetRotation(), gameObject.GetRotation())) {
 
 			gameObject.Move(position.GetPosition(), position.GetRotation())
-			position.Move(position.GetPosition(), position.GetRotation())
-
 			g.tempPositionMod = append(g.tempPositionMod, position)
 		}
 	}
@@ -165,6 +163,7 @@ func (g *GameObjectsModel) TransferObjectsFromClientToHost(clientId uint32, actu
 }
 
 func (g *GameObjectsModel) updateStructuredCache() {
+	clear(g.gameObjectsStructuredCache)
 	g.gameObjectsStructuredCache = g.gameObjectsStructuredCache[:0]
 
 	for _, obj := range g.searchMap {

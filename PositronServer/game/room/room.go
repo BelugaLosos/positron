@@ -149,7 +149,7 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket) {
 
 	peerUuid := packet.GetSourceClient()
 	if _, hasKey := r.connectedPeers[peerUuid]; !hasKey {
-		fmt.Printf("Peer '%s' does not in but send tick")
+		fmt.Printf("Peer '%v' does not in but send tick", peerUuid)
 		return
 	}
 
