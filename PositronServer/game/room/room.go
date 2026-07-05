@@ -2,6 +2,7 @@ package room
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
@@ -145,6 +146,12 @@ func (r *Room) ResetTempBuffers() {
 func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
+
+	peerUuid := packet.GetSourceClient()
+	if _, hasKey := r.connectedPeers[peerUuid]; !hasKey {
+		fmt.Printf("Peer '%s' does not in but send tick")
+		return
+	}
 
 	for i := range packet.GetNewObjects() {
 		r.gameObjectsModel.AddGameObject(packet.GetNewObjects()[i], packet.GetSourceClient())
