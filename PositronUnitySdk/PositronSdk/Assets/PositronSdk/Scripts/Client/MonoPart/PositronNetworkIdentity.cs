@@ -23,7 +23,9 @@ namespace Positron.Client.Mono
         public bool IsHost => PositronFacade.World.HostId == OwnerClientId || !PositronFacade.World.InRoom;
 
         public event Action<PositronNetworkIdentity> completeInitialize;
+        public event Action completeInitWithEmptyCallback;
         public event Action<PositronNetworkIdentity> transfered;
+        public event Action transferedWithEmptyCallback;
 
         public void LocalInit(ushort creationId, uint owner)
         {
@@ -61,6 +63,7 @@ namespace Positron.Client.Mono
             InitSyncers();
 
             completeInitialize?.Invoke(this);
+            completeInitWithEmptyCallback?.Invoke();
         }
 
         public void Transfer(uint actualOwner)
@@ -72,7 +75,9 @@ namespace Positron.Client.Mono
             }
 
             OwnerClientId = actualOwner;
+
             transfered?.Invoke(this);
+            transferedWithEmptyCallback?.Invoke();
         }
 
         public bool TryGetSyncer<TSyncer>(out TSyncer syncer) where TSyncer : IPositronSyncer

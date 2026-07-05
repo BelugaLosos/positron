@@ -36,7 +36,7 @@ namespace Positron.Client.Room
 
         public void Reset()
         {
-            Dispose();
+            StopTime();
             _isInitialized = false;
         }
 
@@ -64,8 +64,6 @@ namespace Positron.Client.Room
             _running = true;
             UpdateLoopHook().Forget();
 
-            Debug.Log("Network clock stopped");
-
             _isInitialized = true;
         }
 
@@ -73,6 +71,8 @@ namespace Positron.Client.Room
         {
             _ctx.Cancel();
             _running = false;
+
+            Debug.Log("Network clock stopped");
         }
 
         public void UpdateServerTime(uint tick)

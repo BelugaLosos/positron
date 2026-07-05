@@ -40,6 +40,16 @@ namespace Positron.Extras.HandTests.Object
             {
                 PositronFacade.LeaveRoom();
             }
+
+            if (Input.GetKeyDown(KeyCode.V))
+            {
+                PositronNetworkIdentity obj = Hitscan();
+
+                if (obj != null)
+                {
+                    PositronFacade.World.RequestOwnershipOn(obj);
+                }
+            }
         }
 
         private PositronNetworkIdentity Hitscan()

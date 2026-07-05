@@ -15,10 +15,11 @@ type GameObjectsModel struct {
 
 	gameObjectsStructuredCache []*gameentities.GameObject
 
-	tempAdd         []*gameentities.GameObject
-	tempRemove      []uint32
-	tempTransfer    []uint32
-	tempPositionMod []*gameentities.Tranform
+	tempAdd                []*gameentities.GameObject
+	tempRemove             []uint32
+	tempTransfer           []uint32
+	tempPositionMod        []*gameentities.Tranform
+	tempTargetatedTransfer []uint32
 
 	lastId uint32
 }
@@ -47,11 +48,11 @@ func (g *GameObjectsModel) GetGameObjects() []*gameentities.GameObject {
 	return g.gameObjectsStructuredCache
 }
 
-func (g *GameObjectsModel) GetModification() ([]*gameentities.GameObject, []uint32, []uint32) {
+func (g *GameObjectsModel) GetModification() ([]*gameentities.GameObject, []uint32, []uint32, []uint32) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	return g.tempAdd, g.tempRemove, g.tempTransfer
+	return g.tempAdd, g.tempRemove, g.tempTransfer, g.tempTargetatedTransfer
 }
 
 func (g *GameObjectsModel) GetSpecificAddModification() []*gameentities.GameObject {
@@ -76,11 +77,13 @@ func (g *GameObjectsModel) ResetTempBuffers() {
 	clear(g.tempRemove)
 	clear(g.tempTransfer)
 	clear(g.tempPositionMod)
+	clear(g.tempTargetatedTransfer)
 
 	g.tempAdd = g.tempAdd[:0]
 	g.tempRemove = g.tempRemove[:0]
 	g.tempTransfer = g.tempTransfer[:0]
 	g.tempPositionMod = g.tempPositionMod[:0]
+	g.tempTargetatedTransfer = g.tempTargetatedTransfer[:0]
 
 	g.updateStructuredCache()
 }
@@ -158,6 +161,28 @@ func (g *GameObjectsModel) TransferObjectsFromClientToHost(clientId uint32, actu
 			g.gameObjectsStructuredCache[i].SetIdAndOnwer(g.gameObjectsStructuredCache[i].GetId(), actualHost)
 
 			g.tempTransfer = append(g.tempTransfer, g.gameObjectsStructuredCache[i].GetId())
+		}
+	}
+}
+
+func (g *GameObjectsModel) TransferObjectsOwnershipToTargetClient(requestedTransfer []uint32, newOwner uint32) {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	g.updateStructuredCache()
+
+	for i := range g.gameObjectsStructuredCache {
+		obj := g.gameObjectsStructuredCache[i]
+
+		for j := range requestedTransfer {
+			reqId := requestedTransfer[j]
+
+			if obj.GetId() == reqId {
+				obj.SetIdAndOnwer(obj.GetId(), newOwner)
+
+				g.tempTargetatedTransfer = append(g.tempTargetatedTransfer, newOwner)
+				g.tempTargetatedTransfer = append(g.tempTargetatedTransfer, obj.GetId())
+			}
 		}
 	}
 }

@@ -195,7 +195,7 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.DataTransferObjects.GameTickPacket value, global::MessagePack.MessagePackSerializerOptions options)
         {
             global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
-            writer.WriteArrayHeader(8);
+            writer.WriteArrayHeader(9);
             writer.Write(value.Tick);
             writer.Write(value.Host);
             writer.Write(value.Client);
@@ -204,6 +204,7 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<uint[]>(formatterResolver).Serialize(ref writer, value.TransferedToHostObjects, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetValue[]>(formatterResolver).Serialize(ref writer, value.ValueModification, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.RpcCall[]>(formatterResolver).Serialize(ref writer, value.Rpcs, options);
+            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<uint[]>(formatterResolver).Serialize(ref writer, value.RequestOwnership, options);
         }
 
         public global::Positron.Client.DataTransferObjects.GameTickPacket Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -245,6 +246,9 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
                         break;
                     case 7:
                         ____result.Rpcs = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.RpcCall[]>(formatterResolver).Deserialize(ref reader, options);
+                        break;
+                    case 8:
+                        ____result.RequestOwnership = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<uint[]>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     default:
                         reader.Skip();

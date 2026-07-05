@@ -16,6 +16,7 @@ namespace Positron.Client.Room.Models
         private readonly List<NetGameObject> _creationDelta = new(128);
         private readonly List<NetTransform> _moveDelta = new(128);
         private readonly List<uint> _destroyDelta = new(128);
+        private readonly List<uint> _requestOwnershipDelta = new(16);
 
         private readonly Dictionary<PositronNetworkIdentity, ushort> _indexedAssets = new();
         private readonly Dictionary<ushort, PositronNetworkIdentity> _reverseAssetsIndex = new();
@@ -155,6 +156,26 @@ namespace Positron.Client.Room.Models
             GameObject.Destroy(instance.gameObject);
         }
 
+        public void RequestOwnership(PositronNetworkIdentity networkIdentity)
+        {
+            if (!networkIdentity.IsFullyInitialized)
+            {
+                return;
+            }
+
+            if (networkIdentity.IsFullyInitialized && networkIdentity.IsMine)
+            {
+                return;
+            }
+
+            if (networkIdentity.SubObjectId != 0)
+            {
+                throw new ArgumentException("Critical error -> can`t request ownership on sub object, must be requested on parent !!!");
+            }
+
+            _requestOwnershipDelta.Add(networkIdentity.ObjectId);
+        }
+
         public void CreateObjects(NetGameObject[] objs)
         {
             foreach (NetGameObject obj in objs)
@@ -241,6 +262,20 @@ namespace Positron.Client.Room.Models
             }
         }
 
+        public void PerformTargetatedTransfer(uint[] transferedDataBuffer)
+        {
+            for (int i = 0; i < transferedDataBuffer.Length - 1; i += 2)
+            {
+                uint newOwnerId = transferedDataBuffer[i];
+                uint oid = transferedDataBuffer[i + 1];
+
+                if (_currentGameObjectsOnScene.TryGetValue(oid, out PositronNetworkIdentity obj))
+                {
+                    obj.Transfer(newOwnerId);
+                }
+            }
+        }
+
         public void CollectCurrentObjectsMoveDeltas()
         {
             foreach (KeyValuePair<uint, PositronNetworkIdentity> networkObjectPair in _currentGameObjectsOnScene)
@@ -290,7 +325,7 @@ namespace Positron.Client.Room.Models
             }
         }
 
-        public GameObjectsDelta GetActionsDelta() => new GameObjectsDelta(_creationDelta.ToArray(), _destroyDelta.ToArray());
+        public GameObjectsDelta GetActionsDelta() => new GameObjectsDelta(_creationDelta.ToArray(), _destroyDelta.ToArray(), _requestOwnershipDelta.ToArray());
         public NetTransform[] GetMoveDelta() => _moveDelta.ToArray();
 
         public void ClearDelta()
@@ -298,17 +333,20 @@ namespace Positron.Client.Room.Models
             _creationDelta.Clear();
             _destroyDelta.Clear();
             _moveDelta.Clear();
+            _requestOwnershipDelta.Clear();
         }
 
         public struct GameObjectsDelta
         {
             public NetGameObject[] NewGameOgjects;
             public uint[] RemovedGameObjectIds;
+            public uint[] RequestOwnershipDelta;
             
-            public GameObjectsDelta(NetGameObject[] gos, uint[] destruction)
+            public GameObjectsDelta(NetGameObject[] gos, uint[] destruction, uint[] requestOwnershipDelta)
             {
                 NewGameOgjects = gos;
                 RemovedGameObjectIds = destruction;
+                RequestOwnershipDelta = requestOwnershipDelta;
             }
         }
     }

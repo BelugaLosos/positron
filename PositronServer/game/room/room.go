@@ -13,6 +13,10 @@ import (
 	"github.com/google/uuid"
 )
 
+var (
+	EMPTY_UINT32_ARR = []uint32{}
+)
+
 type Room struct {
 	mutex       *sync.RWMutex
 	Termination chan struct{}
@@ -107,7 +111,7 @@ func (r *Room) Unlock() {
 }
 
 func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatransferobjects.GameUnreliableTickPacket) {
-	worldModAdd, worldModRemove, worldModTransfer := r.gameObjectsModel.GetModification()
+	worldModAdd, worldModRemove, worldModTransfer, targetatedTransfer := r.gameObjectsModel.GetModification()
 	ticksSinceStartup := r.clock.GetTicksAmountSinceStartup()
 
 	gameTick := r.tickPacketsPool.Get().(*datatransferobjects.GameTickPacket)
@@ -120,6 +124,7 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 		worldModTransfer,
 		r.netValuesModel.GetTempMod(),
 		r.rpcsModel.GetCurrentCallBuffer(),
+		targetatedTransfer,
 	)
 
 	gamePositionsTick := r.unreliableTickPacketsPool.Get().(*datatransferobjects.GameUnreliableTickPacket)
@@ -171,6 +176,8 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket) {
 	for i := range packet.GetValueMod() {
 		r.netValuesModel.AddOrModify(packet.GetValueMod()[i])
 	}
+
+	r.gameObjectsModel.TransferObjectsOwnershipToTargetClient(packet.GetRequestedOwnershipBuffer(), packet.GetSourceClient())
 
 	addMod := r.gameObjectsModel.GetSpecificAddModification()
 

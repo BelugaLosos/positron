@@ -134,7 +134,7 @@ namespace Positron.Client.Room
         {
             if (!InRoom)
             {
-                throw new InvalidOperationException("Critical error -> can`t create objects not in room");
+                throw new InvalidOperationException("Critical error -> can`t create object not in room");
             }
 
             _gameObjectsModel.CreateLocalObjectAndSendToServer(prefab, position, rotation);
@@ -144,10 +144,20 @@ namespace Positron.Client.Room
         {
             if (!InRoom)
             {
-                throw new InvalidOperationException("Critical error -> can`t destroy objects not in room");
+                throw new InvalidOperationException("Critical error -> can`t destroy object not in room");
             }
 
             _gameObjectsModel.DeleteObjectAndSendToServer(instance);
+        }
+
+        public void RequestOwnershipOn(PositronNetworkIdentity instance)
+        {
+            if (!InRoom)
+            {
+                throw new InvalidOperationException("Critical error -> can`t request ownership on object not in room");
+            }
+
+            _gameObjectsModel.RequestOwnership(instance);
         }
 
         public double TickToSeconds(uint tick) => _clock.TickToSeconds(tick);
@@ -200,6 +210,7 @@ namespace Positron.Client.Room
             _gameObjectsModel.CreateObjects(tickPacket.NewGameObjects);
             _gameObjectsModel.RemoveObjects(tickPacket.RemovedObjects);
             _gameObjectsModel.TransferedObjects(tickPacket.TransferedToHostObjects, tickPacket.Host);
+            _gameObjectsModel.PerformTargetatedTransfer(tickPacket.RequestOwnership);
 
             _valuesModel.AddOrModifyValues(tickPacket.ValueModification);
 
@@ -231,6 +242,7 @@ namespace Positron.Client.Room
 
                 tickPacket.ValueModification = _valuesModel.GetValuesDelta();
                 tickPacket.Rpcs = _rpcsModel.GetCurrentDelta();
+                tickPacket.RequestOwnership = reliableGameObjectsDelta.RequestOwnershipDelta;
 
                 GameUnreliableTick unreliableTick = new();
                 unreliableTick.ClientId = LocalClientId;
@@ -255,6 +267,8 @@ namespace Positron.Client.Room
 
         private void CompleteJoin()
         {
+            InRoom = true;
+
             _tickRate = (int)_joinDataPacket.Tickrate;
             LocalClientId = _joinDataPacket.SelfId;
             HostId = _joinDataPacket.Host;
@@ -263,7 +277,6 @@ namespace Positron.Client.Room
             _valuesModel.AddOrModifyValues(_joinDataPacket.Values);
             _rpcsModel.MultiCall(_joinDataPacket.CachedRpcCalls);
 
-            InRoom = true;
             Tick().Forget();
 
             UnsubCompleteJoin();
