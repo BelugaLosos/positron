@@ -28,7 +28,6 @@ namespace Positron.Extras.HandTests
 
         private void DisplayOwnership()
         {
-            Debug.Log($"{_identity.IsMine} {PositronFacade.World.InRoom}");
             _targetRenderer.material.color = _identity.IsMine ? _myColorl : _foreignColor;
         }
     }

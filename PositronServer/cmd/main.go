@@ -20,6 +20,8 @@ func main() {
 	controllPort := flag.Int("cp", 7071, "port for controll the server (stop ...)")
 	allowStop := flag.Bool("als", true, "allows /term listening")
 	version := flag.String("v", "0.0.1 -- DEFAULT", "server version for filtering incoming client connections and prevent version-dependent bugs")
+	//secondsToTransmitUnrWorld := flag.Float64("rtp", 1.0, "Time represented in seconds (S) for retransmitting whole ureliable world state to proove replication percision")
+
 	flag.Parse()
 
 	if *useDbg {
