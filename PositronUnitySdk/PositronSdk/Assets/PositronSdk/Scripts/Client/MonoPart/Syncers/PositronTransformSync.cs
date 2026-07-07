@@ -23,9 +23,7 @@ namespace Positron.Client.Mono.Syncers
         public void Init(PositronNetworkIdentity parent)
         {
             _identity = parent;
-
-            _currentBindingPosition = transform.position;
-            _currentBindingRotation = transform.rotation;
+            RecordCurrentTransform();
         }
 
         public void RecordPreviousTransform()
@@ -41,6 +39,7 @@ namespace Positron.Client.Mono.Syncers
         {
             if (_identity.IsMine)
             {
+                RecordCurrentTransform();
                 return;
             }
 
@@ -88,6 +87,12 @@ namespace Positron.Client.Mono.Syncers
         {
             _currentBindingPosition = right.Transform.Position.ToUnity();
             _currentBindingRotation = Quaternion.Euler(right.Transform.Rotation.ToUnity());
+        }
+
+        private void RecordCurrentTransform()
+        {
+            _currentBindingPosition = transform.position;
+            _currentBindingRotation = transform.rotation;
         }
 
         public struct TransformSnapshot
