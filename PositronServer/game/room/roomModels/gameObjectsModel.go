@@ -15,11 +15,10 @@ type GameObjectsModel struct {
 
 	gameObjectsStructuredCache []*gameentities.GameObject
 
-	tempAdd                []*gameentities.GameObject
-	tempRemove             []uint32
-	tempTransfer           []uint32
-	tempPositionMod        []*gameentities.Tranform
-	tempTargetatedTransfer []uint32
+	tempAdd         []*gameentities.GameObject
+	tempRemove      []uint32
+	tempTransfer    []uint32
+	tempPositionMod []*gameentities.Tranform
 
 	lastId uint32
 }
@@ -48,11 +47,11 @@ func (g *GameObjectsModel) GetGameObjects() []*gameentities.GameObject {
 	return g.gameObjectsStructuredCache
 }
 
-func (g *GameObjectsModel) GetModification() ([]*gameentities.GameObject, []uint32, []uint32, []uint32) {
+func (g *GameObjectsModel) GetModification() ([]*gameentities.GameObject, []uint32, []uint32) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	return g.tempAdd, g.tempRemove, g.tempTransfer, g.tempTargetatedTransfer
+	return g.tempAdd, g.tempRemove, g.tempTransfer
 }
 
 func (g *GameObjectsModel) GetSpecificAddModification() []*gameentities.GameObject {
@@ -77,13 +76,11 @@ func (g *GameObjectsModel) ResetTempBuffers() {
 	clear(g.tempRemove)
 	clear(g.tempTransfer)
 	clear(g.tempPositionMod)
-	clear(g.tempTargetatedTransfer)
 
 	g.tempAdd = g.tempAdd[:0]
 	g.tempRemove = g.tempRemove[:0]
 	g.tempTransfer = g.tempTransfer[:0]
 	g.tempPositionMod = g.tempPositionMod[:0]
-	g.tempTargetatedTransfer = g.tempTargetatedTransfer[:0]
 
 	g.updateStructuredCache()
 }
@@ -159,8 +156,7 @@ func (g *GameObjectsModel) TransferObjectsFromClientToHost(clientId uint32, actu
 	for i := range g.gameObjectsStructuredCache {
 		if g.gameObjectsStructuredCache[i].GetOwnerId() == clientId {
 			g.gameObjectsStructuredCache[i].SetIdAndOnwer(g.gameObjectsStructuredCache[i].GetId(), actualHost)
-
-			g.tempTransfer = append(g.tempTransfer, g.gameObjectsStructuredCache[i].GetId())
+			g.addToTempTransfer(g.gameObjectsStructuredCache[i], actualHost)
 		}
 	}
 }
@@ -179,12 +175,15 @@ func (g *GameObjectsModel) TransferObjectsOwnershipToTargetClient(requestedTrans
 
 			if obj.GetId() == reqId {
 				obj.SetIdAndOnwer(obj.GetId(), newOwner)
-
-				g.tempTargetatedTransfer = append(g.tempTargetatedTransfer, newOwner)
-				g.tempTargetatedTransfer = append(g.tempTargetatedTransfer, obj.GetId())
+				g.addToTempTransfer(obj, newOwner)
 			}
 		}
 	}
+}
+
+func (g *GameObjectsModel) addToTempTransfer(obj *gameentities.GameObject, newOwner uint32) {
+	g.tempTransfer = append(g.tempTransfer, newOwner)
+	g.tempTransfer = append(g.tempTransfer, obj.GetId())
 }
 
 func (g *GameObjectsModel) updateStructuredCache() {

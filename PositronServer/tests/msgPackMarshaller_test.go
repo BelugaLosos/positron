@@ -17,7 +17,7 @@ func TestUnmarshalling(t *testing.T) {
 
 		rpc := gameentities.NewRpcCall(11, 12, 13, 14, "sraka", []byte("fff"), false)
 
-		testData := datatransferobjects.NewTickPacket(1, 15, 16, []*gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []*gameentities.NetValue{val}, []*gameentities.RpcCall{rpc}, []uint32{33, 34, 35})
+		testData := datatransferobjects.NewTickPacket(1, 15, 16, []*gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []*gameentities.NetValue{val}, []*gameentities.RpcCall{rpc})
 
 		buf := &bytes.Buffer{}
 		err := marshaller.NewMessagePackMarshaller().MarshalNonAlloc(buf, testData)
@@ -63,15 +63,11 @@ func TestUnmarshalling(t *testing.T) {
 			len(testData.GetRemovedObjects()) != len(unmarshalled.GetRemovedObjects()) ||
 			len(testData.GetTranferedObjects()) != len(unmarshalled.GetTranferedObjects()) ||
 			len(testData.GetRpcs()) != len(unmarshalled.GetRpcs()) ||
-			len(testData.GetValueMod()) != len(unmarshalled.GetValueMod()) ||
-			len(testData.GetRequestedOwnershipBuffer()) != len(unmarshalled.GetRequestedOwnershipBuffer()) ||
-			testData.GetRequestedOwnershipBuffer()[0] != unmarshalled.GetRequestedOwnershipBuffer()[0] ||
-			testData.GetRequestedOwnershipBuffer()[1] != unmarshalled.GetRequestedOwnershipBuffer()[1] ||
-			testData.GetRequestedOwnershipBuffer()[2] != unmarshalled.GetRequestedOwnershipBuffer()[2] {
+			len(testData.GetValueMod()) != len(unmarshalled.GetValueMod()) {
 			t.Error("Data corrupt")
 		}
 
-		if len(marshalled) > 55 {
+		if len(marshalled) > 51 {
 			t.Errorf("Too big %v", len(marshalled))
 		}
 

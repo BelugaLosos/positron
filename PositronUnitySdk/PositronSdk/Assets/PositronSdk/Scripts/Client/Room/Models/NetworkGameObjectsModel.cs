@@ -246,23 +246,7 @@ namespace Positron.Client.Room.Models
             }
         }
 
-        public void TransferedObjects(uint[] objs, uint actualHost)
-        {
-            foreach(uint objId in objs)
-            {
-                if (_currentGameObjectsOnScene.TryGetValue(objId, out PositronNetworkIdentity instance))
-                {
-                    if (instance == null)
-                    {
-                        continue;
-                    }
-
-                    instance.Transfer(actualHost);
-                }
-            }
-        }
-
-        public void PerformTargetatedTransfer(uint[] transferedDataBuffer)
+        public void TransferObjects(uint[] transferedDataBuffer)
         {
             for (int i = 0; i < transferedDataBuffer.Length - 1; i += 2)
             {

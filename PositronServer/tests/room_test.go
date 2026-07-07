@@ -98,7 +98,6 @@ func TestTick(t *testing.T) {
 		[]uint32{},
 		[]*gameentities.NetValue{},
 		[]*gameentities.RpcCall{},
-		[]uint32{},
 	))
 
 	rel, urel := room.CreateTickPackets()
@@ -161,7 +160,6 @@ func TestRaceInTick(t *testing.T) {
 						nil, nil,
 						[]*gameentities.NetValue{{ParentObjectId: 1, Payload: []byte{1, 2, 3}}},
 						[]*gameentities.RpcCall{gameentities.NewRpcCall(1, 0, 0, 0, "m", []byte{1}, false)},
-						room.EMPTY_UINT32_ARR,
 					)
 					r.ProcessTick(pkt)
 				}

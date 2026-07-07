@@ -209,8 +209,7 @@ namespace Positron.Client.Room
 
             _gameObjectsModel.CreateObjects(tickPacket.NewGameObjects);
             _gameObjectsModel.RemoveObjects(tickPacket.RemovedObjects);
-            _gameObjectsModel.TransferedObjects(tickPacket.TransferedToHostObjects, tickPacket.Host);
-            _gameObjectsModel.PerformTargetatedTransfer(tickPacket.RequestOwnership);
+            _gameObjectsModel.TransferObjects(tickPacket.TransferedObjects);
 
             _valuesModel.AddOrModifyValues(tickPacket.ValueModification);
 
@@ -238,11 +237,10 @@ namespace Positron.Client.Room
 
                 tickPacket.NewGameObjects = reliableGameObjectsDelta.NewGameOgjects;
                 tickPacket.RemovedObjects = reliableGameObjectsDelta.RemovedGameObjectIds;
-                tickPacket.TransferedToHostObjects = new uint[0]; // Unused in case CLIENT --> SERVER
+                tickPacket.TransferedObjects = reliableGameObjectsDelta.RequestOwnershipDelta;
 
                 tickPacket.ValueModification = _valuesModel.GetValuesDelta();
                 tickPacket.Rpcs = _rpcsModel.GetCurrentDelta();
-                tickPacket.RequestOwnership = reliableGameObjectsDelta.RequestOwnershipDelta;
 
                 GameUnreliableTick unreliableTick = new();
                 unreliableTick.ClientId = LocalClientId;

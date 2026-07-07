@@ -111,7 +111,7 @@ func (r *Room) Unlock() {
 }
 
 func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatransferobjects.GameUnreliableTickPacket) {
-	worldModAdd, worldModRemove, worldModTransfer, targetatedTransfer := r.gameObjectsModel.GetModification()
+	worldModAdd, worldModRemove, worldModTransfer := r.gameObjectsModel.GetModification()
 	ticksSinceStartup := r.clock.GetTicksAmountSinceStartup()
 
 	gameTick := r.tickPacketsPool.Get().(*datatransferobjects.GameTickPacket)
@@ -124,7 +124,6 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 		worldModTransfer,
 		r.netValuesModel.GetTempMod(),
 		r.rpcsModel.GetCurrentCallBuffer(),
-		targetatedTransfer,
 	)
 
 	gamePositionsTick := r.unreliableTickPacketsPool.Get().(*datatransferobjects.GameUnreliableTickPacket)
@@ -177,7 +176,7 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket) {
 		r.netValuesModel.AddOrModify(packet.GetValueMod()[i])
 	}
 
-	r.gameObjectsModel.TransferObjectsOwnershipToTargetClient(packet.GetRequestedOwnershipBuffer(), packet.GetSourceClient())
+	r.gameObjectsModel.TransferObjectsOwnershipToTargetClient(packet.GetTranferedObjects(), packet.GetSourceClient())
 
 	addMod := r.gameObjectsModel.GetSpecificAddModification()
 

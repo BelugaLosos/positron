@@ -8,32 +8,30 @@ import (
 )
 
 type GameTickPacket struct {
-	Tick               uint32
-	Host               uint32
-	Client             uint32
-	NewObjects         []*gameentities.GameObject
-	RemovedObjects     []uint32
-	TransferedObjects  []uint32
-	ValueMod           []*gameentities.NetValue
-	Rpc                []*gameentities.RpcCall
-	RequestedOwnership []uint32
+	Tick              uint32
+	Host              uint32
+	Client            uint32
+	NewObjects        []*gameentities.GameObject
+	RemovedObjects    []uint32
+	TransferedObjects []uint32
+	ValueMod          []*gameentities.NetValue
+	Rpc               []*gameentities.RpcCall
 }
 
-func NewTickPacket(tick uint32, host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall, requestedOwnership []uint32) *GameTickPacket {
+func NewTickPacket(tick uint32, host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
 	return &GameTickPacket{
-		Tick:               tick,
-		Host:               host,
-		Client:             sourceClient,
-		NewObjects:         newObjects,
-		RemovedObjects:     removedObjects,
-		TransferedObjects:  transferedObjects,
-		ValueMod:           valueMod,
-		Rpc:                rpc,
-		RequestedOwnership: requestedOwnership,
+		Tick:              tick,
+		Host:              host,
+		Client:            sourceClient,
+		NewObjects:        newObjects,
+		RemovedObjects:    removedObjects,
+		TransferedObjects: transferedObjects,
+		ValueMod:          valueMod,
+		Rpc:               rpc,
 	}
 }
 
-func (g *GameTickPacket) ReassignTickPacketData(tick uint32, host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall, requestedOwnership []uint32) {
+func (g *GameTickPacket) ReassignTickPacketData(tick uint32, host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) {
 	g.Tick = tick
 	g.Host = host
 	g.Client = sourceClient
@@ -42,13 +40,12 @@ func (g *GameTickPacket) ReassignTickPacketData(tick uint32, host uint32, source
 	g.TransferedObjects = transferedObjects
 	g.ValueMod = valueMod
 	g.Rpc = rpc
-	g.RequestedOwnership = requestedOwnership
 }
 
 func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
-	arrErr := enc.EncodeArrayLen(9)
+	arrErr := enc.EncodeArrayLen(8)
 	err := enc.EncodeUint(uint64(g.Tick))
 	err = enc.EncodeUint(uint64(g.Host))
 	err = enc.EncodeUint(uint64(g.Client))
@@ -106,20 +103,6 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	err = enc.EncodeArrayLen(len(g.RequestedOwnership))
-
-	for i := range g.RequestedOwnership {
-		err := enc.EncodeUint(uint64(g.RequestedOwnership[i]))
-
-		if err != nil {
-			return err
-		}
-	}
-
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -137,7 +120,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return arrErr
 	}
 
-	if arrLen != 9 {
+	if arrLen != 8 {
 		return errors.New("Tick packet arr invalid!")
 	}
 
@@ -271,28 +254,6 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	i.Rpc = rpcBuffer
 
-	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-	requestedOwnershipLen, err := dec.DecodeArrayLen()
-
-	if err != nil {
-		return err
-	}
-
-	requestedOwnershipBuffer := make([]uint32, requestedOwnershipLen)
-
-	for i := range requestedOwnershipBuffer {
-		oid, err := dec.DecodeUint32()
-
-		if err != nil {
-			return err
-		}
-
-		requestedOwnershipBuffer[i] = oid
-	}
-
-	i.RequestedOwnership = requestedOwnershipBuffer
-
 	return nil
 }
 
@@ -326,8 +287,4 @@ func (g *GameTickPacket) GetValueMod() []*gameentities.NetValue {
 
 func (g *GameTickPacket) GetRpcs() []*gameentities.RpcCall {
 	return g.Rpc
-}
-
-func (g *GameTickPacket) GetRequestedOwnershipBuffer() []uint32 {
-	return g.RequestedOwnership
 }

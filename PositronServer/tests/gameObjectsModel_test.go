@@ -13,14 +13,14 @@ func TestGetGameObjects(t *testing.T) {
 	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
 	objs := model.GetGameObjects()
 
-	add, _, _, _ := model.GetModification()
+	add, _, _ := model.GetModification()
 
 	if len(objs) != 1 && len(add) != 1 {
 		t.Error("not length matches")
 	}
 
 	model.ResetTempBuffers()
-	add, _, _, _ = model.GetModification()
+	add, _, _ = model.GetModification()
 
 	if len(add) != 0 {
 		t.Error("Reset fault")
@@ -34,7 +34,7 @@ func TestModifications(t *testing.T) {
 	model.TryRemoveGameObject(1, 1)
 	model.TransferObjectsFromClientToHost(1, 0)
 
-	add, remove, transfer, _ := model.GetModification()
+	add, remove, transfer := model.GetModification()
 
 	if len(add) != 2 {
 		t.Error("add len")
@@ -52,9 +52,9 @@ func TestModifications(t *testing.T) {
 		t.Error("removed wronmg object")
 	}
 
-	if len(transfer) != 1 {
+	if len(transfer) != 2 {
 		t.Error("transfer len")
-	} else if transfer[0] != 2 {
+	} else if transfer[0] != 0 || transfer[1] != 2 {
 		t.Error("Tranfered wrong object")
 	} else if len(model.GetGameObjects()) != 1 || model.GetGameObjects()[0].GetId() != 2 || model.GetGameObjects()[0].GetOwnerId() != 0 || model.GetGameObjects()[0].GetCreationId() != 0 || model.GetGameObjects()[0].GetAssetIndex() != 0 {
 		t.Error("Wrong content of model")
@@ -74,7 +74,7 @@ func TestCyclicMod(t *testing.T) {
 	for range 10 {
 		model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
 
-		add, _, _, _ := model.GetModification()
+		add, _, _ := model.GetModification()
 
 		if len(add) != 1 {
 			t.Error("Reset fault")
@@ -141,9 +141,9 @@ func TestGoReset(t *testing.T) {
 	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
 	model.ResetTempBuffers()
 
-	mod1, mod2, mod3, mod4 := model.GetModification()
+	mod1, mod2, mod3 := model.GetModification()
 
-	if len(mod1) != 0 || len(mod2) != 0 || len(mod3) != 0 || len(mod4) != 0 {
+	if len(mod1) != 0 || len(mod2) != 0 || len(mod3) != 0 {
 		t.Error("Ineffient reset")
 	}
 }
