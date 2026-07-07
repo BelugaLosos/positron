@@ -14,12 +14,18 @@ namespace Positron.Client.Mono.Syncers
         private Vector3 _previousPosition;
         private Quaternion _previousRotation;
 
+        private Vector3 _currentBindingPosition;
+        private Quaternion _currentBindingRotation;
+
         private const float DISTANCE_TO_SYNC = 0.05f;
         private const float ANGLE_TO_SYNC = 1f;
 
         public void Init(PositronNetworkIdentity parent)
         {
             _identity = parent;
+
+            _currentBindingPosition = transform.position;
+            _currentBindingRotation = transform.rotation;
         }
 
         public void RecordPreviousTransform()
@@ -56,6 +62,8 @@ namespace Positron.Client.Mono.Syncers
                     DoEmptyBufferFallback(right);
                 }
             }
+
+            transform.SetPositionAndRotation(_currentBindingPosition, _currentBindingRotation);
         }
 
         private void CleanUpBuffer(double currentTime)
@@ -72,14 +80,14 @@ namespace Positron.Client.Mono.Syncers
             double length = future.Time - past.Time;
             double elapsedPercent = localTime / length;
 
-            transform.position = Vector3.Lerp(past.Transform.Position.ToUnity(), future.Transform.Position.ToUnity(), (float)elapsedPercent);
-            transform.rotation = Quaternion.Slerp(Quaternion.Euler(past.Transform.Rotation.ToUnity()), Quaternion.Euler(future.Transform.Rotation.ToUnity()), (float)elapsedPercent);
+            _currentBindingPosition = Vector3.Lerp(past.Transform.Position.ToUnity(), future.Transform.Position.ToUnity(), (float)elapsedPercent);
+            _currentBindingRotation = Quaternion.Slerp(Quaternion.Euler(past.Transform.Rotation.ToUnity()), Quaternion.Euler(future.Transform.Rotation.ToUnity()), (float)elapsedPercent);
         }
 
         private void DoEmptyBufferFallback(TransformSnapshot right)
         {
-            transform.position = right.Transform.Position.ToUnity();
-            transform.rotation = Quaternion.Euler(right.Transform.Rotation.ToUnity());
+            _currentBindingPosition = right.Transform.Position.ToUnity();
+            _currentBindingRotation = Quaternion.Euler(right.Transform.Rotation.ToUnity());
         }
 
         public struct TransformSnapshot
