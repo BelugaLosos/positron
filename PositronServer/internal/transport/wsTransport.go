@@ -27,13 +27,12 @@ type WsTransport struct {
 }
 
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
+	ReadBufferSize:  DEFAULT_BUFFER_SIZE,
+	WriteBufferSize: DEFAULT_BUFFER_SIZE,
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-const defaultBufferSize = 64 * 1024
-const MAX_DATA_SIZE_LIMIT = 256 * 1024 * 1024
+const DEFAULT_BUFFER_SIZE = 256 * 1024
 
 func NewWsTransport() *WsTransport {
 	return &WsTransport{
@@ -170,9 +169,9 @@ func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 		send:             make(chan []byte, 1024),
 		wsConn:           conn,
 		isClosed:         false,
-		readBuf:          make([]byte, defaultBufferSize),
-		compressionBuf:   make([]byte, defaultBufferSize),
-		decompressionBuf: make([]byte, defaultBufferSize),
+		readBuf:          make([]byte, DEFAULT_BUFFER_SIZE),
+		compressionBuf:   make([]byte, DEFAULT_BUFFER_SIZE),
+		decompressionBuf: make([]byte, DEFAULT_BUFFER_SIZE),
 	}
 
 	id := uuid.New().String()
@@ -246,8 +245,8 @@ func (t *WsTransport) handleIncoming(id string, peer *wsPeer, handlers []interna
 func (t *WsTransport) handlePacket(handlers []internal.Handler, peer *wsPeer, packet []byte) {
 	eventT, isCompressed, sourceDataLen, data := util.DeconstructPacket(packet)
 
-	if sourceDataLen > MAX_DATA_SIZE_LIMIT {
-		log.Printf("Max data limit exceeded %v", MAX_DATA_SIZE_LIMIT)
+	if (len(packet) - 10) >= DEFAULT_BUFFER_SIZE {
+		log.Printf("Max data limit exceeded %v", DEFAULT_BUFFER_SIZE)
 		return
 	}
 
