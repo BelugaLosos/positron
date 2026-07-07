@@ -7,17 +7,26 @@ import (
 )
 
 type NetValue struct {
-	ParentObjectId uint32
-	ValueId        uint16
-	Deleting       bool
-	Payload        []byte
+	payload        []byte
+	parentObjectId uint32
+	valueId        uint16
+	deleting       bool
+}
+
+func NewNetValue(payload []byte, parentObj uint32, valueId uint16, isDeleting bool) *NetValue {
+	return &NetValue{
+		payload:        payload,
+		parentObjectId: parentObj,
+		valueId:        valueId,
+		deleting:       isDeleting,
+	}
 }
 
 func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
 	arrErr := enc.EncodeArrayLen(4)
-	err := enc.EncodeUint(uint64(n.ValueId))
+	err := enc.EncodeUint(uint64(n.valueId))
 
 	if arrErr != nil {
 		return arrErr
@@ -27,19 +36,19 @@ func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(n.ParentObjectId))
+	err = enc.EncodeUint(uint64(n.parentObjectId))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeBool(n.Deleting)
+	err = enc.EncodeBool(n.deleting)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeBytes(n.Payload)
+	err = enc.EncodeBytes(n.payload)
 
 	if err != nil {
 		return err
@@ -78,34 +87,34 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	paylpad, err := dec.DecodeBytes()
 
-	n.ValueId = valueId
-	n.ParentObjectId = parentObjectId
-	n.Deleting = isDeleting
-	n.Payload = paylpad
+	n.valueId = valueId
+	n.parentObjectId = parentObjectId
+	n.deleting = isDeleting
+	n.payload = paylpad
 
 	return err
 }
 
 func (n *NetValue) GetValueId() uint16 {
-	return n.ValueId
+	return n.valueId
 }
 
 func (n *NetValue) GetParentObjectId() uint32 {
-	return n.ParentObjectId
+	return n.parentObjectId
 }
 
 func (n *NetValue) GetPayload() []byte {
-	return n.Payload
+	return n.payload
 }
 
 func (n *NetValue) ModifyPayload(newPayload []byte) {
-	n.Payload = newPayload
+	n.payload = newPayload
 }
 
 func (n *NetValue) GetIsDeleting() bool {
-	return n.Deleting
+	return n.deleting
 }
 
 func (n *NetValue) MarkAsDeleting() {
-	n.Deleting = true
+	n.deleting = true
 }

@@ -8,91 +8,91 @@ import (
 )
 
 type GameTickPacket struct {
-	Tick              uint32
-	Host              uint32
-	Client            uint32
-	NewObjects        []*gameentities.GameObject
-	RemovedObjects    []uint32
-	TransferedObjects []uint32
-	ValueMod          []*gameentities.NetValue
-	Rpc               []*gameentities.RpcCall
+	newObjects        []*gameentities.GameObject
+	valueMod          []*gameentities.NetValue
+	rpc               []*gameentities.RpcCall
+	removedObjects    []uint32
+	transferedObjects []uint32
+	tick              uint32
+	host              uint32
+	client            uint32
 }
 
 func NewTickPacket(tick uint32, host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
 	return &GameTickPacket{
-		Tick:              tick,
-		Host:              host,
-		Client:            sourceClient,
-		NewObjects:        newObjects,
-		RemovedObjects:    removedObjects,
-		TransferedObjects: transferedObjects,
-		ValueMod:          valueMod,
-		Rpc:               rpc,
+		tick:              tick,
+		host:              host,
+		client:            sourceClient,
+		newObjects:        newObjects,
+		removedObjects:    removedObjects,
+		transferedObjects: transferedObjects,
+		valueMod:          valueMod,
+		rpc:               rpc,
 	}
 }
 
 func (g *GameTickPacket) ReassignTickPacketData(tick uint32, host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) {
-	g.Tick = tick
-	g.Host = host
-	g.Client = sourceClient
-	g.NewObjects = newObjects
-	g.RemovedObjects = removedObjects
-	g.TransferedObjects = transferedObjects
-	g.ValueMod = valueMod
-	g.Rpc = rpc
+	g.tick = tick
+	g.host = host
+	g.client = sourceClient
+	g.newObjects = newObjects
+	g.removedObjects = removedObjects
+	g.transferedObjects = transferedObjects
+	g.valueMod = valueMod
+	g.rpc = rpc
 }
 
 func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
 	arrErr := enc.EncodeArrayLen(8)
-	err := enc.EncodeUint(uint64(g.Tick))
-	err = enc.EncodeUint(uint64(g.Host))
-	err = enc.EncodeUint(uint64(g.Client))
-	err = enc.EncodeArrayLen(len(g.NewObjects))
+	err := enc.EncodeUint(uint64(g.tick))
+	err = enc.EncodeUint(uint64(g.host))
+	err = enc.EncodeUint(uint64(g.client))
+	err = enc.EncodeArrayLen(len(g.newObjects))
 
 	if arrErr != nil {
 		return arrErr
 	}
 
-	for i := range g.NewObjects {
-		err := enc.Encode(g.NewObjects[i])
+	for i := range g.newObjects {
+		err := enc.Encode(g.newObjects[i])
 
 		if err != nil {
 			return err
 		}
 	}
 
-	err = enc.EncodeArrayLen(len(g.RemovedObjects))
+	err = enc.EncodeArrayLen(len(g.removedObjects))
 
-	for i := range g.RemovedObjects {
-		enc.EncodeUint(uint64(g.RemovedObjects[i]))
+	for i := range g.removedObjects {
+		enc.EncodeUint(uint64(g.removedObjects[i]))
 	}
 
-	err = enc.EncodeArrayLen(len(g.TransferedObjects))
+	err = enc.EncodeArrayLen(len(g.transferedObjects))
 
-	for i := range g.TransferedObjects {
-		err := enc.EncodeUint(uint64(g.TransferedObjects[i]))
+	for i := range g.transferedObjects {
+		err := enc.EncodeUint(uint64(g.transferedObjects[i]))
 
 		if err != nil {
 			return err
 		}
 	}
 
-	err = enc.EncodeArrayLen(len(g.ValueMod))
+	err = enc.EncodeArrayLen(len(g.valueMod))
 
-	for i := range g.ValueMod {
-		err := enc.Encode(g.ValueMod[i])
+	for i := range g.valueMod {
+		err := enc.Encode(g.valueMod[i])
 
 		if err != nil {
 			return err
 		}
 	}
 
-	err = enc.EncodeArrayLen(len(g.Rpc))
+	err = enc.EncodeArrayLen(len(g.rpc))
 
-	for i := range g.Rpc {
-		err := enc.Encode(g.Rpc[i])
+	for i := range g.rpc {
+		err := enc.Encode(g.rpc[i])
 
 		if err != nil {
 			return err
@@ -128,8 +128,8 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	i.Tick = tick
-	i.Host = host
+	i.tick = tick
+	i.host = host
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -139,7 +139,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	i.Client = client
+	i.client = client
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -162,7 +162,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		objsArray[i] = &obj
 	}
 
-	i.NewObjects = objsArray
+	i.newObjects = objsArray
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -184,7 +184,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		removedObjsArray[i] = removeId
 	}
 
-	i.RemovedObjects = removedObjsArray
+	i.removedObjects = removedObjsArray
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -206,7 +206,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		transferedObjects[i] = transferedId
 	}
 
-	i.TransferedObjects = transferedObjects
+	i.transferedObjects = transferedObjects
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -229,7 +229,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		valueMod[i] = &value
 	}
 
-	i.ValueMod = valueMod
+	i.valueMod = valueMod
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -252,39 +252,39 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		rpcBuffer[i] = &rpc
 	}
 
-	i.Rpc = rpcBuffer
+	i.rpc = rpcBuffer
 
 	return nil
 }
 
 func (g *GameTickPacket) GetTick() uint32 {
-	return g.Tick
+	return g.tick
 }
 
 func (g *GameTickPacket) GetHost() uint32 {
-	return g.Host
+	return g.host
 }
 
 func (g *GameTickPacket) GetSourceClient() uint32 {
-	return g.Client
+	return g.client
 }
 
 func (g *GameTickPacket) GetNewObjects() []*gameentities.GameObject {
-	return g.NewObjects
+	return g.newObjects
 }
 
 func (g *GameTickPacket) GetRemovedObjects() []uint32 {
-	return g.RemovedObjects
+	return g.removedObjects
 }
 
 func (g *GameTickPacket) GetTranferedObjects() []uint32 {
-	return g.TransferedObjects
+	return g.transferedObjects
 }
 
 func (g *GameTickPacket) GetValueMod() []*gameentities.NetValue {
-	return g.ValueMod
+	return g.valueMod
 }
 
 func (g *GameTickPacket) GetRpcs() []*gameentities.RpcCall {
-	return g.Rpc
+	return g.rpc
 }

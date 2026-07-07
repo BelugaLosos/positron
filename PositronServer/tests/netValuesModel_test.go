@@ -64,17 +64,11 @@ func TestValueDeletion(t *testing.T) {
 	model := roommodels.NewNetValuesModel()
 
 	for i := range uint16(10) {
-		model.AddOrModify(&gameentities.NetValue{
-			ParentObjectId: 0,
-			ValueId:        i,
-		})
+		model.AddOrModify(gameentities.NewNetValue([]byte("some"), 0, i, false))
 	}
 
 	for i := range uint16(10) {
-		model.AddOrModify(&gameentities.NetValue{
-			ParentObjectId: 1,
-			ValueId:        i,
-		})
+		model.AddOrModify(gameentities.NewNetValue([]byte("some"), 1, i, false))
 	}
 
 	model.ResetTempBuffers()

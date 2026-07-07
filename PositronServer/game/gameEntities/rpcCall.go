@@ -8,12 +8,12 @@ import (
 )
 
 type RpcCall struct {
-	TargetClient uint32
-	ObjectId     uint32
-	SubObjectId  uint16
-	RpcType      uint8
-	MethodName   string
-	Args         []byte
+	args         []byte
+	methodName   string
+	targetClient uint32
+	objectId     uint32
+	subObjectId  uint16
+	rpcType      uint8
 }
 
 func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType uint8, methodName string, agrs []byte, useRawArgs bool) *RpcCall {
@@ -28,12 +28,12 @@ func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType 
 	}
 
 	return &RpcCall{
-		ObjectId:     objId,
-		TargetClient: targetClient,
-		SubObjectId:  subObjectsId,
-		RpcType:      rpcType,
-		MethodName:   methodName,
-		Args:         argsBuf,
+		objectId:     objId,
+		targetClient: targetClient,
+		subObjectId:  subObjectsId,
+		rpcType:      rpcType,
+		methodName:   methodName,
+		args:         argsBuf,
 	}
 }
 
@@ -41,7 +41,7 @@ func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
 	arrErr := enc.EncodeArrayLen(6)
-	err := enc.EncodeUint(uint64(r.ObjectId))
+	err := enc.EncodeUint(uint64(r.objectId))
 
 	if arrErr != nil {
 		return arrErr
@@ -51,31 +51,31 @@ func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(r.TargetClient))
+	err = enc.EncodeUint(uint64(r.targetClient))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(r.SubObjectId))
+	err = enc.EncodeUint(uint64(r.subObjectId))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(r.RpcType))
+	err = enc.EncodeUint(uint64(r.rpcType))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeString(r.MethodName)
+	err = enc.EncodeString(r.methodName)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeBytes(r.Args)
+	err = enc.EncodeBytes(r.args)
 
 	return err
 }
@@ -122,51 +122,51 @@ func (r *RpcCall) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	args, err := dec.DecodeBytes()
 
-	r.ObjectId = id
-	r.TargetClient = clientId
-	r.SubObjectId = subId
-	r.RpcType = typeId
-	r.MethodName = method
-	r.Args = args
+	r.objectId = id
+	r.targetClient = clientId
+	r.subObjectId = subId
+	r.rpcType = typeId
+	r.methodName = method
+	r.args = args
 
 	return err
 }
 
 func (r *RpcCall) GetObjectId() uint32 {
-	return r.ObjectId
+	return r.objectId
 }
 
 func (r *RpcCall) SetObjectId(oid uint32) {
-	r.ObjectId = oid
+	r.objectId = oid
 }
 
 func (r *RpcCall) GetTargetClient() uint32 {
-	return r.TargetClient
+	return r.targetClient
 }
 
 func (r *RpcCall) GetSubObjectId() uint16 {
-	return r.SubObjectId
+	return r.subObjectId
 }
 
-func (r *RpcCall) GetTarget() uint8 {
-	return r.RpcType
+func (r *RpcCall) GetRpcType() uint8 {
+	return r.rpcType
 }
 
 func (r *RpcCall) GetMethodName() string {
-	return r.MethodName
+	return r.methodName
 }
 
 func (r *RpcCall) GetArgs() []byte {
-	if r.Args[0] == 1 {
-		return r.Args[3:]
+	if r.args[0] == 1 {
+		return r.args[3:]
 	}
 
-	return r.Args[1:]
+	return r.args[1:]
 }
 
 func (r *RpcCall) TryGetCreationId() (bool, uint16) {
-	if r.Args[0] == 1 {
-		encoded := r.Args[1:3]
+	if r.args[0] == 1 {
+		encoded := r.args[1:3]
 		return true, binary.BigEndian.Uint16(encoded)
 	}
 

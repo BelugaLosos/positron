@@ -7,16 +7,16 @@ import (
 )
 
 type Tranform struct {
-	ObjectId uint32
-	Position Vector3
-	Rotation Vector3
+	position Vector3
+	rotation Vector3
+	objectId uint32
 }
 
 func NewTransform(gameObject *GameObject) *Tranform {
 	return &Tranform{
-		ObjectId: gameObject.Id,
-		Position: gameObject.Positron,
-		Rotation: gameObject.Rotation,
+		objectId: gameObject.GetId(),
+		position: gameObject.GetPosition(),
+		rotation: gameObject.GetRotation(),
 	}
 }
 
@@ -24,7 +24,7 @@ func (t *Tranform) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
 	arrErr := enc.EncodeArrayLen(3)
-	err := enc.EncodeUint(uint64(t.ObjectId))
+	err := enc.EncodeUint(uint64(t.objectId))
 
 	if arrErr != nil {
 		return arrErr
@@ -34,13 +34,13 @@ func (t *Tranform) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	err = enc.Encode(&t.Position)
+	err = enc.Encode(&t.position)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.Encode(&t.Rotation)
+	err = enc.Encode(&t.rotation)
 
 	return err
 }
@@ -71,26 +71,26 @@ func (t *Tranform) DecodeMsgpack(dec *msgpack.Decoder) error {
 	var rotation Vector3
 	err = dec.Decode(&rotation)
 
-	t.ObjectId = objectId
-	t.Position = position
-	t.Rotation = rotation
+	t.objectId = objectId
+	t.position = position
+	t.rotation = rotation
 
 	return err
 }
 
 func (t *Tranform) GetObjectId() uint32 {
-	return t.ObjectId
+	return t.objectId
 }
 
 func (t *Tranform) GetPosition() Vector3 {
-	return t.Position
+	return t.position
 }
 
 func (t *Tranform) GetRotation() Vector3 {
-	return t.Rotation
+	return t.rotation
 }
 
 func (t *Tranform) Move(position Vector3, rotation Vector3) {
-	t.Position = position
-	t.Rotation = rotation
+	t.position = position
+	t.rotation = rotation
 }

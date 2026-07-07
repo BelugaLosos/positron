@@ -41,12 +41,12 @@ func TestUnmarshalling(t *testing.T) {
 			testData.GetNewObjects()[0].GetOwnerId() != unmarshalled.GetNewObjects()[0].GetOwnerId() ||
 			testData.GetNewObjects()[0].GetAssetIndex() != unmarshalled.GetNewObjects()[0].GetAssetIndex() ||
 			testData.GetNewObjects()[0].GetCreationId() != unmarshalled.GetNewObjects()[0].GetCreationId() ||
-			testData.GetNewObjects()[0].GetPosition().X != unmarshalled.GetNewObjects()[0].GetPosition().X ||
-			testData.GetNewObjects()[0].GetPosition().Y != unmarshalled.GetNewObjects()[0].GetPosition().Y ||
-			testData.GetNewObjects()[0].GetPosition().Z != unmarshalled.GetNewObjects()[0].GetPosition().Z ||
-			testData.GetNewObjects()[0].GetRotation().X != unmarshalled.GetNewObjects()[0].GetRotation().X ||
-			testData.GetNewObjects()[0].GetRotation().Y != unmarshalled.GetNewObjects()[0].GetRotation().Y ||
-			testData.GetNewObjects()[0].GetRotation().Z != unmarshalled.GetNewObjects()[0].GetRotation().Z ||
+			testData.GetNewObjects()[0].GetPosition().GetX() != unmarshalled.GetNewObjects()[0].GetPosition().GetX() ||
+			testData.GetNewObjects()[0].GetPosition().GetY() != unmarshalled.GetNewObjects()[0].GetPosition().GetY() ||
+			testData.GetNewObjects()[0].GetPosition().GetZ() != unmarshalled.GetNewObjects()[0].GetPosition().GetZ() ||
+			testData.GetNewObjects()[0].GetRotation().GetX() != unmarshalled.GetNewObjects()[0].GetRotation().GetX() ||
+			testData.GetNewObjects()[0].GetRotation().GetY() != unmarshalled.GetNewObjects()[0].GetRotation().GetY() ||
+			testData.GetNewObjects()[0].GetRotation().GetZ() != unmarshalled.GetNewObjects()[0].GetRotation().GetZ() ||
 			testData.GetRemovedObjects()[0] != unmarshalled.GetRemovedObjects()[0] ||
 			testData.GetTranferedObjects()[0] != unmarshalled.GetTranferedObjects()[0] ||
 			testData.GetValueMod()[0].GetIsDeleting() != unmarshalled.GetValueMod()[0].GetIsDeleting() ||
@@ -57,7 +57,7 @@ func TestUnmarshalling(t *testing.T) {
 			testData.GetRpcs()[0].GetMethodName() != unmarshalled.GetRpcs()[0].GetMethodName() ||
 			testData.GetRpcs()[0].GetObjectId() != unmarshalled.GetRpcs()[0].GetObjectId() ||
 			testData.GetRpcs()[0].GetSubObjectId() != unmarshalled.GetRpcs()[0].GetSubObjectId() ||
-			testData.GetRpcs()[0].GetTarget() != unmarshalled.GetRpcs()[0].GetTarget() ||
+			testData.GetRpcs()[0].GetRpcType() != unmarshalled.GetRpcs()[0].GetRpcType() ||
 			testData.GetRpcs()[0].GetTargetClient() != unmarshalled.GetRpcs()[0].GetTargetClient() ||
 			len(testData.GetNewObjects()) != len(unmarshalled.GetNewObjects()) ||
 			len(testData.GetRemovedObjects()) != len(unmarshalled.GetRemovedObjects()) ||
@@ -90,11 +90,11 @@ func TestBufferRace(t *testing.T) {
 		marshalled[i] = 0
 	}
 
-	if rpcCall.ObjectId != 1 ||
-		rpcCall.TargetClient != 2 ||
-		rpcCall.SubObjectId != 3 ||
-		rpcCall.RpcType != 4 ||
-		rpcCall.MethodName != "JJjjopa" ||
+	if rpcCall.GetObjectId() != 1 ||
+		rpcCall.GetTargetClient() != 2 ||
+		rpcCall.GetSubObjectId() != 3 ||
+		rpcCall.GetRpcType() != 4 ||
+		rpcCall.GetMethodName() != "JJjjopa" ||
 		(len(rpcCall.GetArgs()) != 1 || rpcCall.GetArgs()[0] != []byte("A")[0]) {
 		t.Error("Data corrupted!")
 	}
@@ -122,12 +122,12 @@ func TestUnreliable(t *testing.T) {
 		if unmarshalled.GetTick() != tick.GetTick() ||
 			unmarshalled.GetSourceClient() != tick.GetSourceClient() ||
 			unmarshalled.GetMovedObjects()[0].GetObjectId() != tick.GetMovedObjects()[0].GetObjectId() ||
-			unmarshalled.GetMovedObjects()[0].GetPosition().X != tick.GetMovedObjects()[0].GetPosition().X ||
-			unmarshalled.GetMovedObjects()[0].GetPosition().Y != tick.GetMovedObjects()[0].GetPosition().Y ||
-			unmarshalled.GetMovedObjects()[0].GetPosition().Z != tick.GetMovedObjects()[0].GetPosition().Z ||
-			unmarshalled.GetMovedObjects()[0].GetRotation().X != tick.GetMovedObjects()[0].GetRotation().X ||
-			unmarshalled.GetMovedObjects()[0].GetRotation().Y != tick.GetMovedObjects()[0].GetRotation().Y ||
-			unmarshalled.GetMovedObjects()[0].GetRotation().Z != tick.GetMovedObjects()[0].GetRotation().Z ||
+			unmarshalled.GetMovedObjects()[0].GetPosition().GetX() != tick.GetMovedObjects()[0].GetPosition().GetX() ||
+			unmarshalled.GetMovedObjects()[0].GetPosition().GetY() != tick.GetMovedObjects()[0].GetPosition().GetY() ||
+			unmarshalled.GetMovedObjects()[0].GetPosition().GetZ() != tick.GetMovedObjects()[0].GetPosition().GetZ() ||
+			unmarshalled.GetMovedObjects()[0].GetRotation().GetX() != tick.GetMovedObjects()[0].GetRotation().GetX() ||
+			unmarshalled.GetMovedObjects()[0].GetRotation().GetY() != tick.GetMovedObjects()[0].GetRotation().GetY() ||
+			unmarshalled.GetMovedObjects()[0].GetRotation().GetZ() != tick.GetMovedObjects()[0].GetRotation().GetZ() ||
 			len(unmarshalled.GetMovedObjects()) != len(tick.GetMovedObjects()) {
 			t.Error("Data corrupt")
 		}

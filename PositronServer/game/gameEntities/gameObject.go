@@ -8,22 +8,22 @@ import (
 )
 
 type GameObject struct {
-	Id         uint32
-	Owner      uint32
-	AssetIndex uint16
-	CreationId uint16
-	Positron   Vector3
-	Rotation   Vector3
+	positron   Vector3
+	rotation   Vector3
+	id         uint32
+	owner      uint32
+	assetIndex uint16
+	creationId uint16
 }
 
 func NewGameObject(id uint32, ownerPeer uint32, assetIndex uint16, creationId uint16, position Vector3, rotation Vector3) *GameObject {
 	return &GameObject{
-		Id:         id,
-		Owner:      ownerPeer,
-		AssetIndex: assetIndex,
-		CreationId: creationId,
-		Positron:   position,
-		Rotation:   rotation,
+		id:         id,
+		owner:      ownerPeer,
+		assetIndex: assetIndex,
+		creationId: creationId,
+		positron:   position,
+		rotation:   rotation,
 	}
 }
 
@@ -31,7 +31,7 @@ func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
 	arrErr := enc.EncodeArrayLen(6)
-	err := enc.EncodeUint(uint64(g.AssetIndex))
+	err := enc.EncodeUint(uint64(g.assetIndex))
 
 	if arrErr != nil {
 		return arrErr
@@ -41,31 +41,31 @@ func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(g.CreationId))
+	err = enc.EncodeUint(uint64(g.creationId))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(g.Id))
+	err = enc.EncodeUint(uint64(g.id))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(g.Owner))
+	err = enc.EncodeUint(uint64(g.owner))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.Encode(&g.Positron)
+	err = enc.Encode(&g.positron)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.Encode(&g.Rotation)
+	err = enc.Encode(&g.rotation)
 
 	return err
 }
@@ -118,61 +118,61 @@ func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	g.AssetIndex = assetIndex
-	g.CreationId = CreationId
-	g.Id = Id
-	g.Owner = Owner
-	g.Positron = position
-	g.Rotation = rotation
+	g.assetIndex = assetIndex
+	g.creationId = CreationId
+	g.id = Id
+	g.owner = Owner
+	g.positron = position
+	g.rotation = rotation
 
 	return nil
 }
 
 func (o *GameObject) GetCreationId() uint16 {
-	return o.CreationId
+	return o.creationId
 }
 
 func (o *GameObject) GetId() uint32 {
-	return o.Id
+	return o.id
 }
 
 func (o *GameObject) GetOwnerId() uint32 {
-	return o.Owner
+	return o.owner
 }
 
 func (o *GameObject) GetAssetIndex() uint16 {
-	return o.AssetIndex
+	return o.assetIndex
 }
 
 func (o *GameObject) GetPosition() Vector3 {
-	return o.Positron
+	return o.positron
 }
 
 func (o *GameObject) GetRotation() Vector3 {
-	return o.Rotation
+	return o.rotation
 }
 
 func (o *GameObject) SetIdAndOnwer(id uint32, owner uint32) {
-	o.Id = id
-	o.Owner = owner
+	o.id = id
+	o.owner = owner
 }
 
 func (o *GameObject) Move(position Vector3, rotation Vector3) {
-	o.Rotation = rotation
-	o.Positron = position
+	o.rotation = rotation
+	o.positron = position
 }
 
 type Vector3 struct {
-	X float32
-	Y float32
-	Z float32
+	x float32
+	y float32
+	z float32
 }
 
 func NewVector(x float32, y float32, z float32) *Vector3 {
 	return &Vector3{
-		X: x,
-		Y: y,
-		Z: z,
+		x: x,
+		y: y,
+		z: z,
 	}
 }
 
@@ -180,19 +180,19 @@ func (v *Vector3) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
 	enc.EncodeArrayLen(3)
-	err := enc.EncodeFloat32(v.X)
+	err := enc.EncodeFloat32(v.x)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeFloat32(v.Y)
+	err = enc.EncodeFloat32(v.y)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeFloat32(v.Z)
+	err = enc.EncodeFloat32(v.z)
 
 	return err
 }
@@ -203,9 +203,9 @@ func (v *Vector3) DecodeMsgpack(dec *msgpack.Decoder) error {
 	y, errY := dec.DecodeFloat32()
 	z, errZ := dec.DecodeFloat32()
 
-	v.X = x
-	v.Y = y
-	v.Z = z
+	v.x = x
+	v.y = y
+	v.z = z
 
 	if errX != nil || errY != nil || errZ != nil {
 		return fmt.Errorf("XE: %v, YE: %v, ZE: %v", errX, errY, errZ)
@@ -214,14 +214,14 @@ func (v *Vector3) DecodeMsgpack(dec *msgpack.Decoder) error {
 	return nil
 }
 
-func (v *Vector3) GetX() float32 {
-	return v.X
+func (v Vector3) GetX() float32 {
+	return v.x
 }
 
-func (v *Vector3) GetY() float32 {
-	return v.Y
+func (v Vector3) GetY() float32 {
+	return v.y
 }
 
-func (v *Vector3) GetZ() float32 {
-	return v.Z
+func (v Vector3) GetZ() float32 {
+	return v.z
 }

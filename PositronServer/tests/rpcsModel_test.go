@@ -21,7 +21,7 @@ func TestCallNonBuffered(t *testing.T) {
 
 	if len(mod) != 3 {
 		t.Error("Not registred call")
-	} else if string(mod[0].GetArgs()) != "hello" || mod[0].GetMethodName() != "test" || mod[0].GetTarget() != eventtypes.RPC_ALL || mod[0].GetTargetClient() != 1 ||
+	} else if string(mod[0].GetArgs()) != "hello" || mod[0].GetMethodName() != "test" || mod[0].GetRpcType() != eventtypes.RPC_ALL || mod[0].GetTargetClient() != 1 ||
 		mod[0].GetObjectId() != 0 || mod[0].GetSubObjectId() != 0 {
 		t.Error("Data corrupted")
 	}
@@ -65,7 +65,7 @@ func TestRpcDto(t *testing.T) {
 	rpc := gameentities.NewRpcCall(1, 2, 3, 4, "someFunc", []byte{0x1, 0x12, 0x34, 0x22, 0x22}, true)
 
 	if rpc.GetArgs()[0] != 0x22 || rpc.GetArgs()[1] != 0x22 || len(rpc.GetArgs()) != 2 {
-		t.Errorf("corrupting of args RAW %v PROCESSED %v", rpc.Args, rpc.GetArgs())
+		t.Errorf("corrupting of args %v", rpc.GetArgs())
 	}
 
 	if has, id := rpc.TryGetCreationId(); has != true || id != 0x1234 {
@@ -75,7 +75,7 @@ func TestRpcDto(t *testing.T) {
 	rpc2 := gameentities.NewRpcCall(1, 2, 3, 4, "someFunc", []byte{0x22, 0x22}, false)
 
 	if rpc2.GetArgs()[0] != 0x22 || rpc2.GetArgs()[1] != 0x22 || len(rpc2.GetArgs()) != 2 {
-		t.Errorf("corrupting of args RAW %v PROCESSED %v", rpc2.Args, rpc2.GetArgs())
+		t.Errorf("corrupting of args %v", rpc2.GetArgs())
 	}
 
 	if has, id := rpc2.TryGetCreationId(); has != false || id != 0x0 {

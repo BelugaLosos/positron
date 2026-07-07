@@ -60,7 +60,7 @@ func (r *RpcsModel) Call(call *gameentities.RpcCall, gameObjectsAddMod []*gameen
 	}
 
 	r.callBuffer = append(r.callBuffer, call)
-	target := call.GetTarget()
+	target := call.GetRpcType()
 
 	if target == eventtypes.RPC_ALL_CACHED || target == eventtypes.RPC_OTHERS_CACHED || target == eventtypes.RPC_TARGET_CACHED {
 		r.cachedRpcs = append(r.cachedRpcs, call)

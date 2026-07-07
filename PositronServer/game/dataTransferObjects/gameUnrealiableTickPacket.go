@@ -8,36 +8,36 @@ import (
 )
 
 type GameUnreliableTickPacket struct {
-	Tick         uint32
-	SourceClient uint32
-	MovedObjects []*gameentities.Tranform
+	movedObjects []*gameentities.Tranform
+	tick         uint32
+	sourceClient uint32
 }
 
 func NewGameUnreliableTickPacket(tick uint32, movedObjects []*gameentities.Tranform, sourceClient uint32) *GameUnreliableTickPacket {
 	return &GameUnreliableTickPacket{
-		Tick:         tick,
-		SourceClient: sourceClient,
-		MovedObjects: movedObjects,
+		tick:         tick,
+		sourceClient: sourceClient,
+		movedObjects: movedObjects,
 	}
 }
 
 func (g *GameUnreliableTickPacket) ReassignUnreliableTickPacket(tick uint32, movedObjects []*gameentities.Tranform, sourceClient uint32) {
-	g.Tick = tick
-	g.SourceClient = sourceClient
-	g.MovedObjects = movedObjects
+	g.tick = tick
+	g.sourceClient = sourceClient
+	g.movedObjects = movedObjects
 }
 
 func (g *GameUnreliableTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
 	arrErr := enc.EncodeArrayLen(3)
-	err := enc.EncodeUint(uint64(g.Tick))
+	err := enc.EncodeUint(uint64(g.tick))
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(g.SourceClient))
+	err = enc.EncodeUint(uint64(g.sourceClient))
 
 	if arrErr != nil {
 		return arrErr
@@ -47,10 +47,10 @@ func (g *GameUnreliableTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	err = enc.EncodeArrayLen(len(g.MovedObjects))
+	err = enc.EncodeArrayLen(len(g.movedObjects))
 
-	for i := range g.MovedObjects {
-		err := enc.Encode(g.MovedObjects[i])
+	for i := range g.movedObjects {
+		err := enc.Encode(g.movedObjects[i])
 
 		if err != nil {
 			return err
@@ -96,21 +96,21 @@ func (g *GameUnreliableTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		moved[i] = &obj
 	}
 
-	g.Tick = tick
-	g.SourceClient = sourceId
-	g.MovedObjects = moved
+	g.tick = tick
+	g.sourceClient = sourceId
+	g.movedObjects = moved
 
 	return err
 }
 
 func (g *GameUnreliableTickPacket) GetTick() uint32 {
-	return g.Tick
+	return g.tick
 }
 
 func (g *GameUnreliableTickPacket) GetMovedObjects() []*gameentities.Tranform {
-	return g.MovedObjects
+	return g.movedObjects
 }
 
 func (g *GameUnreliableTickPacket) GetSourceClient() uint32 {
-	return g.SourceClient
+	return g.sourceClient
 }

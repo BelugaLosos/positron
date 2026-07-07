@@ -10,5 +10,5 @@ func PointsDistance(a gameentities.Vector3, b gameentities.Vector3) float32 {
 }
 
 func VetorsEquals(a gameentities.Vector3, b gameentities.Vector3) bool {
-	return a.X == b.X && a.Y == b.Y && a.Z == b.Z
+	return a.GetX() == b.GetX() && a.GetY() == b.GetY() && a.GetZ() == b.GetZ()
 }

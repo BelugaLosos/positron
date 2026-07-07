@@ -158,7 +158,7 @@ func TestRaceInTick(t *testing.T) {
 						0, cid,
 						[]*gameentities.GameObject{gameentities.NewGameObject(0, cid, 1, 1, gameentities.Vector3{}, gameentities.Vector3{})},
 						nil, nil,
-						[]*gameentities.NetValue{{ParentObjectId: 1, Payload: []byte{1, 2, 3}}},
+						[]*gameentities.NetValue{gameentities.NewNetValue([]byte{1, 2, 3}, 1, 0, false)},
 						[]*gameentities.RpcCall{gameentities.NewRpcCall(1, 0, 0, 0, "m", []byte{1}, false)},
 					)
 					r.ProcessTick(pkt)
