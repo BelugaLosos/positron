@@ -269,7 +269,7 @@ func (t *WsTransport) handlePacket(handlers []internal.Handler, peer *wsPeer, pa
 				decompressedLen, err := lz4.UncompressBlock(data, peer.decompressionBuf)
 
 				if err != nil {
-					log.Printf("Decompression error for peer %s: %v", peer.wsConn.RemoteAddr().String(), err)
+					log.Printf("Decompression error for peer %s: %v Packet type: %v", peer.wsConn.RemoteAddr().String(), err, eventT)
 					continue
 				}
 
