@@ -10,6 +10,8 @@ type Tranform struct {
 	position Vector3
 	rotation Vector3
 	objectId uint32
+
+	staticScoreCounter int // THIS FIELD MUST BE INGNORED IN SERIALIZATION/DESERIALIZATION OF DATA
 }
 
 func NewTransform(gameObject *GameObject) *Tranform {
@@ -90,7 +92,19 @@ func (t *Tranform) GetRotation() Vector3 {
 	return t.rotation
 }
 
-func (t *Tranform) Move(position Vector3, rotation Vector3) {
-	t.position = position
-	t.rotation = rotation
+func (t *Tranform) Move(pos, rot Vector3) {
+	t.position = pos
+	t.rotation = rot
+}
+
+func (t *Tranform) GetStaticScore() int {
+	return t.staticScoreCounter
+}
+
+func (t *Tranform) EvaluateStaticScore() {
+	t.staticScoreCounter++
+}
+
+func (t *Tranform) ResetStaticScore() {
+	t.staticScoreCounter = 0
 }

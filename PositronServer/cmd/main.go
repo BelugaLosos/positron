@@ -20,7 +20,9 @@ func main() {
 	controllPort := flag.Int("cp", 7071, "port for controll the server (stop ...)")
 	allowStop := flag.Bool("als", true, "allows /term listening")
 	version := flag.String("v", "0.0.1 -- DEFAULT", "server version for filtering incoming client connections and prevent version-dependent bugs")
-	//secondsToTransmitUnrWorld := flag.Float64("rtp", 1.0, "Time represented in seconds (S) for retransmitting whole ureliable world state to proove replication percision")
+	ticksToRetransmitStaticObjects := flag.Uint("rtlim", 50, "This value means how much static object`s positions (UNR CHAN) will be retransmitted over the network to prevent desync over UNR CHAN (Unreliable transport channel)")
+	ticksToMarkObjectAsStatic := flag.Uint("rtthr", 150, "This is ticks amount to mark position as static, any object on scene has specific counter that resets while processing move")
+	forceDisableStaticsRetransmit := flag.Bool("drt", false, "If set true forces server to ignore scoring objects and retransmit statics")
 
 	flag.Parse()
 
@@ -31,7 +33,7 @@ func main() {
 	}
 
 	wg := &sync.WaitGroup{}
-	game := gameserver.NewGameServer(*transportAddr+":"+strconv.Itoa(*transportPort), transport.NewWsTransport(), marshaller.NewMessagePackMarshaller(), *version)
+	game := gameserver.NewGameServer(*transportAddr+":"+strconv.Itoa(*transportPort), transport.NewWsTransport(), marshaller.NewMessagePackMarshaller(), *version, int(*ticksToRetransmitStaticObjects), int(*ticksToMarkObjectAsStatic), bool(*forceDisableStaticsRetransmit))
 
 	log.Printf("Starting positron semi-dedicated server v%s", *version)
 	err := game.Start(wg)

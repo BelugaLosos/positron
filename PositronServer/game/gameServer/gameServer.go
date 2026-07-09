@@ -22,6 +22,10 @@ type GameServer struct {
 	gameVersion string
 
 	rooms map[string]*room.Room
+
+	retransmitStaticObjectsLimit           int
+	retransmitStaticObjectsFramesThrashold int
+	retransmissionForceDisabled            bool
 }
 
 var bufferPool = sync.Pool{
@@ -30,16 +34,19 @@ var bufferPool = sync.Pool{
 	},
 }
 
-func NewGameServer(addr string, transport internal.PositronTransportServer, marshaller internal.MarshalService, version string) *GameServer {
+func NewGameServer(addr string, transport internal.PositronTransportServer, marshaller internal.MarshalService, version string, rtLimit, rtThrashold int, rtDisable bool) *GameServer {
 	server := &GameServer{
-		mutex:           &sync.RWMutex{},
-		termination:     make(chan interface{}),
-		addr:            addr,
-		transport:       transport,
-		handlersFactory: nil,
-		marhaller:       marshaller,
-		gameVersion:     version,
-		rooms:           make(map[string]*room.Room),
+		mutex:                                  &sync.RWMutex{},
+		termination:                            make(chan interface{}),
+		addr:                                   addr,
+		transport:                              transport,
+		handlersFactory:                        nil,
+		marhaller:                              marshaller,
+		gameVersion:                            version,
+		rooms:                                  make(map[string]*room.Room),
+		retransmitStaticObjectsLimit:           rtLimit,
+		retransmitStaticObjectsFramesThrashold: rtThrashold,
+		retransmissionForceDisabled:            rtDisable,
 	}
 
 	server.handlersFactory = NewGameHandlersFactory(server)
@@ -83,7 +90,7 @@ func (g *GameServer) CreateRoom(name string, maxSlots int32, ttl time.Duration, 
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	room := room.NewRoom(name, maxSlots, ttl, scene, tickrate, externalData)
+	room := room.NewRoom(name, maxSlots, ttl, scene, tickrate, externalData, g.retransmitStaticObjectsLimit, g.retransmitStaticObjectsFramesThrashold, g.retransmissionForceDisabled)
 	g.rooms[room.GetUuid()] = room
 
 	go g.roomTick(room)

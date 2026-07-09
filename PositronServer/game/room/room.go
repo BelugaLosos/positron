@@ -62,8 +62,8 @@ func clamp(current int, min int, max int) int {
 	return current
 }
 
-func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte) *Room {
-	log.Printf("Created room with params N: %v P_CAP: %v TTL: %v SC: %v T_RATE: %v DATA_SEGMENT: %v", name, maxSlots, ttl, scene, tickrate, externalData)
+func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte, rtLimit, rtThrashold int, rtForceDisable bool) *Room {
+	log.Printf("Created room with params N: %v P_CAP: %v TTL: %v SC: %v T_RATE: %v DATA_SEGMENT: %v RT_L: %v RT_Th: %v RT_FORCE_DISABLE: %v", name, maxSlots, ttl, scene, tickrate, externalData, rtLimit, rtThrashold, rtForceDisable)
 
 	return &Room{
 		mutex:            &sync.RWMutex{},
@@ -80,7 +80,7 @@ func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickr
 		tickrate:         clamp(int(tickrate), 1, 256),
 		scene:            scene,
 		ExternalData:     externalData,
-		gameObjectsModel: roommodels.NewGameObjectsModel(),
+		gameObjectsModel: roommodels.NewGameObjectsModel(rtLimit, rtThrashold, rtForceDisable),
 		netValuesModel:   roommodels.NewNetValuesModel(),
 		rpcsModel:        roommodels.NewRpcsModel(),
 		clock:            NewRoomClock(tickrate),
@@ -125,6 +125,9 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 		r.netValuesModel.GetTempMod(),
 		r.rpcsModel.GetCurrentCallBuffer(),
 	)
+
+	r.gameObjectsModel.EvaluateStaticScore()
+	r.gameObjectsModel.StickStaticsToMoveDelta()
 
 	gamePositionsTick := r.unreliableTickPacketsPool.Get().(*datatransferobjects.GameUnreliableTickPacket)
 	gamePositionsTick.ReassignUnreliableTickPacket(

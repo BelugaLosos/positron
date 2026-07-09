@@ -9,7 +9,7 @@ import (
 )
 
 func TestGetGameObjects(t *testing.T) {
-	model := roommodels.NewGameObjectsModel()
+	model := roommodels.NewGameObjectsModel(50, 30, false)
 	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
 	objs := model.GetGameObjects()
 
@@ -28,7 +28,7 @@ func TestGetGameObjects(t *testing.T) {
 }
 
 func TestModifications(t *testing.T) {
-	model := roommodels.NewGameObjectsModel()
+	model := roommodels.NewGameObjectsModel(50, 30, false)
 	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1) //1
 	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 1, 0), *gameentities.NewVector(0, 1, 0)), 1) //2
 	model.TryRemoveGameObject(1, 1)
@@ -69,7 +69,7 @@ func TestModifications(t *testing.T) {
 }
 
 func TestCyclicMod(t *testing.T) {
-	model := roommodels.NewGameObjectsModel()
+	model := roommodels.NewGameObjectsModel(50, 30, false)
 
 	for range 10 {
 		model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
@@ -89,7 +89,7 @@ func TestCyclicMod(t *testing.T) {
 }
 
 func TestMove(t *testing.T) {
-	model := roommodels.NewGameObjectsModel()
+	model := roommodels.NewGameObjectsModel(50, 30, false)
 	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
 
 	move := make([]*gameentities.Tranform, 0)
@@ -137,7 +137,7 @@ func TestMove(t *testing.T) {
 }
 
 func TestGoReset(t *testing.T) {
-	model := roommodels.NewGameObjectsModel()
+	model := roommodels.NewGameObjectsModel(50, 30, false)
 	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
 	model.ResetTempBuffers()
 
@@ -149,7 +149,7 @@ func TestGoReset(t *testing.T) {
 }
 
 func TestGoRegister(t *testing.T) {
-	model := roommodels.NewGameObjectsModel()
+	model := roommodels.NewGameObjectsModel(50, 30, false)
 	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
 	model.ResetTempBuffers()
 
@@ -157,5 +157,48 @@ func TestGoRegister(t *testing.T) {
 
 	if len(objs) != 1 || objs[0].GetCreationId() != 0 || objs[0].GetId() != 1 || objs[0].GetOwnerId() != 1 {
 		t.Error("Obj not resigtred or data corrupted")
+	}
+}
+
+func TestStaticsRetransmit(t *testing.T) {
+	model := roommodels.NewGameObjectsModel(2, 5, false)
+
+	for range 2 {
+		model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
+	}
+
+	for i := range 30 { // emulate 1 second
+		model.EvaluateStaticScore()
+		model.StickStaticsToMoveDelta()
+
+		mod := model.GetPositionMod()
+		expectedScore := i + 1
+
+		if len(mod) != 2 && expectedScore%5 == 0 && expectedScore != 0 {
+			t.Errorf("Static glue is broken %v tick %v", len(mod), expectedScore)
+		}
+
+		model.ResetTempBuffers()
+	}
+}
+
+func TestRetransmissionDisable(t *testing.T) {
+	model := roommodels.NewGameObjectsModel(2, 5, true)
+
+	for range 2 {
+		model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
+	}
+
+	for range 30 { // emulate 1 second
+		model.EvaluateStaticScore()
+		model.StickStaticsToMoveDelta()
+
+		mod := model.GetPositionMod()
+
+		if len(mod) != 0 {
+			t.Error("Disability was ignored")
+		}
+
+		model.ResetTempBuffers()
 	}
 }

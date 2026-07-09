@@ -1,6 +1,7 @@
 package roommodels
 
 import (
+	"log"
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
 	"positron/util"
@@ -20,7 +21,10 @@ type GameObjectsModel struct {
 	tempTransfer    []uint32
 	tempPositionMod []*gameentities.Tranform
 
-	lastId uint32
+	lastId                            uint32
+	staticRetransmissionsPerTickLimit int
+	staticScoreToRetransmitThrashold  int
+	isRetransmissionForceDisabled     bool
 }
 
 const (
@@ -28,17 +32,20 @@ const (
 	ROTATION_DELTA_TO_SYNC = 1.0
 )
 
-func NewGameObjectsModel() *GameObjectsModel {
+func NewGameObjectsModel(rtLinmit, rtThrashold int, rtForceDisable bool) *GameObjectsModel {
 	return &GameObjectsModel{
-		mutex:                      &sync.Mutex{},
-		searchMap:                  make(map[uint32]*gameentities.GameObject),
-		searchPosCache:             make(map[uint32]*gameentities.Tranform),
-		gameObjectsStructuredCache: make([]*gameentities.GameObject, 0),
-		tempAdd:                    make([]*gameentities.GameObject, 0),
-		tempRemove:                 make([]uint32, 0),
-		tempTransfer:               make([]uint32, 0),
-		tempPositionMod:            make([]*gameentities.Tranform, 0),
-		lastId:                     0,
+		mutex:                             &sync.Mutex{},
+		searchMap:                         make(map[uint32]*gameentities.GameObject),
+		searchPosCache:                    make(map[uint32]*gameentities.Tranform),
+		gameObjectsStructuredCache:        make([]*gameentities.GameObject, 0),
+		tempAdd:                           make([]*gameentities.GameObject, 0),
+		tempRemove:                        make([]uint32, 0),
+		tempTransfer:                      make([]uint32, 0),
+		tempPositionMod:                   make([]*gameentities.Tranform, 0),
+		lastId:                            0,
+		staticRetransmissionsPerTickLimit: rtLinmit,
+		staticScoreToRetransmitThrashold:  rtThrashold,
+		isRetransmissionForceDisabled:     rtForceDisable,
 	}
 }
 
@@ -103,8 +110,14 @@ func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.Gam
 		}
 
 		gameObject, exist := g.searchMap[position.GetObjectId()]
+		localAllocatedTransform, tExist := g.searchPosCache[position.GetObjectId()]
 
 		if !exist || gameObject == nil {
+			continue
+		}
+
+		if !tExist || localAllocatedTransform == nil {
+			log.Fatalf("CRITICAL Maps desync in game objects model!")
 			continue
 		}
 
@@ -113,7 +126,47 @@ func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.Gam
 				util.RotationBetweenEulerAngles(position.GetRotation(), gameObject.GetRotation()) > ROTATION_DELTA_TO_SYNC) {
 
 			gameObject.Move(position.GetPosition(), position.GetRotation())
-			g.tempPositionMod = append(g.tempPositionMod, position)
+			localAllocatedTransform.Move(position.GetPosition(), position.GetRotation())
+
+			localAllocatedTransform.ResetStaticScore()
+			g.tempPositionMod = append(g.tempPositionMod, localAllocatedTransform)
+		}
+	}
+}
+
+func (g *GameObjectsModel) EvaluateStaticScore() {
+	if g.isRetransmissionForceDisabled {
+		return
+	}
+
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	for _, transform := range g.searchPosCache {
+		transform.EvaluateStaticScore()
+	}
+}
+
+func (g *GameObjectsModel) StickStaticsToMoveDelta() {
+	if g.isRetransmissionForceDisabled {
+		return
+	}
+
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	stickedAmount := 0
+
+	for _, transform := range g.searchPosCache {
+		if transform.GetStaticScore() >= g.staticScoreToRetransmitThrashold {
+			g.tempPositionMod = append(g.tempPositionMod, transform)
+			transform.ResetStaticScore()
+
+			stickedAmount++
+		}
+
+		if stickedAmount >= g.staticRetransmissionsPerTickLimit {
+			break
 		}
 	}
 }

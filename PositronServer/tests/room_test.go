@@ -13,7 +13,7 @@ import (
 )
 
 func TestRoomGetters(t *testing.T) {
-	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3))
+	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3), 50, 30, false)
 
 	if room.GetHost() != 0 {
 		t.Error("host corruption")
@@ -45,7 +45,7 @@ func TestRoomGetters(t *testing.T) {
 }
 
 func TestAddPeer(t *testing.T) {
-	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3))
+	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3), 50, 30, false)
 
 	id, err := room.AddPeer("1")
 
@@ -75,7 +75,7 @@ func TestAddPeer(t *testing.T) {
 }
 
 func TestRemovePeer(t *testing.T) {
-	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3))
+	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3), 50, 30, false)
 	room.AddPeer("1")
 	room.AddPeer("2")
 
@@ -87,7 +87,7 @@ func TestRemovePeer(t *testing.T) {
 }
 
 func TestTick(t *testing.T) {
-	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3))
+	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3), 50, 30, false)
 	room.AddPeer("1111")
 	room.ProcessTick(datatransferobjects.NewTickPacket(
 		1,
@@ -134,7 +134,7 @@ func TestTick(t *testing.T) {
 
 func TestRaceInTick(t *testing.T) {
 	m := marshaller.NewMessagePackMarshaller()
-	r := room.NewRoom("t", 64, time.Hour, 0, 60, nil)
+	r := room.NewRoom("t", 64, time.Hour, 0, 60, nil, 50, 30, false)
 
 	cid, err := r.AddPeer("peer-uuid")
 	if err != nil {
@@ -203,7 +203,7 @@ func TestRoomTicker(t *testing.T) {
 }
 
 func passTickrate(t *testing.T, tickrate uint32) {
-	room := room.NewRoom("", 1, time.Hour, 1, tickrate, nil)
+	room := room.NewRoom("", 1, time.Hour, 1, tickrate, nil, 50, 30, false)
 	ticked := 0
 	wg := &sync.WaitGroup{}
 	shutdown := make(chan struct{})
