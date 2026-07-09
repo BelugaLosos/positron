@@ -246,6 +246,7 @@ namespace Positron.Client.Room
                 unreliableTick.ClientId = LocalClientId;
 
                 _gameObjectsModel.CollectCurrentObjectsMoveDeltas();
+                _gameObjectsModel.CollectCurrentObjectsStaticDeltaIfRequired();
                 unreliableTick.MovedObjects = _gameObjectsModel.GetMoveDelta();
 
                 _client.Send(tickPacket, EventTypes.TICK, true);

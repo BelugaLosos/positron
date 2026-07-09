@@ -17,6 +17,8 @@ namespace Positron.Client.Mono.Syncers
         private Vector3 _currentBindingPosition;
         private Quaternion _currentBindingRotation;
 
+        private int _staticScoreCounter = 0;
+
         private const float DISTANCE_TO_SYNC = 0.05f;
         private const float ANGLE_TO_SYNC = 1f;
 
@@ -32,7 +34,11 @@ namespace Positron.Client.Mono.Syncers
             _previousRotation = transform.rotation;
         }
 
-        public bool CheckForMoved() => Vector3.Distance(transform.position, _previousPosition) > DISTANCE_TO_SYNC || Quaternion.Angle(transform.rotation, _previousRotation) > ANGLE_TO_SYNC;
+        public bool CheckForMoved() => Vector3.Distance(transform.position, _previousPosition) > DISTANCE_TO_SYNC ||
+                                       Quaternion.Angle(transform.rotation, _previousRotation) > ANGLE_TO_SYNC;
+        public bool CheckForStaticAlongFor(uint ticksTime) => _staticScoreCounter > ticksTime;
+        public void EvaluateStaticScore() => _staticScoreCounter++;
+        public void ResetStaticScore() => _staticScoreCounter = 0;
         public void SetTransform(NetTransform netTransform, uint tickIndex) => _snapshotsBuffer.Add(new(tickIndex, netTransform));
 
         private void Update()

@@ -11,6 +11,10 @@ namespace Positron.Client.Room.Models
 {
     public sealed class NetworkGameObjectsModel : IDisposable
     {
+        private readonly uint _ticksToMarkObjectAsStatic;
+        private readonly uint _maxObjectsCountForRetransmitPosition;
+        private readonly bool _doResyncTransformStatics;
+
         private readonly NetworkWorld _world;
 
         private readonly List<NetGameObject> _creationDelta = new(128);
@@ -37,6 +41,10 @@ namespace Positron.Client.Room.Models
                 _indexedAssets.Add(settings.SpawnableObjects[i], i);
                 _reverseAssetsIndex.Add(i, settings.SpawnableObjects[i]);
             }
+
+            _ticksToMarkObjectAsStatic = settings.TicksAmountToMarkObjectAsStatic;
+            _maxObjectsCountForRetransmitPosition = settings.MaximalObjectsCountForRetransmitPerPacket;
+            _doResyncTransformStatics = settings.UseTransformsResync;
 
             _lastCrationId = 0;
         }
@@ -269,17 +277,64 @@ namespace Positron.Client.Room.Models
                     continue;
                 }
 
-                if (networkObjectPair.Value.TryGetSyncer(out PositronTransformSync transformSyncer) && 
-                     networkObjectPair.Value.IsMine && transformSyncer.CheckForMoved())
+                if (!networkObjectPair.Value.IsMine)
                 {
-                    NetTransform deltaData = new();
-                    deltaData.ObjectId = networkObjectPair.Key;
-                    deltaData.Position = new(networkObjectPair.Value.transform.position);
-                    deltaData.Rotation = new(networkObjectPair.Value.transform.eulerAngles);
+                    continue;
+                }
 
-                    _moveDelta.Add(deltaData);
+                if (!networkObjectPair.Value.TryGetSyncer(out PositronTransformSync transformSyncer))
+                {
+                    continue;
+                }
 
+                if (transformSyncer.CheckForMoved())
+                {
+                    AddTransformDeltaDataToDeltaArray(networkObjectPair);
                     transformSyncer.RecordPreviousTransform();
+                    transformSyncer.ResetStaticScore();
+                }
+            }
+        }
+
+        public void CollectCurrentObjectsStaticDeltaIfRequired()
+        {
+            if (!_doResyncTransformStatics)
+            {
+                return;
+            }
+
+            int countOfStatic = 0;
+
+            foreach (KeyValuePair<uint, PositronNetworkIdentity> networkObjectPair in _currentGameObjectsOnScene)
+            {
+                if (countOfStatic >= _maxObjectsCountForRetransmitPosition)
+                {
+                    return;
+                }
+
+                if (networkObjectPair.Value == null)
+                {
+                    continue;
+                }
+
+                if (!networkObjectPair.Value.IsMine)
+                {
+                    continue;
+                }
+
+                if (!networkObjectPair.Value.TryGetSyncer(out PositronTransformSync transformSyncer))
+                {
+                    continue;
+                }
+
+                transformSyncer.EvaluateStaticScore();
+
+                if (transformSyncer.CheckForStaticAlongFor(_ticksToMarkObjectAsStatic))
+                {
+                    AddTransformDeltaDataToDeltaArray(networkObjectPair);
+                    transformSyncer.ResetStaticScore();
+
+                    countOfStatic++;
                 }
             }
         }
@@ -318,6 +373,16 @@ namespace Positron.Client.Room.Models
             _destroyDelta.Clear();
             _moveDelta.Clear();
             _requestOwnershipDelta.Clear();
+        }
+
+        private void AddTransformDeltaDataToDeltaArray(KeyValuePair<uint, PositronNetworkIdentity> networkObjectPair)
+        {
+            NetTransform deltaData = new();
+            deltaData.ObjectId = networkObjectPair.Key;
+            deltaData.Position = new(networkObjectPair.Value.transform.position);
+            deltaData.Rotation = new(networkObjectPair.Value.transform.eulerAngles);
+
+            _moveDelta.Add(deltaData);
         }
 
         public struct GameObjectsDelta
