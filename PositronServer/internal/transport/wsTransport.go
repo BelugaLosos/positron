@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"positron/internal"
 	"positron/util"
+	"strconv"
 	"sync"
 
 	"github.com/google/uuid"
@@ -24,6 +25,8 @@ type WsTransport struct {
 
 	gServer         internal.GameServerAdaper
 	handlersFactory internal.HandlersFactory
+
+	lastIdPostfix int
 }
 
 var upgrader = websocket.Upgrader{
@@ -36,10 +39,11 @@ const DEFAULT_BUFFER_SIZE = 256 * 1024
 
 func NewWsTransport() *WsTransport {
 	return &WsTransport{
-		shutdown:    make(chan struct{}),
-		mutex:       &sync.RWMutex{},
-		connections: make(map[string]*wsPeer),
-		handlers:    make(map[*wsPeer][]internal.Handler),
+		shutdown:      make(chan struct{}),
+		mutex:         &sync.RWMutex{},
+		connections:   make(map[string]*wsPeer),
+		handlers:      make(map[*wsPeer][]internal.Handler),
+		lastIdPostfix: 0,
 	}
 }
 
@@ -174,12 +178,15 @@ func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 		decompressionBuf: make([]byte, DEFAULT_BUFFER_SIZE),
 	}
 
-	id := uuid.New().String()
-
 	t.mutex.Lock()
+
+	id := uuid.New().String() + "-" + strconv.Itoa(t.lastIdPostfix)
+	t.lastIdPostfix++
+
 	handlers, disconnectHandler := t.handlersFactory.Create()
 	t.connections[id] = peer
 	t.handlers[peer] = handlers
+
 	t.mutex.Unlock()
 
 	for i := range handlers {

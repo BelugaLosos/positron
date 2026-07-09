@@ -21,7 +21,8 @@ type GameServer struct {
 
 	gameVersion string
 
-	rooms map[string]*room.Room
+	rooms               map[string]*room.Room
+	lastRoomUuidPostfix int
 
 	retransmitStaticObjectsLimit           int
 	retransmitStaticObjectsFramesThrashold int
@@ -44,6 +45,7 @@ func NewGameServer(addr string, transport internal.PositronTransportServer, mars
 		marhaller:                              marshaller,
 		gameVersion:                            version,
 		rooms:                                  make(map[string]*room.Room),
+		lastRoomUuidPostfix:                    0,
 		retransmitStaticObjectsLimit:           rtLimit,
 		retransmitStaticObjectsFramesThrashold: rtThrashold,
 		retransmissionForceDisabled:            rtDisable,
@@ -91,6 +93,9 @@ func (g *GameServer) CreateRoom(name string, maxSlots int32, ttl time.Duration, 
 	defer g.mutex.Unlock()
 
 	room := room.NewRoom(name, maxSlots, ttl, scene, tickrate, externalData, g.retransmitStaticObjectsLimit, g.retransmitStaticObjectsFramesThrashold, g.retransmissionForceDisabled)
+	room.AddPostfixToUuid(g.lastRoomUuidPostfix)
+	g.lastRoomUuidPostfix++
+
 	g.rooms[room.GetUuid()] = room
 
 	go g.roomTick(room)

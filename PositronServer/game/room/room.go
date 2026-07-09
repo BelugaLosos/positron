@@ -7,6 +7,7 @@ import (
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
 	roommodels "positron/game/room/roomModels"
+	"strconv"
 	"sync"
 	"time"
 
@@ -21,8 +22,9 @@ type Room struct {
 	mutex       *sync.RWMutex
 	Termination chan struct{}
 
-	name string
-	uuid string
+	name                  string
+	uuid                  string
+	isUuidPostfixWasAdden bool
 
 	connectedPeers map[uint32]string // internal room ID to transport uuid
 	peerUuids      []string
@@ -96,6 +98,18 @@ func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickr
 		},
 		Ticker: time.NewTicker((1 * time.Second) / time.Duration(tickrate)),
 	}
+}
+
+func (r *Room) AddPostfixToUuid(postfix int) {
+	if r.isUuidPostfixWasAdden {
+		return
+	}
+
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	r.uuid = r.uuid + "-" + strconv.Itoa(postfix)
+	r.isUuidPostfixWasAdden = true
 }
 
 func (r *Room) RecordStartupTimeOnClock() {
