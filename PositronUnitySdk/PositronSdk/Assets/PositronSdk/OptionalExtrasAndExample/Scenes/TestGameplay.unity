@@ -228,6 +228,7 @@ MonoBehaviour:
   _groundMask:
     serializedVersion: 2
     m_Bits: 1
+  _rotSensitivity: 400
   _prefab: {fileID: 330245913734207282, guid: 31010728a1cb0c24db0e36ca0c47a3e0, type: 3}
 --- !u!114 &231837237
 MonoBehaviour:

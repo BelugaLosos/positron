@@ -3,9 +3,10 @@ using UnityEngine;
 
 namespace Positron.Extras.HandTests.Object
 {
-    public class SimplyObjectSpawner : MonoBehaviour
+    public class SimplyObjectManipulationDemo : MonoBehaviour
     {
         [SerializeField] private LayerMask _groundMask;
+        [SerializeField][Min(0.001f)] private float _rotSensitivity = 10f;
         [SerializeField] private PositronNetworkIdentity _prefab;
 
         private void Update()
@@ -49,6 +50,32 @@ namespace Positron.Extras.HandTests.Object
                 {
                     PositronFacade.World.RequestOwnershipOn(obj);
                 }
+            }
+
+            if (Input.GetKey(KeyCode.X))
+            {
+                ProcessRotationByAxis(Vector3.right);
+            }
+
+            if (Input.GetKey(KeyCode.Y))
+            {
+                ProcessRotationByAxis(Vector3.up);
+            }
+
+            if (Input.GetKey(KeyCode.Z))
+            {
+                ProcessRotationByAxis(Vector3.forward);
+            }
+        }
+
+        private void ProcessRotationByAxis(Vector3 rotAxis)
+        {
+            float mouseWheelDelta = Input.mouseScrollDelta.y + Input.mouseScrollDelta.y;
+            PositronNetworkIdentity obj = Hitscan();
+
+            if (obj != null)
+            {
+                obj.transform.Rotate(rotAxis, mouseWheelDelta * _rotSensitivity * Time.deltaTime);
             }
         }
 

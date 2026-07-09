@@ -23,7 +23,10 @@ type GameObjectsModel struct {
 	lastId uint32
 }
 
-const POSITION_DELTA_TO_SYNC = 0.05
+const (
+	POSITION_DELTA_TO_SYNC = 0.05
+	ROTATION_DELTA_TO_SYNC = 1.0
+)
 
 func NewGameObjectsModel() *GameObjectsModel {
 	return &GameObjectsModel{
@@ -107,7 +110,7 @@ func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.Gam
 
 		if gameObject.GetOwnerId() == source &&
 			(util.PointsDistance(position.GetPosition(), gameObject.GetPosition()) > POSITION_DELTA_TO_SYNC ||
-				!util.VetorsEquals(position.GetRotation(), gameObject.GetRotation())) {
+				util.RotationBetweenEulerAngles(position.GetRotation(), gameObject.GetRotation()) > ROTATION_DELTA_TO_SYNC) {
 
 			gameObject.Move(position.GetPosition(), position.GetRotation())
 			g.tempPositionMod = append(g.tempPositionMod, position)

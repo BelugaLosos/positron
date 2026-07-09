@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"math"
 	gameentities "positron/game/gameEntities"
 	"positron/util"
 	"testing"
@@ -75,6 +76,24 @@ func TestDeconstructPacketCompressed(t *testing.T) {
 
 	if eventT != 0xFF || isCompressed == false || sourceLen != 25 || !sliceEquals(rawData, data) {
 		t.Errorf("Deconstruction of compressed packet failed %v %v %v %v %v Passes: %v %v %v %v", eventT, isCompressed, sourceLen, rawData, data, eventT != 0xFF, isCompressed == true, sourceLen != 25, !sliceEquals(rawData, data))
+	}
+}
+
+func TestEualerAngles(t *testing.T) {
+	a := gameentities.NewVector(0, 90, 0)
+	b := gameentities.NewVector(0, 0, 0)
+	l := util.RotationBetweenEulerAngles(*a, *b)
+
+	if l != 90 {
+		t.Errorf("Wrong angle %v", l)
+	}
+}
+
+func TestConvertToEuler(t *testing.T) {
+	x, y, z, w := util.Eul2Quat(*gameentities.NewVector(28.219777479621257, 0.2503920545800611, 60.93141168165579))
+
+	if math.Abs(w-0.8435239154608128) > 0.1 || math.Abs(x-0.2095029176443577) > 0.1 || math.Abs(y-0.12206535948201819) > 0.1 || math.Abs(z-0.47924521860805935) > 0.1 {
+		t.Errorf("Wrong convert %v %v %v %v", w, x, y, z)
 	}
 }
 

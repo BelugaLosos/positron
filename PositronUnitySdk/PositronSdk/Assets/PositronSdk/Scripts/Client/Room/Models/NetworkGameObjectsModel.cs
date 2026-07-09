@@ -270,7 +270,7 @@ namespace Positron.Client.Room.Models
                 }
 
                 if (networkObjectPair.Value.TryGetSyncer(out PositronTransformSync transformSyncer) && 
-                    transformSyncer.CheckForMoved())
+                     networkObjectPair.Value.IsMine && transformSyncer.CheckForMoved())
                 {
                     NetTransform deltaData = new();
                     deltaData.ObjectId = networkObjectPair.Key;
