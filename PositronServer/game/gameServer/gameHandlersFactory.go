@@ -9,7 +9,7 @@ type gameHandlersFactory struct {
 	gServer internal.GameServerAdaper
 }
 
-func NewGameHandlersFactory(gServer *GameServer) *gameHandlersFactory {
+func NewGameHandlersFactory(gServer internal.GameServerAdaper) *gameHandlersFactory {
 	return &gameHandlersFactory{
 		gServer: gServer,
 	}
