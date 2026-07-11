@@ -155,7 +155,7 @@ namespace Positron.Transport
                 }
 
                 _webSokcet.DispatchMessageQueue();
-                bool cancelled = await UniTask.Yield(PlayerLoopTiming.Update, _dispatchCancellationToken.Token).SuppressCancellationThrow();
+                bool cancelled = await UniTask.Yield(PlayerLoopTiming.EarlyUpdate, _dispatchCancellationToken.Token).SuppressCancellationThrow();
                 if (cancelled) break;
             }
         }

@@ -229,7 +229,7 @@ namespace Positron.Client.Room
 
             while (InRoom)
             {
-                await UniTask.Delay(tickInterval, delayType: DelayType.Realtime, delayTiming: PlayerLoopTiming.LastPostLateUpdate, cancellationToken: _ctx.Token);
+                await UniTask.Delay(tickInterval, delayType: DelayType.Realtime, delayTiming: PlayerLoopTiming.EarlyUpdate, cancellationToken: _ctx.Token);
 
                 GameTickPacket tickPacket = new();
                 tickPacket.Host = HostId;
