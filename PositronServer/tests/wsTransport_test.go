@@ -3,6 +3,7 @@ package tests
 import (
 	"fmt"
 	"log"
+	"math/rand/v2"
 	"net/url"
 	eventtypes "positron/game/gameHandlers/eventTypes"
 	gameserver "positron/game/gameServer"
@@ -47,7 +48,13 @@ type wsClientHelper struct {
 
 func (w *wsClientHelper) connect(addr string, t *testing.T) error {
 	url := url.URL{Scheme: "ws", Host: addr, Path: "/"}
-	conn, _, err := websocket.DefaultDialer.Dial(url.String(), nil)
+
+	dialer := websocket.Dialer{
+		WriteBufferSize: 65536,
+		ReadBufferSize:  65536,
+	}
+
+	conn, _, err := dialer.Dial(url.String(), nil)
 
 	if err != nil {
 		return err
@@ -92,6 +99,18 @@ func (w *wsClientHelper) reader() {
 
 			packet := &wsPacket{}
 			packet.event, packet.wasCompressed, packet.originalDataSize, packet.rawPayload = util.DeconstructPacket(data)
+
+			//if packet.wasCompressed {
+			//	decompressBuffer := make([]byte, 25_000)
+			//	decompressedLen, err := lz4.UncompressBlock(data, decompressBuffer)
+
+			//	if err != nil {
+			//		w.errChan <- err
+			//		return
+			//	}
+
+			//	packet.rawPayload = decompressBuffer[:decompressedLen]
+			//}
 
 			w.dataReceive <- packet
 		}
@@ -409,4 +428,95 @@ func TestConcurrentTrafficForCorruption(t *testing.T) {
 	} else {
 		log.Println("Success: Structural data concurrency matches fully without loss.")
 	}
+}
+
+func TestConcurrentDataCorruption(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	addr := "127.0.0.1:12345"
+
+	transport := transport.NewWsTransport()
+	if err := transport.Start(addr, &mockHandlersFactory{}, &mockGameServer{}, wg); err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		transport.Stop()
+		wg.Wait()
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+
+	wsClient := &wsClientHelper{}
+	if err := wsClient.connect(addr, t); err != nil {
+		t.Fatal(err)
+	}
+	defer wsClient.disconnect()
+
+	expectationMap := make(map[int]string)
+
+	for i := range 25 {
+		expectationMap[i] = generateRandomString(rand.IntN(2048))
+	}
+
+	numWorkers := 15
+	workersWg := &sync.WaitGroup{}
+
+	workersWg.Add(numWorkers)
+	for range numWorkers {
+		go func() {
+			defer workersWg.Done()
+
+			index := rand.IntN(len(expectationMap))
+			wsClient.write(0x0, false, []byte(strconv.Itoa(index)+"#"+expectationMap[index]))
+		}()
+	}
+	workersWg.Wait()
+
+	receivedMessages := 0
+
+	for {
+		if receivedMessages == numWorkers {
+			break
+		}
+
+		packet, ok := <-wsClient.dataReceive
+		receivedMessages++
+
+		if !ok {
+			t.Error("channel error")
+			return
+		}
+
+		data := string(packet.rawPayload)
+		key, _ := strconv.Atoi(strings.Split(data, "#")[0])
+		value := strings.Split(data, "#")[1]
+
+		if packet.wasCompressed { // temp
+			log.Println("Compression!")
+			continue
+		}
+
+		if mapValue, exists := expectationMap[key]; !exists || mapValue != value {
+			t.Errorf("corruption. \nexistance %v \nval %s \nrec %s \nlen_rec %v", exists, mapValue, value, len(value))
+		}
+	}
+
+	log.Println("Ok")
+}
+
+func generateRandomString(length int) string {
+	now := time.Now().UnixNano()
+	pcgSource := rand.NewPCG(uint64(now), uint64(now>>32))
+	r := rand.New(pcgSource)
+
+	var sb strings.Builder
+	sb.Grow(length)
+	charset := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+	for i := 0; i < length; i++ {
+		randomIndex := r.IntN(len(charset))
+		sb.WriteByte(charset[randomIndex])
+	}
+
+	return sb.String()
 }
