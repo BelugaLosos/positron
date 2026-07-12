@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"log"
 	"net/url"
 	eventtypes "positron/game/gameHandlers/eventTypes"
@@ -9,6 +10,8 @@ import (
 	"positron/internal"
 	"positron/internal/transport"
 	"positron/util"
+	"strconv"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -39,6 +42,7 @@ type wsClientHelper struct {
 	conn        *websocket.Conn
 	errChan     chan error
 	dataReceive chan *wsPacket
+	dataSend    chan *wsPacket
 }
 
 func (w *wsClientHelper) connect(addr string, t *testing.T) error {
@@ -53,8 +57,10 @@ func (w *wsClientHelper) connect(addr string, t *testing.T) error {
 	w.conn = conn
 	w.dataReceive = make(chan *wsPacket, 1024)
 	w.errChan = make(chan error, 1024)
+	w.dataSend = make(chan *wsPacket, 1024)
 
 	go w.reader()
+	go w.writer()
 	go w.testingChannelReader(t)
 
 	return nil
@@ -69,19 +75,43 @@ func (w *wsClientHelper) reader() {
 	for {
 		select {
 		case <-w.shutdown:
+			close(w.dataReceive)
 			return
 		default:
 			_, data, err := w.conn.ReadMessage()
 
 			if err != nil {
+				if websocket.IsUnexpectedCloseError(err) {
+					w.disconnect()
+					return
+				}
+
 				w.errChan <- err
-				continue
+				return
 			}
 
 			packet := &wsPacket{}
 			packet.event, packet.wasCompressed, packet.originalDataSize, packet.rawPayload = util.DeconstructPacket(data)
 
 			w.dataReceive <- packet
+		}
+	}
+}
+
+func (w *wsClientHelper) writer() {
+	for {
+		select {
+		case <-w.shutdown:
+			close(w.dataSend)
+			return
+		default:
+			packet := <-w.dataSend
+			err := w.conn.WriteMessage(websocket.BinaryMessage, util.GlueDataToOptions(packet.event, packet.wasCompressed, packet.originalDataSize, packet.rawPayload))
+
+			if err != nil {
+				w.errChan <- err
+				continue
+			}
 		}
 	}
 }
@@ -104,8 +134,67 @@ type wsPacket struct {
 	rawPayload       []byte
 }
 
-func (w *wsClientHelper) writeSync(event byte, compressed bool, data []byte) error { // this method is NOT concurent/thread safe!
-	return w.conn.WriteMessage(websocket.BinaryMessage, util.GlueDataToOptions(event, compressed, uint32(len(data)), data))
+func (w *wsClientHelper) write(event byte, compressed bool, data []byte) {
+	w.dataSend <- &wsPacket{
+		event:            event,
+		wasCompressed:    compressed,
+		originalDataSize: uint32(len(data)),
+		rawPayload:       data,
+	}
+}
+
+type echoHandler struct {
+	transport internal.PositronTransportServer
+	connUuid  string
+}
+
+func (e *echoHandler) Init(transport internal.PositronTransportServer, gServer internal.GameServerAdaper, connectionUuid string) {
+	e.transport = transport
+	e.connUuid = connectionUuid
+}
+
+func (e *echoHandler) GetType() byte {
+	return 0x0
+}
+func (e *echoHandler) PassHandle(packet []byte) {
+	if err := e.transport.SendToPeer(packet, 0x3, e.connUuid, true); err != nil {
+		log.Println(err)
+	}
+}
+
+func (e *echoHandler) SetRoom(room *room.Room, inRoomId uint32) {
+}
+
+type uuidReturnHandler struct {
+	transport internal.PositronTransportServer
+	connUuid  string
+}
+
+func (e *uuidReturnHandler) Init(transport internal.PositronTransportServer, gServer internal.GameServerAdaper, connectionUuid string) {
+	e.transport = transport
+	e.connUuid = connectionUuid
+}
+
+func (e *uuidReturnHandler) GetType() byte {
+	return 0x1
+}
+func (e *uuidReturnHandler) PassHandle(packet []byte) {
+	if err := e.transport.SendToPeer([]byte(e.connUuid), 0x2, e.connUuid, true); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (e *uuidReturnHandler) SetRoom(room *room.Room, inRoomId uint32) {
+}
+
+type mockHandlersFactory struct{}
+
+func (m *mockHandlersFactory) Create() ([]internal.Handler, internal.Handler) {
+	handlers := make([]internal.Handler, 0)
+	handlers = append(handlers, &echoHandler{})
+	handlers = append(handlers, &uuidReturnHandler{})
+
+	return handlers, handlers[0]
 }
 
 func TestStartAndStop(t *testing.T) {
@@ -158,11 +247,7 @@ func TestConnectMockedClient(t *testing.T) {
 
 	time.Sleep(150 * time.Millisecond)
 
-	werr := wsClient.writeSync(eventtypes.VERSION_CHECK_REQUEST, false, []byte("nil"))
-
-	if werr != nil {
-		t.Error(werr)
-	}
+	wsClient.write(eventtypes.VERSION_CHECK_REQUEST, false, []byte("nil"))
 
 	go func() {
 		time.Sleep(time.Second)
@@ -190,4 +275,138 @@ func TestConnectMockedClient(t *testing.T) {
 	}()
 
 	wg.Wait()
+}
+
+func TestKick(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	addr := "127.0.0.1:12345"
+
+	transport := transport.NewWsTransport()
+	err := transport.Start(addr, &mockHandlersFactory{}, &mockGameServer{}, wg)
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	time.Sleep(150 * time.Millisecond) // wait for starting server
+
+	wsClient := &wsClientHelper{}
+	cerr := wsClient.connect(addr, t)
+
+	if cerr != nil {
+		t.Error(cerr)
+	}
+
+	time.Sleep(150 * time.Millisecond)
+
+	wsClient.write(0x1, false, []byte("nil"))
+
+	uuid := string((<-wsClient.dataReceive).rawPayload)
+	transport.KickClient(uuid)
+
+	go func() {
+		time.Sleep(time.Second)
+		log.Println("Closing all connections")
+
+		if concurrentConnectionsCount := transport.GetCurrentConnectedPeersCount(); concurrentConnectionsCount != 0 {
+			t.Error("kicked client does not appeared as kicked and still in the active connections list")
+		}
+
+		time.Sleep(500 * time.Millisecond)
+
+		serr := transport.Stop()
+
+		if serr != nil {
+			t.Error(serr)
+		}
+	}()
+
+	wg.Wait()
+}
+
+func TestConcurrentTrafficForCorruption(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	addr := "127.0.0.1:12345"
+
+	transport := transport.NewWsTransport()
+	if err := transport.Start(addr, &mockHandlersFactory{}, &mockGameServer{}, wg); err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		transport.Stop()
+		wg.Wait()
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+
+	wsClient := &wsClientHelper{}
+	if err := wsClient.connect(addr, t); err != nil {
+		t.Fatal(err)
+	}
+	defer wsClient.disconnect()
+
+	origin := "This string is data that would be fragmented and transferred over loopback network using 10 concurrent tasks and one channel E"
+
+	type Chunk struct {
+		Index int
+		Value string
+	}
+
+	inputChan := make(chan Chunk, len(origin))
+	for i, char := range origin {
+		inputChan <- Chunk{Index: i, Value: string(char)}
+	}
+	close(inputChan)
+
+	sendingDataChanWg := sync.WaitGroup{}
+	numWorkers := 10
+	sendingDataChanWg.Add(numWorkers)
+
+	for i := 0; i < numWorkers; i++ {
+		go func() {
+			defer sendingDataChanWg.Done()
+			for chunk := range inputChan {
+				payload := fmt.Sprintf("%d|%s", chunk.Index, chunk.Value)
+				wsClient.write(0x0, false, []byte(payload))
+			}
+		}()
+	}
+
+	sendingDataChanWg.Wait()
+
+	receivedChunks := make([]string, len(origin))
+	timeout := time.After(2 * time.Second)
+	chunksCollected := 0
+
+	for chunksCollected < len(origin) {
+		select {
+		case msg := <-wsClient.dataReceive:
+			strPayload := string(msg.rawPayload)
+			parts := strings.SplitN(strPayload, "|", 2)
+			if len(parts) != 2 {
+				t.Fatalf("Corrupted frame protocol received: %s", strPayload)
+			}
+
+			idx, err := strconv.Atoi(parts[0])
+			if err != nil {
+				t.Fatalf("Failed to parse sequence index: %v", err)
+			}
+			charValue := parts[1]
+
+			receivedChunks[idx] = charValue
+			chunksCollected++
+
+		case <-timeout:
+			t.Fatalf("Timeout reached. Gathered %d/%d chunks.", chunksCollected, len(origin))
+		}
+	}
+
+	received := strings.Join(receivedChunks, "")
+
+	if received != origin {
+		t.Errorf("Data corruption detected!\nExpected: %s\nReceived: %s", origin, received)
+	} else {
+		log.Println("Success: Structural data concurrency matches fully without loss.")
+	}
 }

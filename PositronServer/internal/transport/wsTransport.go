@@ -289,6 +289,13 @@ func (t *WsTransport) handlePacket(handlers []internal.Handler, peer *wsPeer, pa
 	}
 }
 
+func (t *WsTransport) GetCurrentConnectedPeersCount() int {
+	t.mutex.RLock()
+	defer t.mutex.RUnlock()
+
+	return len(t.connections)
+}
+
 type wsPeer struct {
 	mutex            *sync.Mutex
 	send             chan []byte

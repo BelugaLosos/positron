@@ -10,4 +10,5 @@ type PositronTransportServer interface {
 	SendToPeer(data []byte, eventType byte, peerUuid string, reliable bool) error
 	GetPeerHandlers(peerUuid string) []Handler
 	KickClient(uuid string)
+	GetCurrentConnectedPeersCount() int
 }
