@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/pierrec/lz4/v4"
 )
 
 type mockGameServer struct{}
@@ -100,17 +101,17 @@ func (w *wsClientHelper) reader() {
 			packet := &wsPacket{}
 			packet.event, packet.wasCompressed, packet.originalDataSize, packet.rawPayload = util.DeconstructPacket(data)
 
-			//if packet.wasCompressed {
-			//	decompressBuffer := make([]byte, 25_000)
-			//	decompressedLen, err := lz4.UncompressBlock(data, decompressBuffer)
+			if packet.wasCompressed {
+				decompressBuffer := make([]byte, 250_000)
+				decompressedLen, err := lz4.UncompressBlock(packet.rawPayload, decompressBuffer)
 
-			//	if err != nil {
-			//		w.errChan <- err
-			//		return
-			//	}
+				if err != nil {
+					w.errChan <- err
+					return
+				}
 
-			//	packet.rawPayload = decompressBuffer[:decompressedLen]
-			//}
+				packet.rawPayload = decompressBuffer[:decompressedLen]
+			}
 
 			w.dataReceive <- packet
 		}
@@ -455,7 +456,7 @@ func TestConcurrentDataCorruption(t *testing.T) {
 	expectationMap := make(map[int]string)
 
 	for i := range 25 {
-		expectationMap[i] = generateRandomString(rand.IntN(2048))
+		expectationMap[i] = generateRandomString(10_000)
 	}
 
 	numWorkers := 15
@@ -490,11 +491,6 @@ func TestConcurrentDataCorruption(t *testing.T) {
 		data := string(packet.rawPayload)
 		key, _ := strconv.Atoi(strings.Split(data, "#")[0])
 		value := strings.Split(data, "#")[1]
-
-		if packet.wasCompressed { // temp
-			log.Println("Compression!")
-			continue
-		}
 
 		if mapValue, exists := expectationMap[key]; !exists || mapValue != value {
 			t.Errorf("corruption. \nexistance %v \nval %s \nrec %s \nlen_rec %v", exists, mapValue, value, len(value))
