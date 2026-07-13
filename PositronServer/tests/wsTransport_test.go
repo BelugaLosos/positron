@@ -51,8 +51,8 @@ func (w *wsClientHelper) connect(addr string, t *testing.T) error {
 	url := url.URL{Scheme: "ws", Host: addr, Path: "/"}
 
 	dialer := websocket.Dialer{
-		WriteBufferSize: 65536,
-		ReadBufferSize:  65536,
+		WriteBufferSize: 1024 * 1024 * 1024,
+		ReadBufferSize:  1024 * 1024 * 1024,
 	}
 
 	conn, _, err := dialer.Dial(url.String(), nil)
@@ -445,7 +445,7 @@ func TestConcurrentDataCorruption(t *testing.T) {
 		wg.Wait()
 	}()
 
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(61 * time.Millisecond)
 
 	wsClient := &wsClientHelper{}
 	if err := wsClient.connect(addr, t); err != nil {
@@ -456,10 +456,10 @@ func TestConcurrentDataCorruption(t *testing.T) {
 	expectationMap := make(map[int]string)
 
 	for i := range 25 {
-		expectationMap[i] = generateRandomString(10_000)
+		expectationMap[i] = generateRandomString(rand.IntN(15_001))
 	}
 
-	numWorkers := 15
+	numWorkers := 1500
 	workersWg := &sync.WaitGroup{}
 
 	workersWg.Add(numWorkers)
@@ -488,6 +488,8 @@ func TestConcurrentDataCorruption(t *testing.T) {
 			return
 		}
 
+		log.Println(receivedMessages)
+
 		data := string(packet.rawPayload)
 		key, _ := strconv.Atoi(strings.Split(data, "#")[0])
 		value := strings.Split(data, "#")[1]
@@ -495,7 +497,7 @@ func TestConcurrentDataCorruption(t *testing.T) {
 		log.Printf("is compressed %v", packet.wasCompressed)
 
 		if mapValue, exists := expectationMap[key]; !exists || mapValue != value {
-			t.Errorf("corruption. \nexistance %v \nval %s \nrec %s \nlen_rec %v", exists, mapValue, value, len(value))
+			t.Errorf("corruption. \nexistance %v \nval %s \nval_len %v \nrec %s \nlen_rec %v", exists, mapValue, len(mapValue), value, len(value))
 		}
 	}
 

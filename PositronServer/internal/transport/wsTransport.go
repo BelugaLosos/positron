@@ -2,6 +2,7 @@ package transport
 
 import (
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"positron/internal"
@@ -230,11 +231,20 @@ func (t *WsTransport) handleIncoming(id string, peer *wsPeer, handlers []interna
 				return
 			}
 
-			readedAmount, readErr := reader.Read(peer.readBuf)
+			readedAmount := 0
 
-			if readErr != nil {
-				log.Printf("Failed to read from websocket for peer %s: %v", id, readErr)
-				return
+			for {
+				currentReadedAmount, readErr := reader.Read(peer.readBuf[readedAmount:])
+				readedAmount += currentReadedAmount
+
+				if errors.Is(readErr, io.EOF) {
+					break
+				}
+
+				if readErr != nil {
+					log.Printf("Failed to read from websocket for peer %s: %v", id, readErr)
+					return
+				}
 			}
 
 			packet := peer.readBuf[:readedAmount]
