@@ -492,6 +492,8 @@ func TestConcurrentDataCorruption(t *testing.T) {
 		key, _ := strconv.Atoi(strings.Split(data, "#")[0])
 		value := strings.Split(data, "#")[1]
 
+		log.Printf("is compressed %v", packet.wasCompressed)
+
 		if mapValue, exists := expectationMap[key]; !exists || mapValue != value {
 			t.Errorf("corruption. \nexistance %v \nval %s \nrec %s \nlen_rec %v", exists, mapValue, value, len(value))
 		}
