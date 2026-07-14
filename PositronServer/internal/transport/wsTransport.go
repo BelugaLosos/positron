@@ -36,7 +36,10 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-const DEFAULT_BUFFER_SIZE = 256 * 1024
+const (
+	DEFAULT_BUFFER_SIZE = 256 * 1024
+	CAHNNEL_BUFFER_SIZE = 1024
+)
 
 func NewWsTransport() *WsTransport {
 	return &WsTransport{
@@ -171,7 +174,7 @@ func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 
 	peer := &wsPeer{
 		mutex:            &sync.Mutex{},
-		send:             make(chan []byte, 1024),
+		send:             make(chan []byte, CAHNNEL_BUFFER_SIZE),
 		wsConn:           conn,
 		isClosed:         false,
 		readBuf:          make([]byte, DEFAULT_BUFFER_SIZE),

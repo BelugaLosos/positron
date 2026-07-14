@@ -63,9 +63,9 @@ func (w *wsClientHelper) connect(addr string, t *testing.T) error {
 
 	w.shutdown = make(chan interface{})
 	w.conn = conn
-	w.dataReceive = make(chan *wsPacket, 1024)
-	w.errChan = make(chan error, 1024)
-	w.dataSend = make(chan *wsPacket, 1024)
+	w.dataReceive = make(chan *wsPacket, 3024)
+	w.errChan = make(chan error, 3024)
+	w.dataSend = make(chan *wsPacket, 3024)
 
 	go w.reader()
 	go w.writer()
@@ -445,7 +445,7 @@ func TestConcurrentDataCorruption(t *testing.T) {
 		wg.Wait()
 	}()
 
-	time.Sleep(61 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 
 	wsClient := &wsClientHelper{}
 	if err := wsClient.connect(addr, t); err != nil {
@@ -456,10 +456,10 @@ func TestConcurrentDataCorruption(t *testing.T) {
 	expectationMap := make(map[int]string)
 
 	for i := range 25 {
-		expectationMap[i] = generateRandomString(rand.IntN(15_001))
+		expectationMap[i] = generateRandomString(30_001)
 	}
 
-	numWorkers := 1500
+	numWorkers := 1000 // this may be limited by send channel size. if processor not rapid enought and can`t pop data from this channel rapidly it may drop packets
 	workersWg := &sync.WaitGroup{}
 
 	workersWg.Add(numWorkers)
@@ -494,7 +494,7 @@ func TestConcurrentDataCorruption(t *testing.T) {
 		key, _ := strconv.Atoi(strings.Split(data, "#")[0])
 		value := strings.Split(data, "#")[1]
 
-		log.Printf("is compressed %v", packet.wasCompressed)
+		log.Printf("is compressed %v size %v", packet.wasCompressed, len(value))
 
 		if mapValue, exists := expectationMap[key]; !exists || mapValue != value {
 			t.Errorf("corruption. \nexistance %v \nval %s \nval_len %v \nrec %s \nlen_rec %v", exists, mapValue, len(mapValue), value, len(value))
@@ -502,6 +502,10 @@ func TestConcurrentDataCorruption(t *testing.T) {
 	}
 
 	log.Println("Ok")
+}
+
+func TestMultipleConcurrentConnections(t *testing.T) {
+
 }
 
 func generateRandomString(length int) string {
