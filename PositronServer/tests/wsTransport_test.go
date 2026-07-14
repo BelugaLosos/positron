@@ -51,8 +51,8 @@ func (w *wsClientHelper) connect(addr string, t *testing.T) error {
 	url := url.URL{Scheme: "ws", Host: addr, Path: "/"}
 
 	dialer := websocket.Dialer{
-		WriteBufferSize: 1024 * 1024 * 1024,
-		ReadBufferSize:  1024 * 1024 * 1024,
+		WriteBufferSize: 256 * 1024,
+		ReadBufferSize:  256 * 1024,
 	}
 
 	conn, _, err := dialer.Dial(url.String(), nil)
@@ -505,7 +505,67 @@ func TestConcurrentDataCorruption(t *testing.T) {
 }
 
 func TestMultipleConcurrentConnections(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	addr := "127.0.0.1:12345"
 
+	transport := transport.NewWsTransport()
+	if err := transport.Start(addr, &mockHandlersFactory{}, &mockGameServer{}, wg); err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		transport.Stop()
+		wg.Wait()
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+
+	workersWg := &sync.WaitGroup{}
+	worketsCount := 512
+	messagesPerWorkerAmount := 1000
+	messageSize := 4096
+
+	workersWg.Add(worketsCount)
+
+	for i := range worketsCount {
+		time.Sleep(10 * time.Millisecond) // preventing windows from blowing up kernel tcp stack. unnecessary on linux
+
+		go func() {
+			defer workersWg.Done()
+
+			wsClient := &wsClientHelper{}
+			cerr := wsClient.connect(addr, t)
+
+			if cerr != nil {
+				t.Errorf("connection err %v current connected %v", cerr, i+1)
+				return
+			}
+
+			randomData := generateRandomString(messageSize)
+			receivedAmount := 0
+
+			for range messagesPerWorkerAmount {
+				wsClient.write(0x0, false, []byte(randomData))
+			}
+
+			for {
+				message := <-wsClient.dataReceive
+
+				if string(message.rawPayload) != randomData {
+					t.Error("data corruption")
+					return
+				} else {
+					receivedAmount++
+
+					if receivedAmount == messagesPerWorkerAmount {
+						break
+					}
+				}
+			}
+		}()
+	}
+
+	workersWg.Wait()
 }
 
 func generateRandomString(length int) string {
