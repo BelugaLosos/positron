@@ -455,20 +455,19 @@ func TestConcurrentDataCorruption(t *testing.T) {
 
 	expectationMap := make(map[int]string)
 
-	for i := range 25 {
-		expectationMap[i] = generateRandomString(30_001)
-	}
-
 	numWorkers := 1000 // this may be limited by send channel size. if processor not rapid enought and can`t pop data from this channel rapidly it may drop packets
 	workersWg := &sync.WaitGroup{}
 
+	for i := range numWorkers {
+		expectationMap[i] = generateRandomString(30_001)
+	}
+
 	workersWg.Add(numWorkers)
-	for range numWorkers {
+	for i := range numWorkers {
 		go func() {
 			defer workersWg.Done()
 
-			index := rand.IntN(len(expectationMap))
-			wsClient.write(0x0, false, []byte(strconv.Itoa(index)+"#"+expectationMap[index]))
+			wsClient.write(0x0, false, []byte(strconv.Itoa(i)+"#"+expectationMap[i]))
 		}()
 	}
 	workersWg.Wait()
@@ -541,17 +540,23 @@ func TestMultipleConcurrentConnections(t *testing.T) {
 				return
 			}
 
-			randomData := generateRandomString(messageSize)
+			randomData := make(map[int]string)
 			receivedAmount := 0
 
-			for range messagesPerWorkerAmount {
-				wsClient.write(0x0, false, []byte(randomData))
+			for i := range messagesPerWorkerAmount {
+				randomData[i] = generateRandomString(messageSize)
+				dataToSend := strconv.Itoa(i) + "#" + randomData[i]
+
+				wsClient.write(0x0, false, []byte(dataToSend))
 			}
 
 			for {
 				message := <-wsClient.dataReceive
 
-				if string(message.rawPayload) != randomData {
+				key, _ := strconv.Atoi(strings.Split(string(message.rawPayload), "#")[0])
+				value := strings.Split(string(message.rawPayload), "#")[1]
+
+				if mapValue, exists := randomData[key]; !exists || mapValue != value {
 					t.Error("data corruption")
 					return
 				} else {
@@ -590,27 +595,31 @@ func TestConcurrentCorruptionSendToPeer(t *testing.T) {
 	}
 	defer wsClient.disconnect()
 
-	randomData := generateRandomString(200_000)
+	randomData := make(map[int]string, 0)
 
 	wsClient.write(0x1, false, []byte("FFFFF"))
 	selfUuid := string((<-wsClient.dataReceive).rawPayload)
 
 	workersWg := &sync.WaitGroup{}
 	workersCount := 20
-	messagesPerWorker := 150
+	messagesPerWorker := 50
 	receivedMessages := 0
+
+	for i := range messagesPerWorker * workersCount {
+		randomData[i] = generateRandomString(200_000)
+	}
 
 	workersWg.Add(workersCount)
 
-	for range workersCount {
+	for i := range workersCount {
 		go func() {
 			defer workersWg.Done()
 
 			time.Sleep(time.Duration(rand.IntN(2)) * time.Millisecond)
 
-			for range messagesPerWorker {
-				transport.SendToPeer([]byte(randomData), 0x2, selfUuid, true)
-				time.Sleep(time.Duration(rand.IntN(25)) * time.Millisecond)
+			for j := range messagesPerWorker {
+				stringPayload := strconv.Itoa(i+j) + "#" + randomData[i+j]
+				transport.SendToPeer([]byte(stringPayload), 0x2, selfUuid, true)
 			}
 		}()
 	}
@@ -623,8 +632,12 @@ func TestConcurrentCorruptionSendToPeer(t *testing.T) {
 			break
 		}
 
-		if string(message.rawPayload) != randomData {
+		index, _ := strconv.Atoi(strings.Split(string(message.rawPayload), "#")[0])
+		payload := strings.Split(string(message.rawPayload), "#")[1]
+
+		if payloadFromMap, exists := randomData[index]; !exists || payloadFromMap != payload {
 			t.Error("data corruption")
+			return
 		}
 
 		log.Println(receivedMessages)

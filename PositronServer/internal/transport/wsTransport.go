@@ -30,11 +30,20 @@ type WsTransport struct {
 	lastIdPostfix int
 }
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  DEFAULT_BUFFER_SIZE,
-	WriteBufferSize: DEFAULT_BUFFER_SIZE,
-	CheckOrigin:     func(r *http.Request) bool { return true },
-}
+var (
+	upgrader = websocket.Upgrader{
+		ReadBufferSize:  DEFAULT_BUFFER_SIZE,
+		WriteBufferSize: DEFAULT_BUFFER_SIZE,
+		CheckOrigin:     func(r *http.Request) bool { return true },
+	}
+
+	buffersPool = &sync.Pool{
+		New: func() any {
+			buf := make([]byte, DEFAULT_BUFFER_SIZE)
+			return &buf
+		},
+	}
+)
 
 const (
 	DEFAULT_BUFFER_SIZE = 256 * 1024
