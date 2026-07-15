@@ -568,6 +568,71 @@ func TestMultipleConcurrentConnections(t *testing.T) {
 	workersWg.Wait()
 }
 
+func TestConcurrentCorruptionSendToPeer(t *testing.T) {
+	wg := &sync.WaitGroup{}
+	addr := "127.0.0.1:12345"
+
+	transport := transport.NewWsTransport()
+	if err := transport.Start(addr, &mockHandlersFactory{}, &mockGameServer{}, wg); err != nil {
+		t.Fatal(err)
+	}
+
+	defer func() {
+		transport.Stop()
+		wg.Wait()
+	}()
+
+	time.Sleep(50 * time.Millisecond)
+
+	wsClient := &wsClientHelper{}
+	if err := wsClient.connect(addr, t); err != nil {
+		t.Fatal(err)
+	}
+	defer wsClient.disconnect()
+
+	randomData := generateRandomString(200_000)
+
+	wsClient.write(0x1, false, []byte("FFFFF"))
+	selfUuid := string((<-wsClient.dataReceive).rawPayload)
+
+	workersWg := &sync.WaitGroup{}
+	workersCount := 20
+	messagesPerWorker := 150
+	receivedMessages := 0
+
+	workersWg.Add(workersCount)
+
+	for range workersCount {
+		go func() {
+			defer workersWg.Done()
+
+			time.Sleep(time.Duration(rand.IntN(2)) * time.Millisecond)
+
+			for range messagesPerWorker {
+				transport.SendToPeer([]byte(randomData), 0x2, selfUuid, true)
+				time.Sleep(time.Duration(rand.IntN(25)) * time.Millisecond)
+			}
+		}()
+	}
+
+	for {
+		message := <-wsClient.dataReceive
+		receivedMessages++
+
+		if receivedMessages == (workersCount * messagesPerWorker) {
+			break
+		}
+
+		if string(message.rawPayload) != randomData {
+			t.Error("data corruption")
+		}
+
+		log.Println(receivedMessages)
+	}
+
+	workersWg.Wait()
+}
+
 func generateRandomString(length int) string {
 	now := time.Now().UnixNano()
 	pcgSource := rand.NewPCG(uint64(now), uint64(now>>32))
