@@ -9,7 +9,7 @@ namespace Positron.Client.GameEntities
         [Key(1)] public uint TargetClientId { get; set; }
         [Key(2)] public ushort SubObjectId { get; set; }
         [Key(3)] public byte Type { get; set; }
-        [Key(4)] public string MethodName { get; set; }
+        [Key(4)] public ushort MethodId { get; set; }
         [Key(5)] public byte[] Args { get; set; }
     }
 }

@@ -12,16 +12,16 @@ func TestCallNonBuffered(t *testing.T) {
 
 	addMod := []*gameentities.GameObject{gameentities.NewGameObject(0, 2, 3, 4, *gameentities.NewVector(0, 1, 2), *gameentities.NewVector(0, 1, 2))}
 
-	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_ALL, "test", []byte("hello"), false), addMod)
-	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_OTHERS, "test", []byte("hello"), false), addMod)
-	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_TARGET, "test", []byte("hello"), false), addMod)
+	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_ALL, 1, []byte("hello"), false), addMod)
+	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_OTHERS, 1, []byte("hello"), false), addMod)
+	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_TARGET, 1, []byte("hello"), false), addMod)
 
 	mod := model.GetCurrentCallBuffer()
 	buffered := model.GetCachedRpcs()
 
 	if len(mod) != 3 {
 		t.Error("Not registred call")
-	} else if string(mod[0].GetArgs()) != "hello" || mod[0].GetMethodName() != "test" || mod[0].GetRpcType() != eventtypes.RPC_ALL || mod[0].GetTargetClient() != 1 ||
+	} else if string(mod[0].GetArgs()) != "hello" || mod[0].GetMethodId() != 1 || mod[0].GetRpcType() != eventtypes.RPC_ALL || mod[0].GetTargetClient() != 1 ||
 		mod[0].GetObjectId() != 0 || mod[0].GetSubObjectId() != 0 {
 		t.Error("Data corrupted")
 	}
@@ -36,7 +36,7 @@ func TestResetCalls(t *testing.T) {
 
 	addMod := []*gameentities.GameObject{gameentities.NewGameObject(0, 2, 3, 4, *gameentities.NewVector(0, 1, 2), *gameentities.NewVector(0, 1, 2))}
 
-	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_ALL, "test", []byte("hello"), false), addMod)
+	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_ALL, 0, []byte("hello"), false), addMod)
 	model.ResetTempBuffers()
 	mod := model.GetCurrentCallBuffer()
 
@@ -50,9 +50,9 @@ func TestBufferedCall(t *testing.T) {
 
 	addMod := []*gameentities.GameObject{gameentities.NewGameObject(0, 2, 3, 4, *gameentities.NewVector(0, 1, 2), *gameentities.NewVector(0, 1, 2))}
 
-	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_ALL_CACHED, "test", []byte("hello"), false), addMod)
-	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_OTHERS_CACHED, "test", []byte("hello"), false), addMod)
-	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_TARGET_CACHED, "test", []byte("hello"), false), addMod)
+	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_ALL_CACHED, 0, []byte("hello"), false), addMod)
+	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_OTHERS_CACHED, 0, []byte("hello"), false), addMod)
+	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_TARGET_CACHED, 0, []byte("hello"), false), addMod)
 	model.ResetTempBuffers()
 	buf := model.GetCachedRpcs()
 
@@ -62,7 +62,7 @@ func TestBufferedCall(t *testing.T) {
 }
 
 func TestRpcDto(t *testing.T) {
-	rpc := gameentities.NewRpcCall(1, 2, 3, 4, "someFunc", []byte{0x1, 0x12, 0x34, 0x22, 0x22}, true)
+	rpc := gameentities.NewRpcCall(1, 2, 3, 4, 0, []byte{0x1, 0x12, 0x34, 0x22, 0x22}, true)
 
 	if rpc.GetArgs()[0] != 0x22 || rpc.GetArgs()[1] != 0x22 || len(rpc.GetArgs()) != 2 {
 		t.Errorf("corrupting of args %v", rpc.GetArgs())
@@ -72,7 +72,7 @@ func TestRpcDto(t *testing.T) {
 		t.Errorf("Corrupted the creation id %v %v", id, has)
 	}
 
-	rpc2 := gameentities.NewRpcCall(1, 2, 3, 4, "someFunc", []byte{0x22, 0x22}, false)
+	rpc2 := gameentities.NewRpcCall(1, 2, 3, 4, 0, []byte{0x22, 0x22}, false)
 
 	if rpc2.GetArgs()[0] != 0x22 || rpc2.GetArgs()[1] != 0x22 || len(rpc2.GetArgs()) != 2 {
 		t.Errorf("corrupting of args %v", rpc2.GetArgs())

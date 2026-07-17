@@ -9,14 +9,14 @@ import (
 
 type RpcCall struct {
 	args         []byte
-	methodName   string
 	targetClient uint32
 	objectId     uint32
+	methodId     uint16
 	subObjectId  uint16
 	rpcType      uint8
 }
 
-func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType uint8, methodName string, agrs []byte, useRawArgs bool) *RpcCall {
+func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType uint8, methodId uint16, agrs []byte, useRawArgs bool) *RpcCall {
 	var argsBuf []byte
 
 	if useRawArgs {
@@ -32,7 +32,7 @@ func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType 
 		targetClient: targetClient,
 		subObjectId:  subObjectsId,
 		rpcType:      rpcType,
-		methodName:   methodName,
+		methodId:     methodId,
 		args:         argsBuf,
 	}
 }
@@ -69,7 +69,7 @@ func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	err = enc.EncodeString(r.methodName)
+	err = enc.EncodeUint(uint64(r.methodId))
 
 	if err != nil {
 		return err
@@ -114,7 +114,7 @@ func (r *RpcCall) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	method, err := dec.DecodeString()
+	method, err := dec.DecodeUint16()
 
 	if err != nil {
 		return err
@@ -126,7 +126,7 @@ func (r *RpcCall) DecodeMsgpack(dec *msgpack.Decoder) error {
 	r.targetClient = clientId
 	r.subObjectId = subId
 	r.rpcType = typeId
-	r.methodName = method
+	r.methodId = method
 	r.args = args
 
 	return err
@@ -152,8 +152,8 @@ func (r *RpcCall) GetRpcType() uint8 {
 	return r.rpcType
 }
 
-func (r *RpcCall) GetMethodName() string {
-	return r.methodName
+func (r *RpcCall) GetMethodId() uint16 {
+	return r.methodId
 }
 
 func (r *RpcCall) GetArgs() []byte {

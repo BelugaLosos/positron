@@ -15,7 +15,7 @@ func TestUnmarshalling(t *testing.T) {
 		val.MarkAsDeleting()
 		val.ModifyPayload([]byte("jopa"))
 
-		rpc := gameentities.NewRpcCall(11, 12, 13, 14, "sraka", []byte("fff"), false)
+		rpc := gameentities.NewRpcCall(11, 12, 13, 14, 1, []byte("fff"), false)
 
 		testData := datatransferobjects.NewTickPacket(1, 15, 16, []*gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []*gameentities.NetValue{val}, []*gameentities.RpcCall{rpc})
 
@@ -54,7 +54,7 @@ func TestUnmarshalling(t *testing.T) {
 			string(testData.GetValueMod()[0].GetPayload()) != string(unmarshalled.GetValueMod()[0].GetPayload()) ||
 			testData.GetValueMod()[0].GetValueId() != unmarshalled.GetValueMod()[0].GetValueId() ||
 			string(testData.GetRpcs()[0].GetArgs()) != string(unmarshalled.GetRpcs()[0].GetArgs()) ||
-			testData.GetRpcs()[0].GetMethodName() != unmarshalled.GetRpcs()[0].GetMethodName() ||
+			testData.GetRpcs()[0].GetMethodId() != unmarshalled.GetRpcs()[0].GetMethodId() ||
 			testData.GetRpcs()[0].GetObjectId() != unmarshalled.GetRpcs()[0].GetObjectId() ||
 			testData.GetRpcs()[0].GetSubObjectId() != unmarshalled.GetRpcs()[0].GetSubObjectId() ||
 			testData.GetRpcs()[0].GetRpcType() != unmarshalled.GetRpcs()[0].GetRpcType() ||
@@ -76,7 +76,7 @@ func TestUnmarshalling(t *testing.T) {
 }
 
 func TestBufferRace(t *testing.T) {
-	rpcCall := gameentities.NewRpcCall(1, 2, 3, 4, "JJjjopa", []byte("A"), false)
+	rpcCall := gameentities.NewRpcCall(1, 2, 3, 4, 1, []byte("A"), false)
 	marshalled, _ := marshaller.NewMessagePackMarshaller().Marshal(rpcCall)
 	var rpcCopy gameentities.RpcCall
 
@@ -94,7 +94,7 @@ func TestBufferRace(t *testing.T) {
 		rpcCall.GetTargetClient() != 2 ||
 		rpcCall.GetSubObjectId() != 3 ||
 		rpcCall.GetRpcType() != 4 ||
-		rpcCall.GetMethodName() != "JJjjopa" ||
+		rpcCall.GetMethodId() != 1 ||
 		(len(rpcCall.GetArgs()) != 1 || rpcCall.GetArgs()[0] != []byte("A")[0]) {
 		t.Error("Data corrupted!")
 	}

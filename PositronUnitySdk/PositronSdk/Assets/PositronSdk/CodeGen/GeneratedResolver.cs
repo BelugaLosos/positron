@@ -747,13 +747,12 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.GameEntities.RpcCall value, global::MessagePack.MessagePackSerializerOptions options)
         {
-            global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
             writer.WriteArrayHeader(6);
             writer.Write(value.ObjectId);
             writer.Write(value.TargetClientId);
             writer.Write(value.SubObjectId);
             writer.Write(value.Type);
-            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Serialize(ref writer, value.MethodName, options);
+            writer.Write(value.MethodId);
             writer.Write(value.Args);
         }
 
@@ -765,7 +764,6 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
             }
 
             options.Security.DepthStep(ref reader);
-            global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
             var length = reader.ReadArrayHeader();
             var ____result = new global::Positron.Client.GameEntities.RpcCall();
 
@@ -786,7 +784,7 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
                         ____result.Type = reader.ReadByte();
                         break;
                     case 4:
-                        ____result.MethodName = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<string>(formatterResolver).Deserialize(ref reader, options);
+                        ____result.MethodId = reader.ReadUInt16();
                         break;
                     case 5:
                         ____result.Args = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
