@@ -14,10 +14,6 @@ import (
 	"github.com/google/uuid"
 )
 
-var (
-	EMPTY_UINT32_ARR = []uint32{}
-)
-
 type Room struct {
 	mutex       *sync.RWMutex
 	Termination chan struct{}
