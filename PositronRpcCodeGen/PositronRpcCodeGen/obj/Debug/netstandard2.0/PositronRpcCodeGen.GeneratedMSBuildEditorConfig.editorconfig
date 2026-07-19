@@ -1,0 +1,5 @@
+is_global = true
+build_property.RootNamespace = PositronRpcCodeGen
+build_property.ProjectDir = E:\positron\positron\PositronRpcCodeGen\PositronRpcCodeGen\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 
