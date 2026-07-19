@@ -28,7 +28,7 @@ namespace PositronRpcCodeGen.Validator
             return false;
         }
 
-        public DiagnosticDescriptor GenerateDiagnosticsDescriptor(INamedTypeSymbol type)
+        public DiagnosticDescriptor GenerateDiagnosticsDescriptor()
         {
             return new DiagnosticDescriptor(
                     "RPC Codegen " + Guid.NewGuid().ToString(),
