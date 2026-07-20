@@ -5,11 +5,11 @@ public partial class TestRpc : MonoBehaviour
 {
     private void Start()
     {
-        SendRPC_Foo(RpcTargets.RPC_ALL);
+        SendRPC_Foo1(RpcTargets.RPC_ALL);
     }
 
     [Rpc]
-    private void Foo()
+    private void Foo1()
     {
         
     }
