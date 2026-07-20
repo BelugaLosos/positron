@@ -1,16 +1,26 @@
 using Positron.Client.ConstantHolders;
 using UnityEngine;
 
-public partial class TestRpc : MonoBehaviour
+namespace TeGst.F.A.V.C
 {
-    private void Start()
+    public partial class TestRpc : MonoBehaviour
     {
-        SendRPC_Foo1(RpcTargets.RPC_ALL);
-    }
+        private void Start()
+        {
+            SendRPC_Foo1(RpcTargets.RPC_ALL);
+            SendRPC_Foo2(RpcTargets.RPC_ALL);
+        }
 
-    [Rpc]
-    private void Foo1()
-    {
-        
+        [Rpc]
+        private void Foo1()
+        {
+               
+        }
+
+        [Rpc]
+        private void Foo2()
+        {
+
+        }
     }
 }

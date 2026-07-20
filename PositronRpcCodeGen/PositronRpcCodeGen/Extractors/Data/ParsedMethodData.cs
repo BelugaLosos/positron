@@ -1,6 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 
-namespace PositronRpcCodeGen.Extractors
+namespace PositronRpcCodeGen.Extractors.Data
 {
     internal struct ParsedMethodData
     {

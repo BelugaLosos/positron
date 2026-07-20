@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using PositronRpcCodeGen.Extractors;
+using PositronRpcCodeGen.Extractors.Data;
 using PositronRpcCodeGen.Generators;
 using PositronRpcCodeGen.Validator;
 using System.Collections.Generic;
@@ -31,16 +32,16 @@ namespace PositronRpcCodeGen
 
             usagesGenerator.GenerateUsages(sourceBuilder);
 
-            foreach (INamedTypeSymbol type in typesExtractor.ExtractAllTypesFromAssembly(compiler, TypeKind.Class))
+            foreach (ParsedTypeData type in typesExtractor.ExtractAllTypesFromAssembly(compiler, TypeKind.Class))
             {
-                List<ParsedMethodData> methods = methodsExtractor.ExtractMethodsFromType(type, RPC_ATTR_NAME).ToList();
+                List<ParsedMethodData> methods = methodsExtractor.ExtractMethodsFromType(type.Type, RPC_ATTR_NAME).ToList();
 
-                if (!partialsValidator.ClassIsPartial(type) && methods.Count > 0)
+                if (!partialsValidator.ClassIsPartial(type.Type) && methods.Count > 0)
                 {
                     Diagnostic diagnosticsReport = Diagnostic.Create(
                             partialsValidator.GenerateDiagnosticsDescriptor(),
-                            type.Locations.FirstOrDefault() ?? Location.None,
-                            type.Name
+                            type.Type.Locations.FirstOrDefault() ?? Location.None,
+                            type.Type.Name
                         );
 
                     context.ReportDiagnostic(diagnosticsReport);
@@ -53,7 +54,7 @@ namespace PositronRpcCodeGen
                     continue;
                 }
 
-                classGenerator.AppendInitial(sourceBuilder, type.Name);
+                classGenerator.AppendInitial(sourceBuilder, type.Type.Name, type.GetNamespaceName());
 
                 foreach (ParsedMethodData method in methods)
                 {
@@ -73,7 +74,7 @@ namespace PositronRpcCodeGen
                     methodGenerator.GenerateMethodWithClosure(sourceBuilder, method);
                 }
 
-                classGenerator.AppendClosure(sourceBuilder);
+                classGenerator.AppendClosure(sourceBuilder, type.NameSpace.ToDisplayString());
             }
 
             context.AddSource("RpcLowLevelInteractors.gen.cs", SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));

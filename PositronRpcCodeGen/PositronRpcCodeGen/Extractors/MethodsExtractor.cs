@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using PositronRpcCodeGen.Extractors.Data;
 using System.Collections.Generic;
 using System.Linq;
 

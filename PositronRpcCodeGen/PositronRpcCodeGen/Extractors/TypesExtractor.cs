@@ -1,26 +1,27 @@
 ﻿using Microsoft.CodeAnalysis;
+using PositronRpcCodeGen.Extractors.Data;
 using System.Collections.Generic;
 
 namespace PositronRpcCodeGen.Extractors
 {
     internal class TypesExtractor
     {
-        public IEnumerable<INamedTypeSymbol> ExtractAllTypesFromAssembly(Compilation compiler, TypeKind kind) =>
+        public IEnumerable<ParsedTypeData> ExtractAllTypesFromAssembly(Compilation compiler, TypeKind kind) =>
             DoExtractTypes(compiler.GlobalNamespace, kind);
 
-        private IEnumerable<INamedTypeSymbol> DoExtractTypes(INamespaceSymbol space, TypeKind kind)
+        private IEnumerable<ParsedTypeData> DoExtractTypes(INamespaceSymbol space, TypeKind kind)
         {
             foreach (INamedTypeSymbol type in space.GetTypeMembers())
             {
                 if (!type.IsImplicitlyDeclared && type.TypeKind == kind)
                 {
-                    yield return type;
+                    yield return new ParsedTypeData(type, type.ContainingNamespace);
                 }
             }
 
             foreach (INamespaceSymbol nestedNamespace in space.GetNamespaceMembers())
             {
-                foreach (INamedTypeSymbol typeFromNested in DoExtractTypes(nestedNamespace, kind))
+                foreach (ParsedTypeData typeFromNested in DoExtractTypes(nestedNamespace, kind))
                 {
                     yield return typeFromNested;
                 }

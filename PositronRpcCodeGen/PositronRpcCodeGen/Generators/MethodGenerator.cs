@@ -1,5 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
-using PositronRpcCodeGen.Extractors;
+using PositronRpcCodeGen.Extractors.Data;
 using System.Text;
 
 namespace PositronRpcCodeGen.Generators
