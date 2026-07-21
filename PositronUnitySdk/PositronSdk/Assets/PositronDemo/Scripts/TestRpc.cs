@@ -7,12 +7,12 @@ namespace TeGst.F.A.V.C
     {
         private void Start()
         {
-            SendRPC_Foo1(RpcTargets.RPC_ALL);
+            SendRPC_Foo1(RpcTargets.RPC_ALL, "", Vector3.zero);
             SendRPC_Foo2(RpcTargets.RPC_ALL);
         }
 
         [Rpc]
-        private void Foo1()
+        private void Foo1(string s, Vector3 v)
         {
                
         }

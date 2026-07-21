@@ -23,9 +23,25 @@ namespace PositronRpcCodeGen.Extractors
                         continue;
                     }
 
-                    yield return new ParsedMethodData(method, attrData);
+                    yield return new ParsedMethodData(method, attrData, GetMethodArgs(method));
                 }
             }
+        }
+
+        private ParsedMethodArgData[] GetMethodArgs(IMethodSymbol method)
+        {
+            List<ParsedMethodArgData> args = new List<ParsedMethodArgData>();
+
+            foreach (IParameterSymbol param in method.Parameters)
+            {
+                string name = param.Name;
+                string def = param.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+                IParameterSymbol sym = param;
+
+                args.Add(new ParsedMethodArgData(name, def, sym));
+            }   
+
+            return args.ToArray();
         }
     }
 }

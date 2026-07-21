@@ -48,7 +48,7 @@ namespace PositronRpcCodeGen
 
                     return;
                 }
-
+                
                 if (methods.Count == 0)
                 {  
                     continue;

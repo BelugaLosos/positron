@@ -6,11 +6,13 @@ namespace PositronRpcCodeGen.Extractors.Data
     {
         public IMethodSymbol MethodSymbol;
         public AttributeData RpcAttr;
+        public ParsedMethodArgData[] Args;
 
-        public ParsedMethodData(IMethodSymbol method, AttributeData attr)
+        public ParsedMethodData(IMethodSymbol method, AttributeData attr, ParsedMethodArgData[] args)
         {
             MethodSymbol = method;
             RpcAttr = attr;
+            Args = args;
         }
     }
 }

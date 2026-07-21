@@ -26,7 +26,17 @@ namespace PositronRpcCodeGen.Generators
                     break;
             }
 
-            str.AppendLine($"    {accessModifier} void SendRPC_{data.MethodSymbol.Name}(global::Positron.Client.ConstantHolders.RpcTargets targets)");
+            StringBuilder parametersDefinition = new StringBuilder("");
+
+            foreach (ParsedMethodArgData arg in data.Args)
+            {
+                parametersDefinition.Append(", ");
+                parametersDefinition.Append(arg.DefinitionString);
+                parametersDefinition.Append(" ");
+                parametersDefinition.Append(arg.Name);
+            }
+
+            str.AppendLine($"    {accessModifier} void SendRPC_{data.MethodSymbol.Name}(global::Positron.Client.ConstantHolders.RpcTargets targets{parametersDefinition})");
 
             str.AppendLine("    {");
             str.AppendLine("        Debug.Log(\"Hello world\");");
