@@ -20,7 +20,7 @@ namespace Positron.Client.Handlers
 
         public void Dispose() { }
 
-        public void Handle(Span<byte> packet)
+        public void Handle(ReadOnlyMemory<byte> packet)
         {
             callback?.Invoke(_client.Serializer.Deserialize<GameTickPacket>(packet));
         }

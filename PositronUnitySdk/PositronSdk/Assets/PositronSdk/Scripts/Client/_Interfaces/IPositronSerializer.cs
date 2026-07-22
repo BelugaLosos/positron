@@ -6,6 +6,6 @@ namespace Positron.Client.Interfaces
     {
         void Init();
         Span<byte> Serialize<T>(T data);
-        T Deserialize<T>(Span<byte> data);
+        T Deserialize<T>(ReadOnlyMemory<byte> data);
     }
 }

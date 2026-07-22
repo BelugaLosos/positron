@@ -13,7 +13,7 @@ namespace Positron.Client.Handlers
         public void Init(IPositronClient client) { }
         public void Dispose() { }
 
-        public void Handle(Span<byte> packet)
+        public void Handle(ReadOnlyMemory<byte> packet)
         {
             leaveConfirmed?.Invoke();
         }

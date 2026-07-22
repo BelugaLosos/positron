@@ -7,6 +7,6 @@ namespace Positron.Client.Interfaces
     {
         EventTypes MessageType { get; }
         void Init(IPositronClient client);
-        void Handle(Span<byte> packet);
+        void Handle(ReadOnlyMemory<byte> packet);
     }
 }

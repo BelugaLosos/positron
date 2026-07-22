@@ -101,7 +101,7 @@ namespace Positron.Client
             {
                 if (handler.MessageType == types)
                 {
-                    handler.Handle(payloadData);
+                    handler.Handle(new(payloadData));
                     break;
                 }
             }

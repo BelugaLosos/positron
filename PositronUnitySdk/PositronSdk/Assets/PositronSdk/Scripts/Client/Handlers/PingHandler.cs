@@ -22,7 +22,7 @@ namespace Positron.Client.Handlers
             _pingModel.Dispose();
         }
 
-        public void Handle(Span<byte> packet)
+        public void Handle(ReadOnlyMemory<byte> packet)
         {
             _pingModel.Pong();
         }

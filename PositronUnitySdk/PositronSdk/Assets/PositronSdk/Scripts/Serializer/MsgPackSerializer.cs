@@ -24,9 +24,9 @@ namespace Positron.Serialzier
                 .WithCompression(MessagePackCompression.None);
         }
 
-        public T Deserialize<T>(Span<byte> data)
+        public T Deserialize<T>(ReadOnlyMemory<byte> data)
         {
-            return MessagePackSerializer.Deserialize<T>(data.ToArray());
+            return MessagePackSerializer.Deserialize<T>(data);
         }
 
         public Span<byte> Serialize<T>(T data)
