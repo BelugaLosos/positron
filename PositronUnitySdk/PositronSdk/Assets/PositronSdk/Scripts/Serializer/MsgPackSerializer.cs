@@ -31,20 +31,23 @@ namespace Positron.Serialzier
 
         public int Serialize<T>(T data, Span<byte> destination)
         {
-            _serializeStream.SetLength(0);
-            MessagePackSerializer.Serialize(_serializeStream, data);
-
-            int length = (int)_serializeStream.Length;
-
-            if (length > destination.Length)
+            lock (_serializeStream)
             {
-                throw new ArgumentException($"Buffer too small! Required: {length}, Available: {destination.Length}");
+                _serializeStream.SetLength(0);
+                MessagePackSerializer.Serialize(_serializeStream, data);
+
+                int length = (int)_serializeStream.Length;
+
+                if (length > destination.Length)
+                {
+                    throw new ArgumentException($"Buffer too small! Required: {length}, Available: {destination.Length}");
+                }
+
+                _serializeStream.Position = 0;
+                _serializeStream.Read(destination.Slice(0, length));
+
+                return length;
             }
-
-            _serializeStream.Position = 0;
-            _serializeStream.Read(destination.Slice(0, length));
-
-            return length;
         }
 
         public T Deserialize<T>(ReadOnlyMemory<byte> data)
