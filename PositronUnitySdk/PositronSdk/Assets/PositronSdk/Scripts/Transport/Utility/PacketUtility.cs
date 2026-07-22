@@ -8,7 +8,7 @@ namespace Positron.Transport.Utility
     {
         public static readonly int PROTOCOL_HEADER_MAX_OFFSET = 6;
 
-        public static Span<byte> GlueDataToOptions(EventTypes eventType, bool isCompressed, uint sourceSize, Span<byte> data, byte[] sharedBuffer)
+        public static ReadOnlySpan<byte> GlueDataToOptions(EventTypes eventType, bool isCompressed, uint sourceSize, ReadOnlySpan<byte> data, byte[] sharedBuffer)
         {
             byte compressionFlag = 0;
             uint totalLen = (uint)data.Length + 2;
@@ -36,14 +36,14 @@ namespace Positron.Transport.Utility
             return buffer.Slice(0, (int)totalLen);
         }
 
-        public static PacketData DeconstructPacket(Span<byte> packet)
+        public static PacketData DeconstructPacket(ReadOnlySpan<byte> packet)
         {
             PacketData packetWithHeaders = new PacketData();
             packetWithHeaders.Event = (EventTypes)packet[0];
             packetWithHeaders.IsCompressed = packet[1] == 1;
             packetWithHeaders.SourceSize = 0;
 
-            Span<byte> data;
+            ReadOnlySpan<byte> data;
 
             if (packetWithHeaders.IsCompressed)
             {
@@ -67,6 +67,6 @@ namespace Positron.Transport.Utility
         public EventTypes Event;
         public bool IsCompressed;
         public uint SourceSize;
-        public Span<byte> Data;
+        public ReadOnlySpan<byte> Data;
     }
 }

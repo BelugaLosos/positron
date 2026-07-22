@@ -91,7 +91,7 @@ namespace Positron.Transport
             }
         }
 
-        public void Send(Span<byte> rawMessage, EventTypes type, bool isReliable)
+        public void Send(ReadOnlySpan<byte> rawMessage, EventTypes type, bool isReliable)
         {
             if (_webSokcet == null || _webSokcet.State != WebSocketState.Open)
             {
@@ -110,7 +110,7 @@ namespace Positron.Transport
                     int compressedLength = LZ4Codec.Encode(rawMessage, compressionBuffer);
                     compressionBuffer = compressionBuffer.Slice(0, compressedLength);
 
-                    Span<byte> constructedPacket = PacketUtility.GlueDataToOptions(type, true, (uint)rawMessage.Length, compressionBuffer, sendBuffer);
+                    ReadOnlySpan<byte> constructedPacket = PacketUtility.GlueDataToOptions(type, true, (uint)rawMessage.Length, compressionBuffer, sendBuffer);
                     _webSokcet.Send(constructedPacket.ToArray()); // this shit does not allow usage of array segment or smth like that. IT FORCES ME TO DO ALLOC!!!
                 }
                 catch(Exception e)
@@ -129,7 +129,7 @@ namespace Positron.Transport
 
                 try
                 {
-                    Span<byte> constructedPacket = PacketUtility.GlueDataToOptions(type, false, 0, rawMessage, sendBuffer);
+                    ReadOnlySpan<byte> constructedPacket = PacketUtility.GlueDataToOptions(type, false, 0, rawMessage, sendBuffer);
                     _webSokcet.Send(constructedPacket.ToArray()); // this shit does not allow usage of array segment or smth like that. IT FORCES ME TO DO ALLOC!!!
                 }
                 catch (Exception e)
