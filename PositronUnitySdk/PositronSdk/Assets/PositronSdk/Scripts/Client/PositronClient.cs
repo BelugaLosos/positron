@@ -14,6 +14,7 @@ namespace Positron.Client
         private readonly IPositronSerializer _serializer;
         private readonly IPositronTransport _transport;
         private readonly IPositronHandler[] _handlers;
+        private readonly byte[] _serializeBuffer = new byte[256 * 1024]; // 256 KB
 
         public ClientStatus Status { get; private set; }
         public IPositronSerializer Serializer => _serializer;
@@ -29,6 +30,8 @@ namespace Positron.Client
             _serializer = serializer;
             _transport = transport;
             _handlers = handlers;
+
+            _serializer.Init();
 
             Status = ClientStatus.Disconnected;
 
@@ -68,7 +71,10 @@ namespace Positron.Client
 
         public void Send<T>(T data, EventTypes eventType, bool reliable)
         {
-            _transport.Send(_serializer.Serialize(data), eventType, reliable);
+            Span<byte> buffer = _serializeBuffer;
+            int serializedAmount = _serializer.Serialize(data, buffer);
+
+            _transport.Send(buffer.Slice(0, serializedAmount), eventType, reliable);
         }
 
         public void SendRaw(Span<byte> payloadData, EventTypes eventType, bool reliable)

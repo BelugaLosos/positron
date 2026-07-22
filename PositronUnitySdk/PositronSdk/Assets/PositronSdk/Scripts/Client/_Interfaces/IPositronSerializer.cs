@@ -5,7 +5,7 @@ namespace Positron.Client.Interfaces
     public interface IPositronSerializer
     {
         void Init();
-        Span<byte> Serialize<T>(T data);
+        int Serialize<T>(T data, Span<byte> destionation);
         T Deserialize<T>(ReadOnlyMemory<byte> data);
     }
 }
