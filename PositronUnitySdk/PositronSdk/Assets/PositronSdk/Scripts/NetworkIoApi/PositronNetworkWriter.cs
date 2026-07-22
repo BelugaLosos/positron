@@ -2,6 +2,7 @@ using Positron.Client.Interfaces;
 using System;
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Runtime.CompilerServices;
 
 namespace Positron.NetworkIoAPI
@@ -14,13 +15,22 @@ namespace Positron.NetworkIoAPI
 
         private int _pointerPosition;
 
+        /// <summary>
+        /// All data containing in this writer. use it for sending via network
+        /// </summary>
         public ReadOnlySpan<byte> Data => new ReadOnlySpan<byte>(_buffer).Slice(0, _pointerPosition);
 
-        public PositronNetworkWriter(IPositronSerializer complexDataSerializer)
+        /// <summary>
+        /// Creates new writer
+        /// </summary>
+        /// <param name="complexDataSerializer">Serializer tha used for writing structs or classes into network</param>
+        /// <param name="bufferSize">main buffer size in bytes. by default is 65536 (64 KB)</param>
+        /// <param name="tempBufferSize">buffer for serializing complex data. by default is 16384 (16 KB)</param>
+        public PositronNetworkWriter(IPositronSerializer complexDataSerializer, int bufferSize = 64 * 1024, int tempBufferSize = 16 * 1024)
         {
-            _complexDataSerializer = complexDataSerializer;
-            _buffer = new byte[64 * 1024]; // 64 KB
-            _tempComplexDataSerializeBuffer = new byte[16 * 1024]; // 16 KB
+            _complexDataSerializer = complexDataSerializer ?? throw new ArgumentNullException($"{typeof(IPositronSerializer)} can`t be null");
+            _buffer = new byte[bufferSize];
+            _tempComplexDataSerializeBuffer = new byte[tempBufferSize];
         }
 
         /// <summary>
@@ -31,15 +41,8 @@ namespace Positron.NetworkIoAPI
         {
             if (eraseDataFully)
             {
-                for (int i = 0; i < _pointerPosition; i++)
-                {
-                    _buffer[i] = 0;
-                }
-
-                for (int i = 0; i < _tempComplexDataSerializeBuffer.Length; i++)
-                {
-                    _tempComplexDataSerializeBuffer[i] = 0;
-                }
+                _buffer.AsSpan(0, _pointerPosition).Clear();
+                _tempComplexDataSerializeBuffer.AsSpan().Clear();
             }
 
             _pointerPosition = 0;
@@ -159,21 +162,23 @@ namespace Positron.NetworkIoAPI
         /// </summary>
         /// <typeparam name="T">any ref type or ordinary struct</typeparam>
         /// <param name="complex">data instance or copy</param>
-        /// <exception cref="IndexOutOfRangeException">Occures when new serialized data larger than remaining size in writer`s buffer</exception>
-        /// <exception cref="IndexOutOfRangeException">Occures when can`t put data to buffer correctly because serialized representation larger than 16 KB</exception>
+        /// <exception cref="InternalBufferOverflowException">Occures when new serialized data larger than remaining size in writer`s buffer</exception>
+        /// <exception cref="InternalBufferOverflowException">Occures when can`t put data to buffer correctly because serialized representation larger than 16 KB</exception>
         public void Write<T>(T complex)
         {
+            const int KB16 = 16 * 1024; 
+
             Span<byte> tempBuffer = _tempComplexDataSerializeBuffer;
             int bytesWriten = _complexDataSerializer.Serialize(complex, _tempComplexDataSerializeBuffer);
 
-            if (_pointerPosition + bytesWriten > _buffer.Length)
+            if (_pointerPosition + 2 + bytesWriten > _buffer.Length)
             {
-                throw new IndexOutOfRangeException("PositronNetworkWriter overloaded, please clear it!");
+                throw new InternalBufferOverflowException("PositronNetworkWriter overloaded, please clear it!");
             }
 
-            if (bytesWriten > ushort.MaxValue)
+            if (bytesWriten > KB16)
             {
-                throw new IndexOutOfRangeException("PositronNetworkWriter can`t put data to buffer correctly because serialized representation larger than 16 KB");
+                throw new InternalBufferOverflowException("PositronNetworkWriter can`t put data to buffer correctly because serialized representation larger than 16 KB");
             }
 
             WriteUshort((ushort)bytesWriten);
@@ -194,7 +199,7 @@ namespace Positron.NetworkIoAPI
         }
 
         [DoesNotReturn]
-        private void ThrowErr() => throw new IndexOutOfRangeException("PositronNetworkWriter overloaded, please clear it!");
+        private void ThrowErr() => throw new InternalBufferOverflowException("PositronNetworkWriter overloaded, please clear it!");
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void MovePtr(int size)
