@@ -133,7 +133,11 @@ namespace Positron.NetworkIoAPI
         public void WriteBytes(ReadOnlySpan<byte> data)
         {
             WriteInt(data.Length);
-            data.CopyTo(Balloc(data.Length));
+
+            if (data.Length != 0)
+            {
+                data.CopyTo(Balloc(data.Length));
+            }
         }
 
         /// <summary>
@@ -142,7 +146,7 @@ namespace Positron.NetworkIoAPI
         /// <param name="toWrite"></param>
         public void WriteString(string toWrite)
         {
-            if (toWrite == null)
+            if (string.IsNullOrEmpty(toWrite))
             {
                 throw new ArgumentNullException();
             }
