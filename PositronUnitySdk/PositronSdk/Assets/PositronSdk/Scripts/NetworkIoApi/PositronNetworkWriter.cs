@@ -32,6 +32,7 @@ namespace Positron.NetworkIoAPI
         /// <param name="complexDataSerializer">Serializer than is used for writing structs or classes into network</param>
         /// <param name="bufferSize">main buffer size in bytes. by default is 65536 (64 KB)</param>
         /// <param name="tempBufferSize">buffer for serializing complex data. by default is 16384 (16 KB)</param>
+        /// <exception cref="ArgumentNullException">occurs when complex serializer not passed</exception>
         public PositronNetworkWriter(IPositronSerializer complexDataSerializer, int bufferSize = 64 * 1024, int tempBufferSize = 16 * 1024)
         {
             _complexDataSerializer = complexDataSerializer ?? throw new ArgumentNullException($"{typeof(IPositronSerializer)} can`t be null");
@@ -97,12 +98,6 @@ namespace Positron.NetworkIoAPI
         public void WriteUshort(ushort toWrite) => BinaryPrimitives.WriteUInt16BigEndian(Balloc(2), toWrite);
 
         /// <summary>
-        /// Writes bool as byte (0 or 1) to buffer
-        /// </summary>
-        /// <param name="toWrite">bool value</param>
-        public void WriteBool(bool toWrite) => Balloc(1)[0] = (byte)(toWrite ? 1 : 0);
-
-        /// <summary>
         /// Writes one byte into buffer
         /// </summary>
         /// <param name="toWrite">byte value</param>
@@ -113,6 +108,12 @@ namespace Positron.NetworkIoAPI
         /// </summary>
         /// <param name="toWrite">signed byte value</param>
         public void WriteSbyte(sbyte toWrite) => Balloc(1)[0] = (byte)toWrite;
+
+        /// <summary>
+        /// Writes bool as byte (0 or 1) to buffer
+        /// </summary>
+        /// <param name="toWrite">bool value</param>
+        public void WriteBool(bool toWrite) => Balloc(1)[0] = (byte)(toWrite ? 1 : 0);
 
         /// <summary>
         /// Writes float into buffer
