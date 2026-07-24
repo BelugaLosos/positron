@@ -6,6 +6,7 @@ using UnityEngine;
 using Positron.Client.Mono;
 using Positron.Client.GameEntities.Premitive;
 using Positron.Client.Mono.Syncers;
+using Positron.Utility;
 
 namespace Positron.Client.Room.Models
 {
@@ -17,10 +18,10 @@ namespace Positron.Client.Room.Models
 
         private readonly NetworkWorld _world;
 
-        private readonly List<NetGameObject> _creationDelta = new(128);
-        private readonly List<NetTransform> _moveDelta = new(128);
-        private readonly List<uint> _destroyDelta = new(128);
-        private readonly List<uint> _requestOwnershipDelta = new(16);
+        private readonly PooledDynamicArraySegment<NetGameObject> _creationDelta = new(128);
+        private readonly PooledDynamicArraySegment<NetTransform> _moveDelta = new(128);
+        private readonly PooledDynamicArraySegment<uint> _destroyDelta = new(128);
+        private readonly PooledDynamicArraySegment<uint> _requestOwnershipDelta = new(16);
 
         private readonly Dictionary<PositronNetworkIdentity, ushort> _indexedAssets = new();
         private readonly Dictionary<ushort, PositronNetworkIdentity> _reverseAssetsIndex = new();
@@ -52,6 +53,11 @@ namespace Positron.Client.Room.Models
         public void Dispose()
         {
             ClearWorld();
+
+            _creationDelta.Dispose();
+            _moveDelta.Dispose();
+            _destroyDelta.Dispose();
+            _requestOwnershipDelta.Dispose();
         }
 
         public void ClearWorld()
@@ -152,7 +158,7 @@ namespace Positron.Client.Room.Models
                 }
                 else
                 {
-                    _creationDelta.RemoveAt(findIndex);
+                    _creationDelta.RemoveAndDisorder(findIndex);
                     _localCreationMapping.Remove(instance.CreationId);
                 }
 
@@ -184,7 +190,7 @@ namespace Positron.Client.Room.Models
             _requestOwnershipDelta.Add(networkIdentity.ObjectId);
         }
 
-        public void CreateObjects(NetGameObject[] objs)
+        public void CreateObjects(ArraySegment<NetGameObject> objs)
         {
             foreach (NetGameObject obj in objs)
             {
@@ -225,12 +231,12 @@ namespace Positron.Client.Room.Models
 
                 PositronNetworkIdentity created = GameObject.Instantiate(_reverseAssetsIndex[obj.AssetIndex], obj.Position.ToUnity(), Quaternion.Euler(obj.Rotation.ToUnity()));
                 created.NetworkInit(obj);
-
+                Debug.Log(obj.ObjectId);
                 _currentGameObjectsOnScene.Add(obj.ObjectId, created);
             }
         }
 
-        public void RemoveObjects(uint[] objs)
+        public void RemoveObjects(ArraySegment<uint> objs)
         {
             foreach (uint obj in objs)
             {
@@ -254,9 +260,9 @@ namespace Positron.Client.Room.Models
             }
         }
 
-        public void TransferObjects(uint[] transferedDataBuffer)
+        public void TransferObjects(ArraySegment<uint> transferedDataBuffer)
         {
-            for (int i = 0; i < transferedDataBuffer.Length - 1; i += 2)
+            for (int i = 0; i < transferedDataBuffer.Count - 1; i += 2)
             {
                 uint newOwnerId = transferedDataBuffer[i];
                 uint oid = transferedDataBuffer[i + 1];
@@ -339,7 +345,7 @@ namespace Positron.Client.Room.Models
             }
         }
 
-        public void MoveObjects(NetTransform[] objs, uint tickIndex)
+        public void MoveObjects(ArraySegment<NetTransform> objs, uint tickIndex)
         {
             if (tickIndex < _recentTick)
             {
@@ -365,7 +371,7 @@ namespace Positron.Client.Room.Models
         }
 
         public GameObjectsDelta GetActionsDelta() => new GameObjectsDelta(_creationDelta.ToArray(), _destroyDelta.ToArray(), _requestOwnershipDelta.ToArray());
-        public NetTransform[] GetMoveDelta() => _moveDelta.ToArray();
+        public ArraySegment<NetTransform> GetMoveDelta() => _moveDelta.ToArray();
 
         public void ClearDelta()
         {
@@ -387,11 +393,11 @@ namespace Positron.Client.Room.Models
 
         public struct GameObjectsDelta
         {
-            public NetGameObject[] NewGameOgjects;
-            public uint[] RemovedGameObjectIds;
-            public uint[] RequestOwnershipDelta;
+            public ArraySegment<NetGameObject> NewGameOgjects;
+            public ArraySegment<uint> RemovedGameObjectIds;
+            public ArraySegment<uint> RequestOwnershipDelta;
             
-            public GameObjectsDelta(NetGameObject[] gos, uint[] destruction, uint[] requestOwnershipDelta)
+            public GameObjectsDelta(ArraySegment<NetGameObject> gos, ArraySegment<uint> destruction, ArraySegment<uint> requestOwnershipDelta)
             {
                 NewGameOgjects = gos;
                 RemovedGameObjectIds = destruction;

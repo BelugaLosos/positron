@@ -1,17 +1,18 @@
 using Positron.Client.GameEntities;
+using Positron.Utility;
 using System;
-using System.Collections.Generic;
 
 namespace Positron.Client.Room.Models
 {
     public sealed class NetworkValuesModel : IDisposable
     {
-        private readonly List<NetValue> _values = new(128);
-        private readonly List<NetValue> _currentDelta = new(128);
+        private readonly PooledDynamicArraySegment<NetValue> _currentDelta = new(128);
 
         public void Dispose()
         {
             ClearWorld();
+
+            _currentDelta.Dispose();
         }
 
         public void ClearWorld()
@@ -19,7 +20,7 @@ namespace Positron.Client.Room.Models
 
         }
 
-        public void AddOrModifyValues(NetValue[] values)
+        public void AddOrModifyValues(ArraySegment<NetValue> values)
         {
             foreach (NetValue value in values)
             {
@@ -32,7 +33,7 @@ namespace Positron.Client.Room.Models
 
         }
 
-        public NetValue[] GetValuesDelta() => _currentDelta.ToArray();
+        public ArraySegment<NetValue> GetValuesDelta() => _currentDelta.ToArray();
         public void ClearDelta() => _currentDelta.Clear();
     }
 }

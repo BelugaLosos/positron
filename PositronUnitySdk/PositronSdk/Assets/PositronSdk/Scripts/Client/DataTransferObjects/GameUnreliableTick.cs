@@ -1,5 +1,6 @@
 using MessagePack;
 using Positron.Client.GameEntities;
+using System;
 
 namespace Positron.Client.DataTransferObjects
 {
@@ -8,6 +9,6 @@ namespace Positron.Client.DataTransferObjects
     {
         [Key(0)] public uint Tick { get; set; }
         [Key(1)] public uint ClientId { get; set; }
-        [Key(2)] public NetTransform[] MovedObjects { get; set; }
+        [Key(2)] public ArraySegment<NetTransform> MovedObjects { get; set; }
     }
 }
