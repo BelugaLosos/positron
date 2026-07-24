@@ -149,7 +149,23 @@ namespace Positron.NetworkIoAPI
             return Encoding.UTF8.GetString(Bfree(size));
         }
 
-        // TODO: Read complex
+        /// <summary>
+        /// Reads dynamic complex object from buffer
+        /// </summary>
+        /// <typeparam name="T">Complex type</typeparam>
+        /// <returns>New object instance</returns>
+        /// <exception cref="InvalidOperationException">Occurs when size is 0 (invalid data source)</exception>
+        public T ReadComplex<T>()
+        {
+            int size = ReadInt();
+
+            if (size == 0)
+            {
+                throw new InvalidOperationException("Can`t read 0 size complex object");
+            }
+
+            return _complexDataSerializer.Deserialize<T>(BfreeAsMemory(size));
+        }
 
         private ReadOnlySpan<byte> Bfree(int size)
         {
@@ -157,6 +173,14 @@ namespace Positron.NetworkIoAPI
             CheckSizeAndThrow(offset);
             _pointerPosition -= offset;
             return _buffer.AsSpan(_pointerPosition, size);
+        }
+
+        private ReadOnlyMemory<byte> BfreeAsMemory(int size)
+        {
+            int offset = size - 1;
+            CheckSizeAndThrow(offset);
+            _pointerPosition -= offset;
+            return _buffer.AsMemory(_pointerPosition, size);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
