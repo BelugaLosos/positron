@@ -231,7 +231,7 @@ namespace Positron.Client.Room.Models
 
                 PositronNetworkIdentity created = GameObject.Instantiate(_reverseAssetsIndex[obj.AssetIndex], obj.Position.ToUnity(), Quaternion.Euler(obj.Rotation.ToUnity()));
                 created.NetworkInit(obj);
-                Debug.Log(obj.ObjectId);
+                
                 _currentGameObjectsOnScene.Add(obj.ObjectId, created);
             }
         }

@@ -1,0 +1,18 @@
+{
+    "name": "PositronSDK.Editor",
+    "rootNamespace": "",
+    "references": [
+        "GUID:2ba9c801bbdf8104ab089da66f0c6f8c"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
