@@ -84,7 +84,6 @@ func (g *GameUnreliableTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	movedLen, err := dec.DecodeArrayLen()
 
-	clear(g.movedObjects)
 	g.movedObjects = g.movedObjects[:cap(g.movedObjects)]
 
 	for i := range movedLen {

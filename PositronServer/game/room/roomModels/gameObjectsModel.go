@@ -16,8 +16,9 @@ type GameObjectsModel struct {
 	flatObjectsContainer    []gameentities.GameObject
 	flatTransformsContainer []gameentities.Tranform
 
-	freedIds []uint32
-	lastId   uint32
+	freedIds           []uint32
+	lastId             uint32
+	currntObjectsCount int
 
 	addCache      []gameentities.GameObject
 	moveCache     []gameentities.Tranform
@@ -32,6 +33,7 @@ type GameObjectsModel struct {
 const (
 	POSITION_DELTA_TO_SYNC = 0.05
 	ROTATION_DELTA_TO_SYNC = 1.0
+	ALLOCATION_CHUNK       = 128
 )
 
 func NewGameObjectsModel(rtLinmit, rtThrashold int, rtForceDisable bool) *GameObjectsModel {
@@ -44,6 +46,7 @@ func NewGameObjectsModel(rtLinmit, rtThrashold int, rtForceDisable bool) *GameOb
 		flatTransformsContainer:           make([]gameentities.Tranform, 0, 32),
 		freedIds:                          make([]uint32, 0, 16),
 		lastId:                            0,
+		currntObjectsCount:                0,
 		addCache:                          make([]gameentities.GameObject, 0, 16),
 		moveCache:                         make([]gameentities.Tranform, 0, 16),
 		removeCache:                       make([]uint32, 0, 16),
@@ -86,11 +89,6 @@ func (g *GameObjectsModel) GetPositionMod() []gameentities.Tranform {
 func (g *GameObjectsModel) ResetTempBuffers() {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
-
-	clear(g.addCache)
-	clear(g.moveCache)
-	clear(g.removeCache)
-	clear(g.transferCache)
 
 	g.addCache = g.addCache[:0]
 	g.moveCache = g.moveCache[:0]
@@ -203,6 +201,8 @@ func (g *GameObjectsModel) AddGameObject(gameObject gameentities.GameObject, own
 	g.flatTransformsContainer[id] = transform
 
 	g.addCache = append(g.addCache, gameObject)
+
+	g.currntObjectsCount++
 }
 
 func (g *GameObjectsModel) TryRemoveGameObject(id uint32, attemptor uint32) bool {
@@ -221,6 +221,7 @@ func (g *GameObjectsModel) TryRemoveGameObject(id uint32, attemptor uint32) bool
 		g.flatTransformsContainer[id] = g.defaultEmptyTransform
 
 		success = true
+		g.currntObjectsCount--
 	}
 
 	return success
@@ -271,13 +272,8 @@ func (g *GameObjectsModel) generateId() uint32 {
 	var id uint32
 
 	if len(g.freedIds) != 0 {
-		id = g.freedIds[0]
-
-		if len(g.freedIds) > 1 {
-			g.freedIds = g.freedIds[1:]
-		} else {
-			g.freedIds = g.freedIds[:0]
-		}
+		id = g.freedIds[len(g.freedIds)-1]
+		g.freedIds = g.freedIds[:len(g.freedIds)-1]
 	} else {
 		g.lastId++
 		id = g.lastId
@@ -288,10 +284,10 @@ func (g *GameObjectsModel) generateId() uint32 {
 
 func (g *GameObjectsModel) allocateChunkIfNeed(id uint32) {
 	if id >= uint32(len(g.flatObjectsContainer)) {
-		toAppendObjs := make([]gameentities.GameObject, 128)
+		toAppendObjs := make([]gameentities.GameObject, ALLOCATION_CHUNK)
 		g.flatObjectsContainer = append(g.flatObjectsContainer, toAppendObjs...)
 
-		toAppendTransforms := make([]gameentities.Tranform, 128)
+		toAppendTransforms := make([]gameentities.Tranform, ALLOCATION_CHUNK)
 		g.flatTransformsContainer = append(g.flatTransformsContainer, toAppendTransforms...)
 	}
 }

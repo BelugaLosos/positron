@@ -39,7 +39,6 @@ func (r *RpcsModel) ResetTempBuffers() {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	clear(r.callBuffer)
 	r.callBuffer = r.callBuffer[:0]
 }
 

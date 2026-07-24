@@ -149,7 +149,6 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	clear(i.newObjects)
 	i.newObjects = i.newObjects[:cap(i.newObjects)]
 
 	for index := range newObjectsLen {
@@ -181,7 +180,6 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	clear(i.removedObjects)
 	i.removedObjects = i.removedObjects[:0]
 
 	for range removedObjectsLen {
@@ -204,7 +202,6 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	clear(i.transferedObjects)
 	i.transferedObjects = i.transferedObjects[:0]
 
 	for range transferedObjsLen {
@@ -227,7 +224,6 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	clear(i.valueMod)
 	i.valueMod = i.valueMod[:cap(i.valueMod)]
 
 	for index := range valueModLen {
@@ -259,7 +255,6 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	clear(i.rpc)
 	i.rpc = i.rpc[:cap(i.rpc)]
 
 	for index := range rpcBufferLen {
