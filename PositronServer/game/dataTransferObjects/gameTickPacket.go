@@ -8,9 +8,9 @@ import (
 )
 
 type GameTickPacket struct {
-	newObjects        []*gameentities.GameObject
-	valueMod          []*gameentities.NetValue
-	rpc               []*gameentities.RpcCall
+	newObjects        []gameentities.GameObject
+	valueMod          []gameentities.NetValue
+	rpc               []gameentities.RpcCall
 	removedObjects    []uint32
 	transferedObjects []uint32
 	tick              uint32
@@ -18,7 +18,7 @@ type GameTickPacket struct {
 	client            uint32
 }
 
-func NewTickPacket(tick uint32, host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) *GameTickPacket {
+func NewTickPacket(tick uint32, host uint32, sourceClient uint32, newObjects []gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []gameentities.NetValue, rpc []gameentities.RpcCall) *GameTickPacket {
 	return &GameTickPacket{
 		tick:              tick,
 		host:              host,
@@ -31,7 +31,7 @@ func NewTickPacket(tick uint32, host uint32, sourceClient uint32, newObjects []*
 	}
 }
 
-func (g *GameTickPacket) ReassignTickPacketData(tick uint32, host uint32, sourceClient uint32, newObjects []*gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []*gameentities.NetValue, rpc []*gameentities.RpcCall) {
+func (g *GameTickPacket) ReassignTickPacketData(tick uint32, host uint32, sourceClient uint32, newObjects []gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []gameentities.NetValue, rpc []gameentities.RpcCall) {
 	g.tick = tick
 	g.host = host
 	g.client = sourceClient
@@ -56,7 +56,7 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	}
 
 	for i := range g.newObjects {
-		err := enc.Encode(g.newObjects[i])
+		err := enc.Encode(&g.newObjects[i])
 
 		if err != nil {
 			return err
@@ -82,7 +82,7 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	err = enc.EncodeArrayLen(len(g.valueMod))
 
 	for i := range g.valueMod {
-		err := enc.Encode(g.valueMod[i])
+		err := enc.Encode(&g.valueMod[i])
 
 		if err != nil {
 			return err
@@ -92,7 +92,7 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	err = enc.EncodeArrayLen(len(g.rpc))
 
 	for i := range g.rpc {
-		err := enc.Encode(g.rpc[i])
+		err := enc.Encode(&g.rpc[i])
 
 		if err != nil {
 			return err
@@ -149,20 +149,29 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	objsArray := make([]*gameentities.GameObject, newObjectsLen)
+	clear(i.newObjects)
+	i.newObjects = i.newObjects[:cap(i.newObjects)]
 
-	for i := range newObjectsLen {
-		var obj gameentities.GameObject
-		err = dec.Decode(&obj)
+	for index := range newObjectsLen {
+		if index >= cap(i.newObjects) || index >= len(i.newObjects) {
+			var obj gameentities.GameObject
+			err = dec.Decode(&obj)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+
+			i.newObjects = append(i.newObjects, obj)
+		} else {
+			err = dec.Decode(&i.newObjects[index])
+
+			if err != nil {
+				return err
+			}
 		}
-
-		objsArray[i] = &obj
 	}
 
-	i.newObjects = objsArray
+	i.newObjects = i.newObjects[:newObjectsLen]
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -172,19 +181,20 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	removedObjsArray := make([]uint32, removedObjectsLen)
+	clear(i.removedObjects)
+	i.removedObjects = i.removedObjects[:0]
 
-	for i := range removedObjsArray {
+	for range removedObjectsLen {
 		removeId, err := dec.DecodeUint32()
 
 		if err != nil {
 			return err
 		}
 
-		removedObjsArray[i] = removeId
+		i.removedObjects = append(i.removedObjects, removeId)
 	}
 
-	i.removedObjects = removedObjsArray
+	i.removedObjects = i.removedObjects[:removedObjectsLen]
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -194,19 +204,20 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	transferedObjects := make([]uint32, transferedObjsLen)
+	clear(i.transferedObjects)
+	i.transferedObjects = i.transferedObjects[:0]
 
-	for i := range transferedObjsLen {
+	for range transferedObjsLen {
 		transferedId, err := dec.DecodeUint32()
 
 		if err != nil {
 			return err
 		}
 
-		transferedObjects[i] = transferedId
+		i.transferedObjects = append(i.transferedObjects, transferedId)
 	}
 
-	i.transferedObjects = transferedObjects
+	i.transferedObjects = i.transferedObjects[:transferedObjsLen]
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -216,20 +227,29 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	valueMod := make([]*gameentities.NetValue, valueModLen)
+	clear(i.valueMod)
+	i.valueMod = i.valueMod[:cap(i.valueMod)]
 
-	for i := range valueModLen {
-		var value gameentities.NetValue
-		err = dec.Decode(&value)
+	for index := range valueModLen {
+		if index >= cap(i.valueMod) || index >= len(i.valueMod) {
+			var value gameentities.NetValue
+			err = dec.Decode(&value)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+
+			i.valueMod = append(i.valueMod, value)
+		} else {
+			err = dec.Decode(&i.valueMod[index])
+
+			if err != nil {
+				return err
+			}
 		}
-
-		valueMod[i] = &value
 	}
 
-	i.valueMod = valueMod
+	i.valueMod = i.valueMod[:valueModLen]
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -239,20 +259,29 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	rpcBuffer := make([]*gameentities.RpcCall, rpcBufferLen)
+	clear(i.rpc)
+	i.rpc = i.rpc[:cap(i.rpc)]
 
-	for i := range rpcBuffer {
-		var rpc gameentities.RpcCall
-		err = dec.Decode(&rpc)
+	for index := range rpcBufferLen {
+		if index >= cap(i.rpc) || index >= len(i.rpc) {
+			var rpc gameentities.RpcCall
+			err = dec.Decode(&rpc)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+
+			i.rpc = append(i.rpc, rpc)
+		} else {
+			err = dec.Decode(&i.rpc[index])
+
+			if err != nil {
+				return err
+			}
 		}
-
-		rpcBuffer[i] = &rpc
 	}
 
-	i.rpc = rpcBuffer
+	i.rpc = i.rpc[:rpcBufferLen]
 
 	return nil
 }
@@ -269,7 +298,7 @@ func (g *GameTickPacket) GetSourceClient() uint32 {
 	return g.client
 }
 
-func (g *GameTickPacket) GetNewObjects() []*gameentities.GameObject {
+func (g *GameTickPacket) GetNewObjects() []gameentities.GameObject {
 	return g.newObjects
 }
 
@@ -281,10 +310,10 @@ func (g *GameTickPacket) GetTranferedObjects() []uint32 {
 	return g.transferedObjects
 }
 
-func (g *GameTickPacket) GetValueMod() []*gameentities.NetValue {
+func (g *GameTickPacket) GetValueMod() []gameentities.NetValue {
 	return g.valueMod
 }
 
-func (g *GameTickPacket) GetRpcs() []*gameentities.RpcCall {
+func (g *GameTickPacket) GetRpcs() []gameentities.RpcCall {
 	return g.rpc
 }

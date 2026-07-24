@@ -8,12 +8,12 @@ import (
 )
 
 type GameUnreliableTickPacket struct {
-	movedObjects []*gameentities.Tranform
+	movedObjects []gameentities.Tranform
 	tick         uint32
 	sourceClient uint32
 }
 
-func NewGameUnreliableTickPacket(tick uint32, movedObjects []*gameentities.Tranform, sourceClient uint32) *GameUnreliableTickPacket {
+func NewGameUnreliableTickPacket(tick uint32, movedObjects []gameentities.Tranform, sourceClient uint32) *GameUnreliableTickPacket {
 	return &GameUnreliableTickPacket{
 		tick:         tick,
 		sourceClient: sourceClient,
@@ -21,7 +21,7 @@ func NewGameUnreliableTickPacket(tick uint32, movedObjects []*gameentities.Tranf
 	}
 }
 
-func (g *GameUnreliableTickPacket) ReassignUnreliableTickPacket(tick uint32, movedObjects []*gameentities.Tranform, sourceClient uint32) {
+func (g *GameUnreliableTickPacket) ReassignUnreliableTickPacket(tick uint32, movedObjects []gameentities.Tranform, sourceClient uint32) {
 	g.tick = tick
 	g.sourceClient = sourceClient
 	g.movedObjects = movedObjects
@@ -50,7 +50,7 @@ func (g *GameUnreliableTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	err = enc.EncodeArrayLen(len(g.movedObjects))
 
 	for i := range g.movedObjects {
-		err := enc.Encode(g.movedObjects[i])
+		err := enc.Encode(&g.movedObjects[i])
 
 		if err != nil {
 			return err
@@ -83,22 +83,33 @@ func (g *GameUnreliableTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	}
 
 	movedLen, err := dec.DecodeArrayLen()
-	moved := make([]*gameentities.Tranform, movedLen)
+
+	clear(g.movedObjects)
+	g.movedObjects = g.movedObjects[:cap(g.movedObjects)]
 
 	for i := range movedLen {
-		var obj gameentities.Tranform
-		err := dec.Decode(&obj)
+		if i >= cap(g.movedObjects) || i >= len(g.movedObjects) {
+			var obj gameentities.Tranform
+			err := dec.Decode(&obj)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+
+			g.movedObjects = append(g.movedObjects, obj)
+		} else {
+			err := dec.Decode(&g.movedObjects[i])
+
+			if err != nil {
+				return err
+			}
 		}
-
-		moved[i] = &obj
 	}
+
+	g.movedObjects = g.movedObjects[:movedLen]
 
 	g.tick = tick
 	g.sourceClient = sourceId
-	g.movedObjects = moved
 
 	return err
 }
@@ -107,7 +118,7 @@ func (g *GameUnreliableTickPacket) GetTick() uint32 {
 	return g.tick
 }
 
-func (g *GameUnreliableTickPacket) GetMovedObjects() []*gameentities.Tranform {
+func (g *GameUnreliableTickPacket) GetMovedObjects() []gameentities.Tranform {
 	return g.movedObjects
 }
 

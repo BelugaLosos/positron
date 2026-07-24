@@ -9,11 +9,12 @@ import (
 )
 
 type GameUnreliableTickHandler struct {
-	transport  internal.PositronTransportServer
-	uuid       string
-	room       *room.Room
-	clientId   uint32
-	marshaller internal.MarshalService
+	transport        internal.PositronTransportServer
+	uuid             string
+	room             *room.Room
+	clientId         uint32
+	marshaller       internal.MarshalService
+	cachedTickPacket *datatransferobjects.GameUnreliableTickPacket
 }
 
 func NewGameUnreliableTickHandler() *GameUnreliableTickHandler {
@@ -24,6 +25,7 @@ func (g *GameUnreliableTickHandler) Init(transport internal.PositronTransportSer
 	g.transport = transport
 	g.uuid = connectionUuid
 	g.marshaller = gServer.GetMarshaller()
+	g.cachedTickPacket = &datatransferobjects.GameUnreliableTickPacket{}
 }
 
 func (g *GameUnreliableTickHandler) GetType() byte {
@@ -35,21 +37,20 @@ func (g *GameUnreliableTickHandler) PassHandle(packet []byte) {
 		return
 	}
 
-	var tickPacket datatransferobjects.GameUnreliableTickPacket
-	err := g.marshaller.Unmarshal(packet, &tickPacket)
+	err := g.marshaller.Unmarshal(packet, g.cachedTickPacket)
 
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	if tickPacket.GetSourceClient() != g.clientId {
-		log.Printf("Unrealiable update clientId spoofing detected. From %v to %v", g.clientId, tickPacket.GetSourceClient())
+	if g.cachedTickPacket.GetSourceClient() != g.clientId {
+		log.Printf("Unrealiable update clientId spoofing detected. From %v to %v", g.clientId, g.cachedTickPacket.GetSourceClient())
 		g.transport.KickClient(g.uuid)
 		return
 	}
 
-	g.room.ProcessUnreliableTick(&tickPacket)
+	g.room.ProcessUnreliableTick(g.cachedTickPacket)
 }
 
 func (g *GameUnreliableTickHandler) SetRoom(room *room.Room, inRoomId uint32) {

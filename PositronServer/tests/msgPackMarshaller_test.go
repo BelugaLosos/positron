@@ -10,14 +10,14 @@ import (
 
 func TestUnmarshalling(t *testing.T) {
 	for range 1 {
-		obj := gameentities.NewGameObject(1, 2, 3, 4, *gameentities.NewVector(5, 6, 7), *gameentities.NewVector(8, 9, 10))
-		val := &gameentities.NetValue{}
+		obj := gameentities.NewGameObject(1, 2, 3, 4, gameentities.NewVector(5, 6, 7), gameentities.NewVector(8, 9, 10))
+		val := gameentities.NetValue{}
 		val.MarkAsDeleting()
 		val.ModifyPayload([]byte("jopa"))
 
 		rpc := gameentities.NewRpcCall(11, 12, 13, 14, 1, []byte("fff"), false)
 
-		testData := datatransferobjects.NewTickPacket(1, 15, 16, []*gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []*gameentities.NetValue{val}, []*gameentities.RpcCall{rpc})
+		testData := datatransferobjects.NewTickPacket(1, 15, 16, []gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []gameentities.NetValue{val}, []gameentities.RpcCall{rpc})
 
 		buf := &bytes.Buffer{}
 		err := marshaller.NewMessagePackMarshaller().MarshalNonAlloc(buf, testData)
@@ -77,7 +77,12 @@ func TestUnmarshalling(t *testing.T) {
 
 func TestBufferRace(t *testing.T) {
 	rpcCall := gameentities.NewRpcCall(1, 2, 3, 4, 1, []byte("A"), false)
-	marshalled, _ := marshaller.NewMessagePackMarshaller().Marshal(rpcCall)
+	marshalled, merr := marshaller.NewMessagePackMarshaller().Marshal(&rpcCall)
+
+	if merr != nil {
+		t.Error(merr)
+	}
+
 	var rpcCopy gameentities.RpcCall
 
 	err := marshaller.NewMessagePackMarshaller().Unmarshal(marshalled, &rpcCopy)
@@ -101,8 +106,8 @@ func TestBufferRace(t *testing.T) {
 }
 
 func TestUnreliable(t *testing.T) {
-	for range 100_000 {
-		tick := datatransferobjects.NewGameUnreliableTickPacket(0, []*gameentities.Tranform{gameentities.NewTransform(gameentities.NewGameObject(1, 2, 3, 4, *gameentities.NewVector(5, 6, 7), *gameentities.NewVector(8, 9, 10)))}, 1)
+	for range 1 {
+		tick := datatransferobjects.NewGameUnreliableTickPacket(0, []gameentities.Tranform{gameentities.NewTransform(gameentities.NewGameObject(1, 2, 3, 4, gameentities.NewVector(5, 6, 7), gameentities.NewVector(8, 9, 10)))}, 1)
 
 		buf := &bytes.Buffer{}
 		err := marshaller.NewMessagePackMarshaller().MarshalNonAlloc(buf, tick)

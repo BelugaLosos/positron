@@ -2,55 +2,54 @@ package roommodels
 
 import (
 	gameentities "positron/game/gameEntities"
-	"strconv"
 	"sync"
 )
 
 type NetValuesModel struct {
 	mutex *sync.Mutex
 
-	searchMap map[string]*gameentities.NetValue
+	worldManagedContainer map[uint64]gameentities.NetValue
 
-	netValues              []*gameentities.NetValue
-	tempModificationBuffer []*gameentities.NetValue
+	valuesFlatCache   []gameentities.NetValue
+	modificationCache []gameentities.NetValue
 }
 
 func NewNetValuesModel() *NetValuesModel {
 	return &NetValuesModel{
-		mutex:                  &sync.Mutex{},
-		searchMap:              make(map[string]*gameentities.NetValue),
-		netValues:              make([]*gameentities.NetValue, 0),
-		tempModificationBuffer: make([]*gameentities.NetValue, 0),
+		mutex:                 &sync.Mutex{},
+		worldManagedContainer: make(map[uint64]gameentities.NetValue),
+		valuesFlatCache:       make([]gameentities.NetValue, 0, 16),
+		modificationCache:     make([]gameentities.NetValue, 0, 16),
 	}
 }
 
-func (n *NetValuesModel) GetValues() []*gameentities.NetValue {
+func (n *NetValuesModel) GetValues() []gameentities.NetValue {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	return n.netValues
+	return n.valuesFlatCache
 }
 
-func (n *NetValuesModel) GetTempMod() []*gameentities.NetValue {
+func (n *NetValuesModel) GetTempMod() []gameentities.NetValue {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	return n.tempModificationBuffer
+	return n.modificationCache
 }
 
 func (n *NetValuesModel) ResetTempBuffers() {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	clear(n.tempModificationBuffer)
-	n.tempModificationBuffer = n.tempModificationBuffer[:0]
+	clear(n.modificationCache)
+	n.modificationCache = n.modificationCache[:0]
 }
 
-func (n *NetValuesModel) AddOrModify(value *gameentities.NetValue) {
+func (n *NetValuesModel) AddOrModify(value gameentities.NetValue) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	gettenValue, isExist := n.searchMap[n.getKeyOfValue(value)]
+	gettenValue, isExist := n.worldManagedContainer[n.getKeyOfValue(value)]
 
 	if isExist && gettenValue.GetIsDeleting() {
 		return
@@ -67,41 +66,43 @@ func (n *NetValuesModel) RemoveAllValuesFromObject(objectUuid uint32) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	for i := range n.netValues {
-		val := n.netValues[i]
+	for i := range n.valuesFlatCache {
+		val := n.valuesFlatCache[i]
 
 		if val.GetParentObjectId() == objectUuid {
-			delete(n.searchMap, n.getKeyOfValue(val))
+			delete(n.worldManagedContainer, n.getKeyOfValue(val))
 			val.MarkAsDeleting()
 
-			n.tempModificationBuffer = append(n.tempModificationBuffer, val)
+			n.modificationCache = append(n.modificationCache, val)
 		}
 	}
 
-	clear(n.netValues)
-	n.netValues = n.netValues[:0]
+	clear(n.valuesFlatCache)
+	n.valuesFlatCache = n.valuesFlatCache[:0]
 
-	for _, val := range n.searchMap {
-		n.netValues = append(n.netValues, val)
+	for _, val := range n.worldManagedContainer {
+		n.valuesFlatCache = append(n.valuesFlatCache, val)
 	}
 }
 
-func (n *NetValuesModel) addValue(value *gameentities.NetValue) {
-	n.netValues = append(n.netValues, value)
-	n.searchMap[n.getKeyOfValue(value)] = value
+func (n *NetValuesModel) addValue(value gameentities.NetValue) {
+	n.valuesFlatCache = append(n.valuesFlatCache, value)
+	n.worldManagedContainer[n.getKeyOfValue(value)] = value
 
-	n.tempModificationBuffer = append(n.tempModificationBuffer, value)
+	n.modificationCache = append(n.modificationCache, value)
 }
 
-func (n *NetValuesModel) modifyValue(value *gameentities.NetValue, currentValue *gameentities.NetValue) {
+func (n *NetValuesModel) modifyValue(value gameentities.NetValue, currentValue gameentities.NetValue) {
 	currentValue.ModifyPayload(value.GetPayload())
 
-	n.tempModificationBuffer = append(n.tempModificationBuffer, currentValue)
+	n.modificationCache = append(n.modificationCache, currentValue)
+	n.worldManagedContainer[n.getKeyOfValue(currentValue)] = currentValue
 }
 
-func (n *NetValuesModel) getKeyOfValue(value *gameentities.NetValue) string {
-	vid := strconv.FormatUint(uint64(value.GetValueId()), 10)
-	oid := strconv.FormatUint(uint64(value.GetParentObjectId()), 10)
+func (n *NetValuesModel) getKeyOfValue(value gameentities.NetValue) uint64 {
+	result := uint64(0)
+	result = uint64(value.GetParentObjectId()) << 16
+	result = result | uint64(value.GetValueId())
 
-	return oid + vid
+	return result
 }

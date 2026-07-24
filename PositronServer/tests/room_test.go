@@ -93,11 +93,11 @@ func TestTick(t *testing.T) {
 		1,
 		1,
 		1,
-		[]*gameentities.GameObject{gameentities.NewGameObject(0, 1, 1, 1, *gameentities.NewVector(1, 1, 1), *gameentities.NewVector(1, 1, 1))},
+		[]gameentities.GameObject{gameentities.NewGameObject(0, 1, 1, 1, gameentities.NewVector(1, 1, 1), gameentities.NewVector(1, 1, 1))},
 		[]uint32{},
 		[]uint32{},
-		[]*gameentities.NetValue{},
-		[]*gameentities.RpcCall{},
+		[]gameentities.NetValue{},
+		[]gameentities.RpcCall{},
 	))
 
 	rel, urel := room.CreateTickPackets()
@@ -156,10 +156,10 @@ func TestRaceInTick(t *testing.T) {
 					pkt := datatransferobjects.NewTickPacket(
 						1,
 						0, cid,
-						[]*gameentities.GameObject{gameentities.NewGameObject(0, cid, 1, 1, gameentities.Vector3{}, gameentities.Vector3{})},
+						[]gameentities.GameObject{gameentities.NewGameObject(0, cid, 1, 1, gameentities.Vector3{}, gameentities.Vector3{})},
 						nil, nil,
-						[]*gameentities.NetValue{gameentities.NewNetValue([]byte{1, 2, 3}, 1, 0, false)},
-						[]*gameentities.RpcCall{gameentities.NewRpcCall(1, 0, 0, 0, 1, []byte{1}, false)},
+						[]gameentities.NetValue{gameentities.NewNetValue([]byte{1, 2, 3}, 1, 0, false)},
+						[]gameentities.RpcCall{gameentities.NewRpcCall(1, 0, 0, 0, 1, []byte{1}, false)},
 					)
 					r.ProcessTick(pkt)
 				}

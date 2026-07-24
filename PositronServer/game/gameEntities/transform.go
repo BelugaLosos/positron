@@ -14,8 +14,8 @@ type Tranform struct {
 	staticScoreCounter int // THIS FIELD MUST BE INGNORED IN SERIALIZATION/DESERIALIZATION OF DATA
 }
 
-func NewTransform(gameObject *GameObject) *Tranform {
-	return &Tranform{
+func NewTransform(gameObject GameObject) Tranform {
+	return Tranform{
 		objectId: gameObject.GetId(),
 		position: gameObject.GetPosition(),
 		rotation: gameObject.GetRotation(),
@@ -63,19 +63,15 @@ func (t *Tranform) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	var position Vector3
-	err = dec.Decode(&position)
+	err = dec.Decode(&t.position)
 
 	if err != nil {
 		return err
 	}
 
-	var rotation Vector3
-	err = dec.Decode(&rotation)
+	err = dec.Decode(&t.rotation)
 
 	t.objectId = objectId
-	t.position = position
-	t.rotation = rotation
 
 	return err
 }

@@ -13,8 +13,8 @@ type NetValue struct {
 	deleting       bool
 }
 
-func NewNetValue(payload []byte, parentObj uint32, valueId uint16, isDeleting bool) *NetValue {
-	return &NetValue{
+func NewNetValue(payload []byte, parentObj uint32, valueId uint16, isDeleting bool) NetValue {
+	return NetValue{
 		payload:        payload,
 		parentObjectId: parentObj,
 		valueId:        valueId,

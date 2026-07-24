@@ -272,7 +272,7 @@ func (r *Room) IsTimeFromLastLeaveOverTTL() bool {
 	return time.Now().UTC().Sub(r.lastLeaveTime) > r.ttl
 }
 
-func (r *Room) GetWorld() ([]*gameentities.GameObject, []*gameentities.NetValue, []*gameentities.RpcCall) {
+func (r *Room) GetWorld() ([]gameentities.GameObject, []gameentities.NetValue, []gameentities.RpcCall) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 

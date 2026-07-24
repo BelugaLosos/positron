@@ -5,16 +5,16 @@ import gameentities "positron/game/gameEntities"
 type JoinRoomResponsePacket struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	GameObjects []*gameentities.GameObject
-	NetValues   []*gameentities.NetValue
-	CachedRpcs  []*gameentities.RpcCall
+	GameObjects []gameentities.GameObject
+	NetValues   []gameentities.NetValue
+	CachedRpcs  []gameentities.RpcCall
 	Tickrate    uint32
 	SelfId      uint32
 	Host        uint32
 	Scene       uint32
 }
 
-func NewJoinRoomResponsePacket(gameObjects []*gameentities.GameObject, netValues []*gameentities.NetValue, cachedRpcs []*gameentities.RpcCall, tickrate uint32, selfId uint32, host uint32, scene uint32) *JoinRoomResponsePacket {
+func NewJoinRoomResponsePacket(gameObjects []gameentities.GameObject, netValues []gameentities.NetValue, cachedRpcs []gameentities.RpcCall, tickrate uint32, selfId uint32, host uint32, scene uint32) *JoinRoomResponsePacket {
 	return &JoinRoomResponsePacket{
 		GameObjects: gameObjects,
 		NetValues:   netValues,

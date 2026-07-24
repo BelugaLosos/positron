@@ -16,7 +16,7 @@ type RpcCall struct {
 	rpcType      uint8
 }
 
-func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType uint8, methodId uint16, agrs []byte, useRawArgs bool) *RpcCall {
+func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType uint8, methodId uint16, agrs []byte, useRawArgs bool) RpcCall {
 	var argsBuf []byte
 
 	if useRawArgs {
@@ -27,7 +27,7 @@ func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType 
 		copy(argsBuf[1:], agrs)
 	}
 
-	return &RpcCall{
+	return RpcCall{
 		objectId:     objId,
 		targetClient: targetClient,
 		subObjectId:  subObjectsId,

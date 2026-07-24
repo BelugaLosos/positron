@@ -1,7 +1,6 @@
 package roommodels
 
 import (
-	"log"
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
 	"positron/util"
@@ -9,19 +8,22 @@ import (
 )
 
 type GameObjectsModel struct {
-	mutex *sync.Mutex
+	mutex                 *sync.Mutex
+	defaultEmptyObject    gameentities.GameObject
+	defaultEmptyTransform gameentities.Tranform
 
-	searchMap      map[uint32]*gameentities.GameObject
-	searchPosCache map[uint32]*gameentities.Tranform
+	worldCache              []gameentities.GameObject
+	flatObjectsContainer    []gameentities.GameObject
+	flatTransformsContainer []gameentities.Tranform
 
-	gameObjectsStructuredCache []*gameentities.GameObject
+	freedIds []uint32
+	lastId   uint32
 
-	tempAdd         []*gameentities.GameObject
-	tempRemove      []uint32
-	tempTransfer    []uint32
-	tempPositionMod []*gameentities.Tranform
+	addCache      []gameentities.GameObject
+	moveCache     []gameentities.Tranform
+	removeCache   []uint32
+	transferCache []uint32
 
-	lastId                            uint32
 	staticRetransmissionsPerTickLimit int
 	staticScoreToRetransmitThrashold  int
 	isRetransmissionForceDisabled     bool
@@ -35,64 +37,65 @@ const (
 func NewGameObjectsModel(rtLinmit, rtThrashold int, rtForceDisable bool) *GameObjectsModel {
 	return &GameObjectsModel{
 		mutex:                             &sync.Mutex{},
-		searchMap:                         make(map[uint32]*gameentities.GameObject),
-		searchPosCache:                    make(map[uint32]*gameentities.Tranform),
-		gameObjectsStructuredCache:        make([]*gameentities.GameObject, 0),
-		tempAdd:                           make([]*gameentities.GameObject, 0),
-		tempRemove:                        make([]uint32, 0),
-		tempTransfer:                      make([]uint32, 0),
-		tempPositionMod:                   make([]*gameentities.Tranform, 0),
+		defaultEmptyObject:                gameentities.GameObject{},
+		defaultEmptyTransform:             gameentities.Tranform{},
+		worldCache:                        make([]gameentities.GameObject, 0, 32),
+		flatObjectsContainer:              make([]gameentities.GameObject, 0, 32),
+		flatTransformsContainer:           make([]gameentities.Tranform, 0, 32),
+		freedIds:                          make([]uint32, 0, 16),
 		lastId:                            0,
+		addCache:                          make([]gameentities.GameObject, 0, 16),
+		moveCache:                         make([]gameentities.Tranform, 0, 16),
+		removeCache:                       make([]uint32, 0, 16),
+		transferCache:                     make([]uint32, 0, 16),
 		staticRetransmissionsPerTickLimit: rtLinmit,
 		staticScoreToRetransmitThrashold:  rtThrashold,
 		isRetransmissionForceDisabled:     rtForceDisable,
 	}
 }
 
-func (g *GameObjectsModel) GetGameObjects() []*gameentities.GameObject {
+func (g *GameObjectsModel) GetGameObjects() []gameentities.GameObject {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	g.updateStructuredCache()
-	return g.gameObjectsStructuredCache
+	g.buildWorldCache()
+	return g.worldCache
 }
 
-func (g *GameObjectsModel) GetModification() ([]*gameentities.GameObject, []uint32, []uint32) {
+func (g *GameObjectsModel) GetModification() ([]gameentities.GameObject, []uint32, []uint32) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	return g.tempAdd, g.tempRemove, g.tempTransfer
+	return g.addCache, g.removeCache, g.transferCache
 }
 
-func (g *GameObjectsModel) GetSpecificAddModification() []*gameentities.GameObject {
+func (g *GameObjectsModel) GetSpecificAddModification() []gameentities.GameObject {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	return g.tempAdd
+	return g.addCache
 }
 
-func (g *GameObjectsModel) GetPositionMod() []*gameentities.Tranform {
+func (g *GameObjectsModel) GetPositionMod() []gameentities.Tranform {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	return g.tempPositionMod
+	return g.moveCache
 }
 
 func (g *GameObjectsModel) ResetTempBuffers() {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	clear(g.tempAdd)
-	clear(g.tempRemove)
-	clear(g.tempTransfer)
-	clear(g.tempPositionMod)
+	clear(g.addCache)
+	clear(g.moveCache)
+	clear(g.removeCache)
+	clear(g.transferCache)
 
-	g.tempAdd = g.tempAdd[:0]
-	g.tempRemove = g.tempRemove[:0]
-	g.tempTransfer = g.tempTransfer[:0]
-	g.tempPositionMod = g.tempPositionMod[:0]
-
-	g.updateStructuredCache()
+	g.addCache = g.addCache[:0]
+	g.moveCache = g.moveCache[:0]
+	g.removeCache = g.removeCache[:0]
+	g.transferCache = g.transferCache[:0]
 }
 
 func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.GameUnreliableTickPacket) {
@@ -105,31 +108,30 @@ func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.Gam
 	for i := range delta {
 		position := delta[i]
 
-		if position == nil {
+		if position.GetObjectId() == 0 {
 			continue
 		}
 
-		gameObject, exist := g.searchMap[position.GetObjectId()]
-		localAllocatedTransform, tExist := g.searchPosCache[position.GetObjectId()]
+		gameObjectCopy, exist := g.getObjectById(position.GetObjectId())
 
-		if !exist || gameObject == nil {
+		if !exist {
 			continue
 		}
 
-		if !tExist || localAllocatedTransform == nil {
-			log.Fatalf("CRITICAL Maps desync in game objects model!")
-			continue
-		}
+		localTransformCopy := g.flatTransformsContainer[gameObjectCopy.GetId()]
 
-		if gameObject.GetOwnerId() == source &&
-			(util.PointsDistance(position.GetPosition(), gameObject.GetPosition()) > POSITION_DELTA_TO_SYNC ||
-				util.RotationBetweenEulerAngles(position.GetRotation(), gameObject.GetRotation()) > ROTATION_DELTA_TO_SYNC) {
+		if gameObjectCopy.GetOwnerId() == source &&
+			(util.PointsDistance(position.GetPosition(), gameObjectCopy.GetPosition()) > POSITION_DELTA_TO_SYNC ||
+				util.RotationBetweenEulerAngles(position.GetRotation(), gameObjectCopy.GetRotation()) > ROTATION_DELTA_TO_SYNC) {
 
-			gameObject.Move(position.GetPosition(), position.GetRotation())
-			localAllocatedTransform.Move(position.GetPosition(), position.GetRotation())
+			gameObjectCopy.Move(position.GetPosition(), position.GetRotation())
+			localTransformCopy.Move(position.GetPosition(), position.GetRotation())
+			localTransformCopy.ResetStaticScore()
 
-			localAllocatedTransform.ResetStaticScore()
-			g.tempPositionMod = append(g.tempPositionMod, localAllocatedTransform)
+			g.moveCache = append(g.moveCache, localTransformCopy)
+
+			g.flatObjectsContainer[gameObjectCopy.GetId()] = gameObjectCopy
+			g.flatTransformsContainer[localTransformCopy.GetObjectId()] = localTransformCopy
 		}
 	}
 }
@@ -142,8 +144,15 @@ func (g *GameObjectsModel) EvaluateStaticScore() {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	for _, transform := range g.searchPosCache {
+	for i := range g.flatTransformsContainer {
+
+		if g.flatTransformsContainer[i].GetObjectId() == 0 {
+			continue
+		}
+
+		transform := g.flatTransformsContainer[i]
 		transform.EvaluateStaticScore()
+		g.flatTransformsContainer[i] = transform
 	}
 }
 
@@ -157,10 +166,18 @@ func (g *GameObjectsModel) StickStaticsToMoveDelta() {
 
 	stickedAmount := 0
 
-	for _, transform := range g.searchPosCache {
+	for i := range g.flatTransformsContainer {
+		transform := g.flatTransformsContainer[i]
+
+		if transform.GetObjectId() == 0 {
+			continue
+		}
+
 		if transform.GetStaticScore() >= g.staticScoreToRetransmitThrashold {
-			g.tempPositionMod = append(g.tempPositionMod, transform)
 			transform.ResetStaticScore()
+			g.flatTransformsContainer[i] = transform
+
+			g.moveCache = append(g.moveCache, transform)
 
 			stickedAmount++
 		}
@@ -171,17 +188,21 @@ func (g *GameObjectsModel) StickStaticsToMoveDelta() {
 	}
 }
 
-func (g *GameObjectsModel) AddGameObject(gameObject *gameentities.GameObject, owner uint32) {
+func (g *GameObjectsModel) AddGameObject(gameObject gameentities.GameObject, owner uint32) {
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	g.lastId++
-	gameObject.SetIdAndOnwer(g.lastId, owner)
+	id := g.generateId()
+	gameObject.SetIdAndOnwer(id, owner)
+	g.allocateChunkIfNeed(id)
 
-	g.tempAdd = append(g.tempAdd, gameObject)
+	g.flatObjectsContainer[id] = gameObject
 
-	g.searchMap[g.lastId] = gameObject
-	g.searchPosCache[g.lastId] = gameentities.NewTransform(gameObject)
+	transform := gameentities.NewTransform(gameObject)
+	transform.Move(gameObject.GetPosition(), gameObject.GetRotation())
+	g.flatTransformsContainer[id] = transform
+
+	g.addCache = append(g.addCache, gameObject)
 }
 
 func (g *GameObjectsModel) TryRemoveGameObject(id uint32, attemptor uint32) bool {
@@ -190,12 +211,14 @@ func (g *GameObjectsModel) TryRemoveGameObject(id uint32, attemptor uint32) bool
 
 	success := false
 
-	object, exist := g.searchMap[id]
+	object, exist := g.getObjectById(id)
 
 	if exist && object.GetOwnerId() == attemptor {
-		g.tempRemove = append(g.tempRemove, id)
-		delete(g.searchMap, id)
-		delete(g.searchPosCache, id)
+		g.removeCache = append(g.removeCache, id)
+		g.freedIds = append(g.freedIds, id)
+
+		g.flatObjectsContainer[id] = g.defaultEmptyObject
+		g.flatTransformsContainer[id] = g.defaultEmptyTransform
 
 		success = true
 	}
@@ -207,12 +230,16 @@ func (g *GameObjectsModel) TransferObjectsFromClientToHost(clientId uint32, actu
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	g.updateStructuredCache()
+	for i := range g.flatObjectsContainer {
+		if g.flatObjectsContainer[i].GetId() == 0 {
+			continue
+		}
 
-	for i := range g.gameObjectsStructuredCache {
-		if g.gameObjectsStructuredCache[i].GetOwnerId() == clientId {
-			g.gameObjectsStructuredCache[i].SetIdAndOnwer(g.gameObjectsStructuredCache[i].GetId(), actualHost)
-			g.addToTempTransfer(g.gameObjectsStructuredCache[i], actualHost)
+		gameObject := g.flatObjectsContainer[i]
+
+		if gameObject.GetOwnerId() == clientId {
+			gameObject.SetIdAndOnwer(gameObject.GetId(), actualHost)
+			g.addToTempTransfer(gameObject, actualHost)
 		}
 	}
 }
@@ -221,32 +248,75 @@ func (g *GameObjectsModel) TransferObjectsOwnershipToTargetClient(requestedTrans
 	g.mutex.Lock()
 	defer g.mutex.Unlock()
 
-	g.updateStructuredCache()
+	for i := range requestedTransfer {
+		requestedObject := g.flatObjectsContainer[requestedTransfer[i]]
 
-	for i := range g.gameObjectsStructuredCache {
-		obj := g.gameObjectsStructuredCache[i]
-
-		for j := range requestedTransfer {
-			reqId := requestedTransfer[j]
-
-			if obj.GetId() == reqId {
-				obj.SetIdAndOnwer(obj.GetId(), newOwner)
-				g.addToTempTransfer(obj, newOwner)
-			}
+		if requestedObject.GetId() == 0 {
+			continue
 		}
+
+		requestedObject.SetIdAndOnwer(requestedObject.GetId(), newOwner)
+		g.addToTempTransfer(requestedObject, newOwner)
 	}
 }
 
-func (g *GameObjectsModel) addToTempTransfer(obj *gameentities.GameObject, newOwner uint32) {
-	g.tempTransfer = append(g.tempTransfer, newOwner)
-	g.tempTransfer = append(g.tempTransfer, obj.GetId())
+func (g *GameObjectsModel) addToTempTransfer(obj gameentities.GameObject, newOwner uint32) {
+	g.transferCache = append(g.transferCache, newOwner)
+	g.transferCache = append(g.transferCache, obj.GetId())
+
+	g.flatObjectsContainer[obj.GetId()] = obj
 }
 
-func (g *GameObjectsModel) updateStructuredCache() {
-	clear(g.gameObjectsStructuredCache)
-	g.gameObjectsStructuredCache = g.gameObjectsStructuredCache[:0]
+func (g *GameObjectsModel) generateId() uint32 {
+	var id uint32
 
-	for _, obj := range g.searchMap {
-		g.gameObjectsStructuredCache = append(g.gameObjectsStructuredCache, obj)
+	if len(g.freedIds) != 0 {
+		id = g.freedIds[0]
+
+		if len(g.freedIds) > 1 {
+			g.freedIds = g.freedIds[1:]
+		} else {
+			g.freedIds = g.freedIds[:0]
+		}
+	} else {
+		g.lastId++
+		id = g.lastId
+	}
+
+	return id
+}
+
+func (g *GameObjectsModel) allocateChunkIfNeed(id uint32) {
+	if id >= uint32(len(g.flatObjectsContainer)) {
+		toAppendObjs := make([]gameentities.GameObject, 128)
+		g.flatObjectsContainer = append(g.flatObjectsContainer, toAppendObjs...)
+
+		toAppendTransforms := make([]gameentities.Tranform, 128)
+		g.flatTransformsContainer = append(g.flatTransformsContainer, toAppendTransforms...)
+	}
+}
+
+func (g *GameObjectsModel) getObjectById(id uint32) (gameentities.GameObject, bool) {
+	if id >= uint32(len(g.flatObjectsContainer)) {
+		return g.defaultEmptyObject, false
+	}
+
+	if g.flatObjectsContainer[id].GetId() == 0 {
+		return g.defaultEmptyObject, false
+	}
+
+	return g.flatObjectsContainer[id], true
+}
+
+func (g *GameObjectsModel) buildWorldCache() {
+	clear(g.worldCache)
+	g.worldCache = g.worldCache[:0]
+
+	for i := range g.flatObjectsContainer {
+		obj := g.flatObjectsContainer[i]
+
+		if obj.GetId() != 0 {
+			g.worldCache = append(g.worldCache, obj)
+		}
 	}
 }

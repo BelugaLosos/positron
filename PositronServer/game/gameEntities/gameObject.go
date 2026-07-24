@@ -16,8 +16,8 @@ type GameObject struct {
 	creationId uint16
 }
 
-func NewGameObject(id uint32, ownerPeer uint32, assetIndex uint16, creationId uint16, position Vector3, rotation Vector3) *GameObject {
-	return &GameObject{
+func NewGameObject(id uint32, ownerPeer uint32, assetIndex uint16, creationId uint16, position Vector3, rotation Vector3) GameObject {
+	return GameObject{
 		id:         id,
 		owner:      ownerPeer,
 		assetIndex: assetIndex,
@@ -104,15 +104,13 @@ func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	var position Vector3
-	err = dec.Decode(&position)
+	err = dec.Decode(&g.positron)
 
 	if err != nil {
 		return err
 	}
 
-	var rotation Vector3
-	err = dec.Decode(&rotation)
+	err = dec.Decode(&g.rotation)
 
 	if err != nil {
 		return err
@@ -122,8 +120,6 @@ func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
 	g.creationId = CreationId
 	g.id = Id
 	g.owner = Owner
-	g.positron = position
-	g.rotation = rotation
 
 	return nil
 }
@@ -168,8 +164,8 @@ type Vector3 struct {
 	z float32
 }
 
-func NewVector(x float32, y float32, z float32) *Vector3 {
-	return &Vector3{
+func NewVector(x float32, y float32, z float32) Vector3 {
+	return Vector3{
 		x: x,
 		y: y,
 		z: z,
@@ -179,7 +175,11 @@ func NewVector(x float32, y float32, z float32) *Vector3 {
 func (v *Vector3) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
-	enc.EncodeArrayLen(3)
+
+	if err := enc.EncodeArrayLen(3); err != nil {
+		return err
+	}
+
 	err := enc.EncodeFloat32(v.x)
 
 	if err != nil {
@@ -198,7 +198,16 @@ func (v *Vector3) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (v *Vector3) DecodeMsgpack(dec *msgpack.Decoder) error {
-	dec.DecodeArrayLen()
+	plen, derr := dec.DecodeArrayLen()
+
+	if derr != nil {
+		return derr
+	}
+
+	if plen != 3 {
+		return errors.New("vector3 must contain 3 floats")
+	}
+
 	x, errX := dec.DecodeFloat32()
 	y, errY := dec.DecodeFloat32()
 	z, errZ := dec.DecodeFloat32()

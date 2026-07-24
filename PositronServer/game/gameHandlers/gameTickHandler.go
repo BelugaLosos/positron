@@ -9,11 +9,12 @@ import (
 )
 
 type GameTickHandler struct {
-	transport  internal.PositronTransportServer
-	uuid       string
-	room       *room.Room
-	clientId   uint32
-	marsahller internal.MarshalService
+	transport                 internal.PositronTransportServer
+	uuid                      string
+	room                      *room.Room
+	clientId                  uint32
+	marsahller                internal.MarshalService
+	cachedTickPacketContainer *datatransferobjects.GameTickPacket
 }
 
 func NewGameTickHandler() *GameTickHandler {
@@ -24,6 +25,7 @@ func (g *GameTickHandler) Init(transport internal.PositronTransportServer, gServ
 	g.transport = transport
 	g.uuid = connectionUuid
 	g.marsahller = gServer.GetMarshaller()
+	g.cachedTickPacketContainer = &datatransferobjects.GameTickPacket{}
 }
 
 func (g *GameTickHandler) GetType() byte {
@@ -35,21 +37,20 @@ func (g *GameTickHandler) PassHandle(packet []byte) {
 		return
 	}
 
-	var tickPacket datatransferobjects.GameTickPacket
-	err := g.marsahller.Unmarshal(packet, &tickPacket)
+	err := g.marsahller.Unmarshal(packet, g.cachedTickPacketContainer)
 
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	if tickPacket.GetSourceClient() != g.clientId {
-		log.Printf("Spoofing of client id detected. From %v spoofed to %v", g.clientId, tickPacket.GetSourceClient())
+	if g.cachedTickPacketContainer.GetSourceClient() != g.clientId {
+		log.Printf("Spoofing of client id detected. From %v spoofed to %v", g.clientId, g.cachedTickPacketContainer.GetSourceClient())
 		g.transport.KickClient(g.uuid)
 		return
 	}
 
-	g.room.ProcessTick(&tickPacket)
+	g.room.ProcessTick(g.cachedTickPacketContainer)
 }
 
 func (g *GameTickHandler) SetRoom(room *room.Room, inRoomId uint32) {

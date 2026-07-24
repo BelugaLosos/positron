@@ -8,7 +8,7 @@ import (
 
 func TestAddValue(t *testing.T) {
 	model := roommodels.NewNetValuesModel()
-	model.AddOrModify(&gameentities.NetValue{})
+	model.AddOrModify(gameentities.NetValue{})
 	mod := model.GetTempMod()
 
 	if len(mod) != 1 {
@@ -20,7 +20,7 @@ func TestAddValue(t *testing.T) {
 
 func TestReset(t *testing.T) {
 	model := roommodels.NewNetValuesModel()
-	model.AddOrModify(&gameentities.NetValue{})
+	model.AddOrModify(gameentities.NetValue{})
 	model.ResetTempBuffers()
 	mod := model.GetTempMod()
 
@@ -31,14 +31,14 @@ func TestReset(t *testing.T) {
 
 func TestValueMod(t *testing.T) {
 	model := roommodels.NewNetValuesModel()
-	model.AddOrModify(&gameentities.NetValue{})
+	model.AddOrModify(gameentities.NetValue{})
 	model.ResetTempBuffers()
 
 	if len(model.GetValues()[0].GetPayload()) != 0 {
 		t.Error("Unexpected value payload")
 	}
 
-	modVal := &gameentities.NetValue{}
+	modVal := gameentities.NetValue{}
 	modVal.ModifyPayload([]byte("hello"))
 
 	model.AddOrModify(modVal)
@@ -87,7 +87,7 @@ func TestValueDeletion(t *testing.T) {
 func TestGetValues(t *testing.T) {
 	model := roommodels.NewNetValuesModel()
 
-	val := &gameentities.NetValue{}
+	val := gameentities.NetValue{}
 	val.ModifyPayload([]byte("hello"))
 
 	model.AddOrModify(val)

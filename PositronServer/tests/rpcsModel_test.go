@@ -10,7 +10,7 @@ import (
 func TestCallNonBuffered(t *testing.T) {
 	model := roommodels.NewRpcsModel()
 
-	addMod := []*gameentities.GameObject{gameentities.NewGameObject(0, 2, 3, 4, *gameentities.NewVector(0, 1, 2), *gameentities.NewVector(0, 1, 2))}
+	addMod := []gameentities.GameObject{gameentities.NewGameObject(0, 2, 3, 4, gameentities.NewVector(0, 1, 2), gameentities.NewVector(0, 1, 2))}
 
 	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_ALL, 1, []byte("hello"), false), addMod)
 	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_OTHERS, 1, []byte("hello"), false), addMod)
@@ -34,7 +34,7 @@ func TestCallNonBuffered(t *testing.T) {
 func TestResetCalls(t *testing.T) {
 	model := roommodels.NewRpcsModel()
 
-	addMod := []*gameentities.GameObject{gameentities.NewGameObject(0, 2, 3, 4, *gameentities.NewVector(0, 1, 2), *gameentities.NewVector(0, 1, 2))}
+	addMod := []gameentities.GameObject{gameentities.NewGameObject(0, 2, 3, 4, gameentities.NewVector(0, 1, 2), gameentities.NewVector(0, 1, 2))}
 
 	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_ALL, 0, []byte("hello"), false), addMod)
 	model.ResetTempBuffers()
@@ -48,7 +48,7 @@ func TestResetCalls(t *testing.T) {
 func TestBufferedCall(t *testing.T) {
 	model := roommodels.NewRpcsModel()
 
-	addMod := []*gameentities.GameObject{gameentities.NewGameObject(0, 2, 3, 4, *gameentities.NewVector(0, 1, 2), *gameentities.NewVector(0, 1, 2))}
+	addMod := []gameentities.GameObject{gameentities.NewGameObject(0, 2, 3, 4, gameentities.NewVector(0, 1, 2), gameentities.NewVector(0, 1, 2))}
 
 	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_ALL_CACHED, 0, []byte("hello"), false), addMod)
 	model.Call(gameentities.NewRpcCall(0, 1, 0, eventtypes.RPC_OTHERS_CACHED, 0, []byte("hello"), false), addMod)

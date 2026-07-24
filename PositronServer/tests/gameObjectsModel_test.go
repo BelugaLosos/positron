@@ -10,13 +10,13 @@ import (
 
 func TestGetGameObjects(t *testing.T) {
 	model := roommodels.NewGameObjectsModel(50, 30, false)
-	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
+	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 0, 0), gameentities.NewVector(0, 0, 0)), 1)
 	objs := model.GetGameObjects()
 
 	add, _, _ := model.GetModification()
 
-	if len(objs) != 1 && len(add) != 1 {
-		t.Error("not length matches")
+	if len(objs) != 1 || len(add) != 1 {
+		t.Errorf("not length matches %v %v", len(objs), len(add))
 	}
 
 	model.ResetTempBuffers()
@@ -29,17 +29,28 @@ func TestGetGameObjects(t *testing.T) {
 
 func TestModifications(t *testing.T) {
 	model := roommodels.NewGameObjectsModel(50, 30, false)
-	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1) //1
-	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 1, 0), *gameentities.NewVector(0, 1, 0)), 1) //2
+	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 0, 0), gameentities.NewVector(0, 0, 0)), 1) //1
+	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 1, 0), gameentities.NewVector(0, 1, 0)), 1) //2
+
+	persistent := model.GetGameObjects()
+
+	if len(persistent) != 2 || persistent[0].GetId() != 1 || persistent[1].GetId() != 2 || persistent[0].GetOwnerId() != 1 || persistent[1].GetOwnerId() != 1 {
+		t.Error("Persistance failed")
+
+		for i := range persistent {
+			log.Println(persistent[i].GetId(), persistent[i].GetOwnerId())
+		}
+	}
+
 	model.TryRemoveGameObject(1, 1)
 	model.TransferObjectsFromClientToHost(1, 0)
 
 	add, remove, transfer := model.GetModification()
 
 	if len(add) != 2 {
-		t.Error("add len")
-	} else if add[0].GetId() != 1 || add[1].GetId() != 2 || add[0].GetOwnerId() != 1 || add[1].GetOwnerId() != 0 {
-		t.Error("data corruption ")
+		t.Errorf("add len %v", len(add))
+	} else if add[0].GetId() != 1 || add[1].GetId() != 2 || add[0].GetOwnerId() != 1 || add[1].GetOwnerId() != 1 {
+		t.Error("data corruption")
 
 		for i := range add {
 			log.Println(add[i].GetId(), add[i].GetOwnerId())
@@ -72,7 +83,7 @@ func TestCyclicMod(t *testing.T) {
 	model := roommodels.NewGameObjectsModel(50, 30, false)
 
 	for range 10 {
-		model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
+		model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 0, 0), gameentities.NewVector(0, 0, 0)), 1)
 
 		add, _, _ := model.GetModification()
 
@@ -90,10 +101,10 @@ func TestCyclicMod(t *testing.T) {
 
 func TestMove(t *testing.T) {
 	model := roommodels.NewGameObjectsModel(50, 30, false)
-	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
+	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 0, 0), gameentities.NewVector(0, 0, 0)), 1)
 
-	move := make([]*gameentities.Tranform, 0)
-	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, *gameentities.NewVector(1, 1, 1), *gameentities.NewVector(1, 1, 1))))
+	move := make([]gameentities.Tranform, 0)
+	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, gameentities.NewVector(1, 1, 1), gameentities.NewVector(1, 1, 1))))
 
 	movePacket := datatransferobjects.NewGameUnreliableTickPacket(0, move, 1)
 	model.MoveGameObjects(movePacket)
@@ -109,8 +120,8 @@ func TestMove(t *testing.T) {
 
 	model.ResetTempBuffers()
 
-	move = make([]*gameentities.Tranform, 0)
-	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, *gameentities.NewVector(1, 1, 1), *gameentities.NewVector(1, 1, 1))))
+	move = make([]gameentities.Tranform, 0)
+	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, gameentities.NewVector(1, 1, 1), gameentities.NewVector(1, 1, 1))))
 
 	movePacket = datatransferobjects.NewGameUnreliableTickPacket(0, move, 1)
 	model.MoveGameObjects(movePacket)
@@ -123,8 +134,8 @@ func TestMove(t *testing.T) {
 
 	model.ResetTempBuffers()
 
-	move = make([]*gameentities.Tranform, 0)
-	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, *gameentities.NewVector(1, 2, 1), *gameentities.NewVector(1, 2, 1))))
+	move = make([]gameentities.Tranform, 0)
+	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, gameentities.NewVector(1, 2, 1), gameentities.NewVector(1, 2, 1))))
 
 	movePacket = datatransferobjects.NewGameUnreliableTickPacket(0, move, 1)
 	model.MoveGameObjects(movePacket)
@@ -138,7 +149,7 @@ func TestMove(t *testing.T) {
 
 func TestGoReset(t *testing.T) {
 	model := roommodels.NewGameObjectsModel(50, 30, false)
-	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
+	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 0, 0), gameentities.NewVector(0, 0, 0)), 1)
 	model.ResetTempBuffers()
 
 	mod1, mod2, mod3 := model.GetModification()
@@ -150,7 +161,7 @@ func TestGoReset(t *testing.T) {
 
 func TestGoRegister(t *testing.T) {
 	model := roommodels.NewGameObjectsModel(50, 30, false)
-	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
+	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 0, 0), gameentities.NewVector(0, 0, 0)), 1)
 	model.ResetTempBuffers()
 
 	objs := model.GetGameObjects()
@@ -164,7 +175,7 @@ func TestStaticsRetransmit(t *testing.T) {
 	model := roommodels.NewGameObjectsModel(2, 5, false)
 
 	for range 2 {
-		model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
+		model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 0, 0), gameentities.NewVector(0, 0, 0)), 1)
 	}
 
 	for i := range 30 { // emulate 1 second
@@ -186,7 +197,7 @@ func TestRetransmissionDisable(t *testing.T) {
 	model := roommodels.NewGameObjectsModel(2, 5, true)
 
 	for range 2 {
-		model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, *gameentities.NewVector(0, 0, 0), *gameentities.NewVector(0, 0, 0)), 1)
+		model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 0, 0), gameentities.NewVector(0, 0, 0)), 1)
 	}
 
 	for range 30 { // emulate 1 second

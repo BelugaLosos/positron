@@ -9,26 +9,26 @@ import (
 type RpcsModel struct {
 	mutex *sync.Mutex
 
-	cachedRpcs []*gameentities.RpcCall
-	callBuffer []*gameentities.RpcCall
+	cachedRpcs []gameentities.RpcCall
+	callBuffer []gameentities.RpcCall
 }
 
 func NewRpcsModel() *RpcsModel {
 	return &RpcsModel{
 		mutex:      &sync.Mutex{},
-		cachedRpcs: make([]*gameentities.RpcCall, 0),
-		callBuffer: make([]*gameentities.RpcCall, 0),
+		cachedRpcs: make([]gameentities.RpcCall, 0, 16),
+		callBuffer: make([]gameentities.RpcCall, 0, 16),
 	}
 }
 
-func (r *RpcsModel) GetCachedRpcs() []*gameentities.RpcCall {
+func (r *RpcsModel) GetCachedRpcs() []gameentities.RpcCall {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
 	return r.cachedRpcs
 }
 
-func (r *RpcsModel) GetCurrentCallBuffer() []*gameentities.RpcCall {
+func (r *RpcsModel) GetCurrentCallBuffer() []gameentities.RpcCall {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -43,7 +43,7 @@ func (r *RpcsModel) ResetTempBuffers() {
 	r.callBuffer = r.callBuffer[:0]
 }
 
-func (r *RpcsModel) Call(call *gameentities.RpcCall, gameObjectsAddMod []*gameentities.GameObject) {
+func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameentities.GameObject) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
