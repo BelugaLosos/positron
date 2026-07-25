@@ -50,7 +50,7 @@ func (g *GameUnreliableTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	err = enc.EncodeArrayLen(len(g.movedObjects))
 
 	for i := range g.movedObjects {
-		err := enc.Encode(&g.movedObjects[i])
+		err := g.movedObjects[i].EncodeMsgpack(enc)
 
 		if err != nil {
 			return err
@@ -89,7 +89,7 @@ func (g *GameUnreliableTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	for i := range movedLen {
 		if i >= cap(g.movedObjects) || i >= len(g.movedObjects) {
 			var obj gameentities.Tranform
-			err := dec.Decode(&obj)
+			err := obj.DecodeMsgpack(dec)
 
 			if err != nil {
 				return err
@@ -97,7 +97,7 @@ func (g *GameUnreliableTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 			g.movedObjects = append(g.movedObjects, obj)
 		} else {
-			err := dec.Decode(&g.movedObjects[i])
+			err := g.movedObjects[i].DecodeMsgpack(dec)
 
 			if err != nil {
 				return err

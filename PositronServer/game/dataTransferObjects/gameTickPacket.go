@@ -56,7 +56,7 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	}
 
 	for i := range g.newObjects {
-		err := enc.Encode(&g.newObjects[i])
+		err := g.newObjects[i].EncodeMsgpack(enc)
 
 		if err != nil {
 			return err
@@ -82,7 +82,7 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	err = enc.EncodeArrayLen(len(g.valueMod))
 
 	for i := range g.valueMod {
-		err := enc.Encode(&g.valueMod[i])
+		err := g.valueMod[i].EncodeMsgpack(enc)
 
 		if err != nil {
 			return err
@@ -92,7 +92,7 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	err = enc.EncodeArrayLen(len(g.rpc))
 
 	for i := range g.rpc {
-		err := enc.Encode(&g.rpc[i])
+		err := g.rpc[i].EncodeMsgpack(enc)
 
 		if err != nil {
 			return err
@@ -154,7 +154,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	for index := range newObjectsLen {
 		if index >= cap(i.newObjects) || index >= len(i.newObjects) {
 			var obj gameentities.GameObject
-			err = dec.Decode(&obj)
+			err = obj.DecodeMsgpack(dec)
 
 			if err != nil {
 				return err
@@ -162,7 +162,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 			i.newObjects = append(i.newObjects, obj)
 		} else {
-			err = dec.Decode(&i.newObjects[index])
+			err = i.newObjects[index].DecodeMsgpack(dec)
 
 			if err != nil {
 				return err
@@ -229,7 +229,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	for index := range valueModLen {
 		if index >= cap(i.valueMod) || index >= len(i.valueMod) {
 			var value gameentities.NetValue
-			err = dec.Decode(&value)
+			err = value.DecodeMsgpack(dec)
 
 			if err != nil {
 				return err
@@ -237,7 +237,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 			i.valueMod = append(i.valueMod, value)
 		} else {
-			err = dec.Decode(&i.valueMod[index])
+			err = i.valueMod[index].DecodeMsgpack(dec)
 
 			if err != nil {
 				return err
@@ -260,7 +260,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 	for index := range rpcBufferLen {
 		if index >= cap(i.rpc) || index >= len(i.rpc) {
 			var rpc gameentities.RpcCall
-			err = dec.Decode(&rpc)
+			err = rpc.DecodeMsgpack(dec)
 
 			if err != nil {
 				return err
@@ -268,7 +268,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 			i.rpc = append(i.rpc, rpc)
 		} else {
-			err = dec.Decode(&i.rpc[index])
+			err = i.rpc[index].DecodeMsgpack(dec)
 
 			if err != nil {
 				return err

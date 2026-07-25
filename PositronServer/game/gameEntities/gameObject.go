@@ -59,13 +59,13 @@ func (g *GameObject) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	err = enc.Encode(&g.positron)
+	err = g.positron.EncodeMsgpack(enc)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.Encode(&g.rotation)
+	err = g.rotation.EncodeMsgpack(enc)
 
 	return err
 }
@@ -104,13 +104,13 @@ func (g *GameObject) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	err = dec.Decode(&g.positron)
+	err = g.positron.DecodeMsgpack(dec)
 
 	if err != nil {
 		return err
 	}
 
-	err = dec.Decode(&g.rotation)
+	err = g.rotation.DecodeMsgpack(dec)
 
 	if err != nil {
 		return err

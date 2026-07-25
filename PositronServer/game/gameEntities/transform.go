@@ -36,13 +36,13 @@ func (t *Tranform) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
-	err = enc.Encode(&t.position)
+	err = t.position.EncodeMsgpack(enc)
 
 	if err != nil {
 		return err
 	}
 
-	err = enc.Encode(&t.rotation)
+	err = t.rotation.EncodeMsgpack(enc)
 
 	return err
 }
@@ -63,13 +63,13 @@ func (t *Tranform) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return err
 	}
 
-	err = dec.Decode(&t.position)
+	err = t.position.DecodeMsgpack(dec)
 
 	if err != nil {
 		return err
 	}
 
-	err = dec.Decode(&t.rotation)
+	err = t.rotation.DecodeMsgpack(dec)
 
 	t.objectId = objectId
 
