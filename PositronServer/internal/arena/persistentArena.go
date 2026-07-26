@@ -1,0 +1,187 @@
+package arena
+
+import (
+	"math"
+	"math/bits"
+)
+
+type PersistentArena struct {
+	meta               []Block
+	freeSlotContainers []FreeMemorySearchContainer
+	freeBlocksCount    int
+
+	buffer []byte
+
+	writePtr uint32
+}
+
+const (
+	ALLOC_CHUNK                = 512
+	DEFRAGMENT_THRASHOLD       = 1024 * 5    // 5 KB
+	DEFRAGMENT_TICKS_THRASHOLD = 30 * 5 * 60 // ~per 5 minutes
+	MIN_TO_SPLIT               = 32
+)
+
+func NewPersistentArena() *PersistentArena {
+	allocated := &PersistentArena{
+		meta:               make([]Block, 0, 32),
+		freeSlotContainers: make([]FreeMemorySearchContainer, 0),
+		freeBlocksCount:    0,
+		buffer:             make([]byte, ALLOC_CHUNK),
+		writePtr:           0,
+	}
+
+	for i := range 15 {
+		power := i + 1
+
+		slotsContainer := FreeMemorySearchContainer{
+			size:  uint32(math.Pow(2, float64(power))),
+			slots: make([]int, 0, 32),
+		}
+
+		allocated.freeSlotContainers = append(allocated.freeSlotContainers, slotsContainer)
+	}
+
+	return allocated
+}
+
+func (p *PersistentArena) Alloc(data []byte) int {
+	dataLen := uint32(len(data))
+
+	hasFree, slot := p.tryFindFreeSlot(dataLen)
+
+	var dst Block
+
+	if hasFree {
+		meta := p.meta[slot]
+		oldCap := meta.cap
+
+		remaining := oldCap - dataLen
+
+		if remaining >= MIN_TO_SPLIT {
+			meta.len = dataLen
+			meta.cap = dataLen
+			meta.used = true
+			p.meta[slot] = meta
+
+			splitted := Block{
+				ptr:  meta.ptr + dataLen,
+				len:  0,
+				cap:  remaining,
+				used: false,
+			}
+
+			contIdx := p.findContainerFor(splitted.cap)
+			p.meta = append(p.meta, splitted)
+			p.freeSlotContainers[contIdx].slots = append(p.freeSlotContainers[contIdx].slots, len(p.meta)-1)
+		} else {
+			meta.len = dataLen
+			meta.used = true
+			p.meta[slot] = meta
+
+			p.freeBlocksCount--
+		}
+
+		dst = p.meta[slot]
+
+	} else {
+		p.checkAndResize(dataLen)
+
+		dst = Block{
+			ptr:  p.writePtr,
+			len:  dataLen,
+			cap:  dataLen,
+			used: true,
+		}
+
+		slot = len(p.meta)
+		p.meta = append(p.meta, dst)
+
+		p.writePtr += dataLen
+	}
+
+	copy(p.buffer[dst.ptr:dst.ptr+dataLen], data)
+
+	return slot
+}
+
+// TODO: Free (Must do p.freeBlocksCount++)
+
+// TODO: Patch: if data matches into current block simply place it otherwise call Free and Alloc
+
+// TODO: Memory defragmentation: scan memory for large overflows
+
+// TODO: Test shit
+
+func (p *PersistentArena) checkAndResize(dataLen uint32) {
+	buffLen := uint32(len(p.buffer))
+
+	if (dataLen + p.writePtr) <= buffLen {
+		return
+	}
+
+	need := p.writePtr + dataLen
+
+	for uint32(len(p.buffer)) < need {
+		p.buffer = append(p.buffer, make([]byte, ALLOC_CHUNK)...)
+	}
+}
+
+func (p *PersistentArena) tryFindFreeSlot(dataLen uint32) (bool, int) {
+	if p.freeBlocksCount == 0 {
+		return false, 0
+	}
+
+	i := p.findContainerFor(dataLen)
+
+	for i < len(p.freeSlotContainers) {
+		finded, slot := p.findSlotInCont(i, dataLen)
+
+		if finded {
+			return true, slot
+		}
+
+		i++
+	}
+
+	return false, 0
+}
+
+func (p *PersistentArena) findContainerFor(dataLen uint32) int {
+	i := bits.Len32(dataLen-1) - 1
+
+	if i >= len(p.freeSlotContainers) {
+		i = len(p.freeSlotContainers) - 1
+	}
+
+	if i < 0 {
+		i = 0
+	}
+
+	return i
+}
+
+func (p *PersistentArena) findSlotInCont(i int, dataLen uint32) (bool, int) {
+	cont := p.freeSlotContainers[i]
+
+	for j := range cont.slots {
+		slotIndex := cont.slots[j]
+
+		if slotIndex == -1 {
+			continue
+		}
+
+		slot := p.meta[slotIndex]
+
+		if slot.cap >= dataLen {
+			cont.slots[j] = cont.slots[len(cont.slots)-1]
+			cont.slots = cont.slots[:(len(cont.slots) - 1)]
+
+			return true, slotIndex
+		}
+	}
+
+	p.freeSlotContainers[i] = cont
+
+	return false, 0
+}
