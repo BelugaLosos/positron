@@ -1,6 +1,7 @@
 package arena
 
 import (
+	"errors"
 	"math"
 	"math/bits"
 )
@@ -19,7 +20,7 @@ const (
 	ALLOC_CHUNK                = 512
 	DEFRAGMENT_THRASHOLD       = 1024 * 5    // 5 KB
 	DEFRAGMENT_TICKS_THRASHOLD = 30 * 5 * 60 // ~per 5 minutes
-	MIN_TO_SPLIT               = 32
+	MIN_TO_SPLIT               = 256
 )
 
 func NewPersistentArena() *PersistentArena {
@@ -48,12 +49,12 @@ func NewPersistentArena() *PersistentArena {
 func (p *PersistentArena) Alloc(data []byte) int {
 	dataLen := uint32(len(data))
 
-	hasFree, slot := p.tryFindFreeSlot(dataLen)
+	hasFree, descriptor := p.tryFindFreeSlot(dataLen)
 
 	var dst Block
 
 	if hasFree {
-		meta := p.meta[slot]
+		meta := p.meta[descriptor]
 		oldCap := meta.cap
 
 		remaining := oldCap - dataLen
@@ -62,7 +63,7 @@ func (p *PersistentArena) Alloc(data []byte) int {
 			meta.len = dataLen
 			meta.cap = dataLen
 			meta.used = true
-			p.meta[slot] = meta
+			p.meta[descriptor] = meta
 
 			splitted := Block{
 				ptr:  meta.ptr + dataLen,
@@ -77,12 +78,12 @@ func (p *PersistentArena) Alloc(data []byte) int {
 		} else {
 			meta.len = dataLen
 			meta.used = true
-			p.meta[slot] = meta
+			p.meta[descriptor] = meta
 
 			p.freeBlocksCount--
 		}
 
-		dst = p.meta[slot]
+		dst = p.meta[descriptor]
 
 	} else {
 		p.checkAndResize(dataLen)
@@ -94,7 +95,7 @@ func (p *PersistentArena) Alloc(data []byte) int {
 			used: true,
 		}
 
-		slot = len(p.meta)
+		descriptor = len(p.meta)
 		p.meta = append(p.meta, dst)
 
 		p.writePtr += dataLen
@@ -102,10 +103,35 @@ func (p *PersistentArena) Alloc(data []byte) int {
 
 	copy(p.buffer[dst.ptr:dst.ptr+dataLen], data)
 
-	return slot
+	return descriptor
 }
 
-// TODO: Free (Must do p.freeBlocksCount++)
+func (p *PersistentArena) Free(descriptor int, doFullSegmentClear bool) error {
+	block := p.meta[descriptor]
+
+	if descriptor < 0 || descriptor >= len(p.meta) {
+		return errors.New("Invalid descriptor out of range")
+	}
+
+	if !block.used {
+		return errors.New("Can`t free already free memory")
+	}
+
+	if doFullSegmentClear {
+		clear(p.buffer[block.ptr:(block.ptr + block.cap)])
+	}
+
+	block.len = 0
+	block.used = false
+
+	p.meta[descriptor] = block
+
+	contIndex := p.findContainerFor(block.cap)
+	p.freeSlotContainers[contIndex].slots = append(p.freeSlotContainers[contIndex].slots, descriptor)
+	p.freeBlocksCount++
+
+	return nil
+}
 
 // TODO: Patch: if data matches into current block simply place it otherwise call Free and Alloc
 
