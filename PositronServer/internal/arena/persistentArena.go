@@ -107,11 +107,11 @@ func (p *PersistentArena) Alloc(data []byte) int {
 }
 
 func (p *PersistentArena) Free(descriptor int, doFullSegmentClear bool) error {
-	block := p.meta[descriptor]
-
 	if descriptor < 0 || descriptor >= len(p.meta) {
 		return errors.New("Invalid descriptor out of range")
 	}
+
+	block := p.meta[descriptor]
 
 	if !block.used {
 		return errors.New("Can`t free already free memory")
@@ -133,7 +133,38 @@ func (p *PersistentArena) Free(descriptor int, doFullSegmentClear bool) error {
 	return nil
 }
 
-// TODO: Patch: if data matches into current block simply place it otherwise call Free and Alloc
+func (p *PersistentArena) Patch(descriptor int, newData []byte) (int, error) {
+	if descriptor < 0 || descriptor >= len(p.meta) {
+		return 0, errors.New("Patch invalid descriptor out of range")
+	}
+
+	block := p.meta[descriptor]
+
+	if !block.used {
+		return 0, errors.New("Patch invalid descriptor. Trying to patch already free memory")
+	}
+
+	dataLen := uint32(len(newData))
+
+	if block.cap >= dataLen {
+		copy(p.buffer[block.ptr:(block.ptr+dataLen)], newData)
+
+		if block.len != dataLen {
+			block.len = dataLen
+			p.meta[descriptor] = block
+		}
+
+		return descriptor, nil
+	}
+
+	if err := p.Free(descriptor, false); err != nil {
+		return descriptor, err
+	}
+
+	return p.Alloc(newData), nil
+}
+
+// TODO: Read data by descriptor
 
 // TODO: Memory defragmentation: scan memory for large overflows
 
