@@ -14,13 +14,16 @@ type PersistentArena struct {
 	buffer []byte
 
 	writePtr uint32
+
+	metricAllocWithReuse   int
+	metricAllocWithMalloc  int
+	metricPatchWithReuse   int
+	metricPatchWithRealloc int
 }
 
 const (
-	ALLOC_CHUNK                = 512
-	DEFRAGMENT_THRASHOLD       = 1024 * 5    // 5 KB
-	DEFRAGMENT_TICKS_THRASHOLD = 30 * 5 * 60 // ~per 5 minutes
-	MIN_TO_SPLIT               = 256
+	ALLOC_CHUNK  = 512
+	MIN_TO_SPLIT = 256
 )
 
 var (
@@ -30,11 +33,15 @@ var (
 
 func NewPersistentArena() *PersistentArena {
 	allocated := &PersistentArena{
-		meta:               make([]Block, 0, 32),
-		freeSlotContainers: make([]FreeMemorySearchContainer, 0),
-		freeBlocksCount:    0,
-		buffer:             make([]byte, ALLOC_CHUNK),
-		writePtr:           0,
+		meta:                   make([]Block, 0, 32),
+		freeSlotContainers:     make([]FreeMemorySearchContainer, 0),
+		freeBlocksCount:        0,
+		buffer:                 make([]byte, ALLOC_CHUNK),
+		writePtr:               0,
+		metricAllocWithReuse:   0,
+		metricAllocWithMalloc:  0,
+		metricPatchWithReuse:   0,
+		metricPatchWithRealloc: 0,
 	}
 
 	for i := range 15 {
@@ -90,6 +97,7 @@ func (p *PersistentArena) Alloc(data []byte) int {
 
 		dst = p.meta[descriptor]
 
+		p.metricAllocWithReuse++
 	} else {
 		p.checkAndResize(dataLen)
 
@@ -104,6 +112,8 @@ func (p *PersistentArena) Alloc(data []byte) int {
 		p.meta = append(p.meta, dst)
 
 		p.writePtr += dataLen
+
+		p.metricAllocWithMalloc++
 	}
 
 	copy(p.buffer[dst.ptr:dst.ptr+dataLen], data)
@@ -159,11 +169,15 @@ func (p *PersistentArena) Patch(descriptor int, newData []byte) (int, error) {
 			p.meta[descriptor] = block
 		}
 
+		p.metricPatchWithReuse++
+
 		return descriptor, nil
 	}
 
+	p.metricPatchWithRealloc++
+
 	if err := p.Free(descriptor, false); err != nil {
-		return descriptor, err
+		return 0, err
 	}
 
 	return p.Alloc(newData), nil
@@ -183,9 +197,20 @@ func (p *PersistentArena) Read(descriptor int) ([]byte, error) {
 	return p.buffer[block.ptr:(block.ptr + block.len)], nil
 }
 
-// TODO: Memory defragmentation: scan memory for large overflows
+//TODO: make metrcs collecting and integrate observability stack to determine necessaryti of defragmentation
+//TODO: Test shit
 
-// TODO: Test shit
+func (p *PersistentArena) estimateFragmentationPercent() float64 {
+	used := uint32(0)
+
+	for desc := range p.meta {
+		if p.meta[desc].used {
+			used += p.meta[desc].len
+		}
+	}
+
+	return float64(p.writePtr-used) / float64(p.writePtr)
+}
 
 func (p *PersistentArena) checkAndResize(dataLen uint32) {
 	buffLen := uint32(len(p.buffer))
