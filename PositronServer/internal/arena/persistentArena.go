@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math"
 	"math/bits"
+	diagnosticsdata "positron/internal/diagnosticsData"
 )
 
 type PersistentArena struct {
@@ -15,10 +16,7 @@ type PersistentArena struct {
 
 	writePtr uint32
 
-	metricAllocWithReuse   int
-	metricAllocWithMalloc  int
-	metricPatchWithReuse   int
-	metricPatchWithRealloc int
+	metrics *diagnosticsdata.ArenaMetrics
 }
 
 const (
@@ -33,15 +31,22 @@ var (
 
 func NewPersistentArena() *PersistentArena {
 	allocated := &PersistentArena{
-		meta:                   make([]Block, 0, 32),
-		freeSlotContainers:     make([]FreeMemorySearchContainer, 0),
-		freeBlocksCount:        0,
-		buffer:                 make([]byte, ALLOC_CHUNK),
-		writePtr:               0,
-		metricAllocWithReuse:   0,
-		metricAllocWithMalloc:  0,
-		metricPatchWithReuse:   0,
-		metricPatchWithRealloc: 0,
+		meta:               make([]Block, 0, 32),
+		freeSlotContainers: make([]FreeMemorySearchContainer, 0),
+		freeBlocksCount:    0,
+		buffer:             make([]byte, ALLOC_CHUNK),
+		writePtr:           0,
+		metrics: &diagnosticsdata.ArenaMetrics{
+			DescriptorsCount:   0,
+			AllocatedSize:      0,
+			UsedSize:           0,
+			AllocWithReuse:     0,
+			AllocWithMalloc:    0,
+			PatchWithReuse:     0,
+			PatchWithRealloc:   0,
+			FragmentationRatio: 0.0,
+			FreeDescriptors:    make([]diagnosticsdata.ArenaFreeDescriotorsCalssMetrics, 0),
+		},
 	}
 
 	for i := range 15 {
@@ -52,7 +57,13 @@ func NewPersistentArena() *PersistentArena {
 			slots: make([]int, 0, 32),
 		}
 
+		slotMetrics := diagnosticsdata.ArenaFreeDescriotorsCalssMetrics{
+			Size:                 int(slotsContainer.size),
+			FreeDescriptorsCount: 0,
+		}
+
 		allocated.freeSlotContainers = append(allocated.freeSlotContainers, slotsContainer)
+		allocated.metrics.FreeDescriptors = append(allocated.metrics.FreeDescriptors, slotMetrics)
 	}
 
 	return allocated
@@ -97,7 +108,7 @@ func (p *PersistentArena) Alloc(data []byte) int {
 
 		dst = p.meta[descriptor]
 
-		p.metricAllocWithReuse++
+		p.metrics.AllocWithReuse++
 	} else {
 		p.checkAndResize(dataLen)
 
@@ -113,7 +124,7 @@ func (p *PersistentArena) Alloc(data []byte) int {
 
 		p.writePtr += dataLen
 
-		p.metricAllocWithMalloc++
+		p.metrics.AllocWithMalloc++
 	}
 
 	copy(p.buffer[dst.ptr:dst.ptr+dataLen], data)
@@ -169,12 +180,12 @@ func (p *PersistentArena) Patch(descriptor int, newData []byte) (int, error) {
 			p.meta[descriptor] = block
 		}
 
-		p.metricPatchWithReuse++
+		p.metrics.PatchWithReuse++
 
 		return descriptor, nil
 	}
 
-	p.metricPatchWithRealloc++
+	p.metrics.PatchWithRealloc++
 
 	if err := p.Free(descriptor, false); err != nil {
 		return 0, err
@@ -197,10 +208,22 @@ func (p *PersistentArena) Read(descriptor int) ([]byte, error) {
 	return p.buffer[block.ptr:(block.ptr + block.len)], nil
 }
 
-//TODO: make metrcs collecting and integrate observability stack to determine necessaryti of defragmentation
-//TODO: Test shit
+func (p *PersistentArena) CollectMetrics() diagnosticsdata.ArenaMetrics {
+	used, ratio := p.estimateFragmentationPercent()
 
-func (p *PersistentArena) estimateFragmentationPercent() float64 {
+	p.metrics.DescriptorsCount = len(p.meta)
+	p.metrics.AllocatedSize = len(p.buffer)
+	p.metrics.UsedSize = used
+	p.metrics.FragmentationRatio = ratio
+
+	for i := range p.metrics.FreeDescriptors {
+		p.metrics.FreeDescriptors[i].FreeDescriptorsCount = len(p.freeSlotContainers[i].slots)
+	}
+
+	return *p.metrics
+}
+
+func (p *PersistentArena) estimateFragmentationPercent() (int, float64) {
 	used := uint32(0)
 
 	for desc := range p.meta {
@@ -209,7 +232,7 @@ func (p *PersistentArena) estimateFragmentationPercent() float64 {
 		}
 	}
 
-	return float64(p.writePtr-used) / float64(p.writePtr)
+	return int(used), float64(p.writePtr-used) / float64(p.writePtr)
 }
 
 func (p *PersistentArena) checkAndResize(dataLen uint32) {
