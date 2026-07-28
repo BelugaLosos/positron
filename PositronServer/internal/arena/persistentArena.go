@@ -23,6 +23,11 @@ const (
 	MIN_TO_SPLIT               = 256
 )
 
+var (
+	ErrInvalidDescriptor   = errors.New("Invalid descriptor out of range")
+	ErrFreeMemoryViolation = errors.New("Can`t free already free memory")
+)
+
 func NewPersistentArena() *PersistentArena {
 	allocated := &PersistentArena{
 		meta:               make([]Block, 0, 32),
@@ -108,13 +113,13 @@ func (p *PersistentArena) Alloc(data []byte) int {
 
 func (p *PersistentArena) Free(descriptor int, doFullSegmentClear bool) error {
 	if descriptor < 0 || descriptor >= len(p.meta) {
-		return errors.New("Invalid descriptor out of range")
+		return ErrInvalidDescriptor
 	}
 
 	block := p.meta[descriptor]
 
 	if !block.used {
-		return errors.New("Can`t free already free memory")
+		return ErrFreeMemoryViolation
 	}
 
 	if doFullSegmentClear {
@@ -135,13 +140,13 @@ func (p *PersistentArena) Free(descriptor int, doFullSegmentClear bool) error {
 
 func (p *PersistentArena) Patch(descriptor int, newData []byte) (int, error) {
 	if descriptor < 0 || descriptor >= len(p.meta) {
-		return 0, errors.New("Patch invalid descriptor out of range")
+		return 0, ErrInvalidDescriptor
 	}
 
 	block := p.meta[descriptor]
 
 	if !block.used {
-		return 0, errors.New("Patch invalid descriptor. Trying to patch already free memory")
+		return 0, ErrFreeMemoryViolation
 	}
 
 	dataLen := uint32(len(newData))
@@ -164,7 +169,19 @@ func (p *PersistentArena) Patch(descriptor int, newData []byte) (int, error) {
 	return p.Alloc(newData), nil
 }
 
-// TODO: Read data by descriptor
+func (p *PersistentArena) Read(descriptor int) ([]byte, error) {
+	if descriptor < 0 || descriptor >= len(p.meta) {
+		return nil, ErrInvalidDescriptor
+	}
+
+	block := p.meta[descriptor]
+
+	if !block.used {
+		return nil, ErrFreeMemoryViolation
+	}
+
+	return p.buffer[block.ptr:(block.ptr + block.len)], nil
+}
 
 // TODO: Memory defragmentation: scan memory for large overflows
 
