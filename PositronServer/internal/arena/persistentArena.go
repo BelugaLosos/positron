@@ -208,7 +208,7 @@ func (p *PersistentArena) Read(descriptor int) ([]byte, error) {
 	return p.buffer[block.ptr:(block.ptr + block.len)], nil
 }
 
-func (p *PersistentArena) CollectMetrics() diagnosticsdata.ArenaMetrics {
+func (p *PersistentArena) CollectMetrics() *diagnosticsdata.ArenaMetrics {
 	used, ratio := p.estimateFragmentationPercent()
 
 	p.metrics.DescriptorsCount = len(p.meta)
@@ -220,7 +220,7 @@ func (p *PersistentArena) CollectMetrics() diagnosticsdata.ArenaMetrics {
 		p.metrics.FreeDescriptors[i].FreeDescriptorsCount = len(p.freeSlotContainers[i].slots)
 	}
 
-	return *p.metrics
+	return p.metrics
 }
 
 func (p *PersistentArena) estimateFragmentationPercent() (int, float64) {
