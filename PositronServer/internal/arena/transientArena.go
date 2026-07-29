@@ -14,7 +14,7 @@ func NewTransfientArena() *TransientArena {
 
 func (t *TransientArena) CloneFrom(externalBuffer []byte) {
 	t.checkAndResizeAbsolute(uint32(len(externalBuffer)))
-	t.writePtr = 0
+	t.writePtr = uint32(len(externalBuffer))
 	copy(t.buff, externalBuffer)
 }
 
@@ -38,9 +38,17 @@ func (t *TransientArena) Read(ptr, len uint32) ([]byte, error) {
 	return t.buff[ptr:(ptr + len)], nil
 }
 
+func (t *TransientArena) ReadAll() []byte {
+	return t.buff[:t.writePtr]
+}
+
 func (t *TransientArena) Flush() {
 	clear(t.buff)
 	t.writePtr = 0
+}
+
+func (t *TransientArena) GetActualSize() int {
+	return int(t.writePtr)
 }
 
 func (t *TransientArena) checkAndResize(dataLen uint32) {
