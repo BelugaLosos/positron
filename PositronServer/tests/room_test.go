@@ -98,9 +98,9 @@ func TestTick(t *testing.T) {
 		[]uint32{},
 		[]gameentities.NetValue{},
 		[]gameentities.RpcCall{},
-	))
+	), make([]byte, 0), make([]byte, 0))
 
-	rel, urel := room.CreateTickPackets()
+	rel, urel, _, _ := room.CreateTickPackets()
 
 	if rel == nil || urel == nil {
 		t.Error("Packet is nil")
@@ -116,14 +116,14 @@ func TestTick(t *testing.T) {
 
 	room.ResetTempBuffers()
 
-	rel, urel = room.CreateTickPackets()
+	rel, urel, _, _ = room.CreateTickPackets()
 	newGos = rel.GetNewObjects()
 
 	if len(newGos) != 0 {
 		t.Error("Unefficient reset")
 	}
 
-	worldObjects, worldValues, cachedRpcs := room.GetWorld()
+	worldObjects, worldValues, cachedRpcs, _, _ := room.GetWorld()
 
 	if len(worldObjects) != 1 || len(worldValues) != 0 || len(cachedRpcs) != 0 {
 		t.Error("World corruption")
@@ -158,10 +158,10 @@ func TestRaceInTick(t *testing.T) {
 						0, cid,
 						[]gameentities.GameObject{gameentities.NewGameObject(0, cid, 1, 1, gameentities.Vector3{}, gameentities.Vector3{})},
 						nil, nil,
-						[]gameentities.NetValue{gameentities.NewNetValue([]byte{1, 2, 3}, 1, 0, false)},
-						[]gameentities.RpcCall{gameentities.NewRpcCall(1, 0, 0, 0, 1, []byte{1}, false)},
+						[]gameentities.NetValue{},
+						[]gameentities.RpcCall{},
 					)
-					r.ProcessTick(pkt)
+					r.ProcessTick(pkt, make([]byte, 0), make([]byte, 0))
 				}
 			}
 		}()
@@ -179,7 +179,7 @@ func TestRaceInTick(t *testing.T) {
 			default:
 				r.Lock()
 
-				packet, unrel := r.CreateTickPackets()
+				packet, unrel, _, _ := r.CreateTickPackets()
 				_ = m.MarshalNonAlloc(buf, packet)
 				_ = m.MarshalNonAlloc(ubuf, unrel)
 				r.ReleaseTickPackets(packet, unrel)

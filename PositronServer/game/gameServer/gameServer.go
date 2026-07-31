@@ -6,6 +6,7 @@ import (
 	eventtypes "positron/game/gameHandlers/eventTypes"
 	"positron/game/room"
 	"positron/internal"
+	networkio "positron/internal/networkIo"
 	"sync"
 	"time"
 )
@@ -32,6 +33,12 @@ type GameServer struct {
 var bufferPool = sync.Pool{
 	New: func() interface{} {
 		return &bytes.Buffer{}
+	},
+}
+
+var rawBuffersPool = sync.Pool{
+	New: func() interface{} {
+		return make([]byte, 4096)
 	},
 }
 
@@ -135,6 +142,7 @@ func (g *GameServer) filterEmptyRooms() {
 
 func (g *GameServer) roomTick(room *room.Room) {
 	room.RecordStartupTimeOnClock()
+	writer := networkio.NewNetworkWriter()
 
 	for {
 		select {
@@ -144,16 +152,34 @@ func (g *GameServer) roomTick(room *room.Room) {
 		case <-room.Ticker.C:
 			room.Lock()
 
-			packet, unreliablePacket := room.CreateTickPackets()
+			packet, unreliablePacket, netValuesArena, rpcsArena := room.CreateTickPackets()
 			peers := room.GetAllConnectedPeers()
 
 			packetMarshallBuffer := bufferPool.Get().(*bytes.Buffer)
+			packetArensBuf := rawBuffersPool.Get().([]byte)
 			packetUnrMarshalled := bufferPool.Get().(*bytes.Buffer)
 
 			packetMarshallBuffer.Reset()
+			packetArensBuf = packetArensBuf[:0]
 			packetUnrMarshalled.Reset()
 
 			err := g.marhaller.MarshalNonAlloc(packetMarshallBuffer, packet)
+
+			targetLen := 16 + packetMarshallBuffer.Len() + len(netValuesArena) + len(rpcsArena)
+			checkAndResizeBuffer(packetArensBuf, targetLen)
+			writer.Wrap(packetArensBuf)
+
+			writer.WriteUint32(uint32(packetMarshallBuffer.Len()))
+			writer.WriteSegment(packetMarshallBuffer.Bytes())
+
+			writer.WriteUint32(uint32(len(netValuesArena)))
+			writer.WriteSegment(netValuesArena)
+
+			writer.WriteUint32(uint32(len(rpcsArena)))
+			writer.WriteSegment(rpcsArena)
+
+			packetArensBuf = packetArensBuf[:targetLen]
+
 			unrErr := g.marhaller.MarshalNonAlloc(packetUnrMarshalled, unreliablePacket)
 
 			room.ReleaseTickPackets(packet, unreliablePacket)
@@ -163,7 +189,7 @@ func (g *GameServer) roomTick(room *room.Room) {
 
 			for i := range peers {
 				if err == nil {
-					g.transport.SendToPeer(packetMarshallBuffer.Bytes(), eventtypes.TICK, peers[i], true)
+					g.transport.SendToPeer(packetArensBuf, eventtypes.TICK, peers[i], true)
 				} else {
 					log.Println(err)
 				}
@@ -175,8 +201,16 @@ func (g *GameServer) roomTick(room *room.Room) {
 				}
 			}
 
+			writer.Free()
 			bufferPool.Put(packetMarshallBuffer)
+			rawBuffersPool.Put(packetArensBuf)
 			bufferPool.Put(packetUnrMarshalled)
 		}
+	}
+}
+
+func checkAndResizeBuffer(buf []byte, need int) {
+	for len(buf) < need {
+		buf = append(buf, make([]byte, 2048)...)
 	}
 }

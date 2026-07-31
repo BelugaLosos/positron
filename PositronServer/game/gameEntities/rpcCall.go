@@ -8,7 +8,8 @@ import (
 )
 
 type RpcCall struct {
-	args         []byte
+	arenaPtr     uint32
+	arenaLen     uint32
 	targetClient uint32
 	objectId     uint32
 	methodId     uint16
@@ -16,120 +17,109 @@ type RpcCall struct {
 	rpcType      uint8
 }
 
-func NewRpcCall(objId uint32, targetClient uint32, subObjectsId uint16, rpcType uint8, methodId uint16, agrs []byte, useRawArgs bool) RpcCall {
-	var argsBuf []byte
-
-	if useRawArgs {
-		argsBuf = agrs
-	} else {
-		argsBuf = make([]byte, len(agrs)+1)
-		argsBuf[0] = 0
-		copy(argsBuf[1:], agrs)
-	}
-
+func NewRpcCall(ptr, dlen, objId, targetClient uint32, subObjectsId uint16, rpcType uint8, methodId uint16) RpcCall {
 	return RpcCall{
-		objectId:     objId,
+		arenaPtr:     ptr,
+		arenaLen:     dlen,
 		targetClient: targetClient,
+		objectId:     objId,
+		methodId:     methodId,
 		subObjectId:  subObjectsId,
 		rpcType:      rpcType,
-		methodId:     methodId,
-		args:         argsBuf,
 	}
 }
 
 func (r *RpcCall) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
-	arrErr := enc.EncodeArrayLen(6)
-	err := enc.EncodeUint(uint64(r.objectId))
 
-	if arrErr != nil {
-		return arrErr
-	}
-
-	if err != nil {
+	if err := enc.EncodeArrayLen(7); err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(r.targetClient))
-
-	if err != nil {
+	if err := enc.EncodeUint(uint64(r.arenaPtr)); err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(r.subObjectId))
-
-	if err != nil {
+	if err := enc.EncodeUint(uint64(r.arenaLen)); err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(r.rpcType))
-
-	if err != nil {
+	if err := enc.EncodeUint(uint64(r.targetClient)); err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(r.methodId))
-
-	if err != nil {
+	if err := enc.EncodeUint(uint64(r.objectId)); err != nil {
 		return err
 	}
 
-	err = enc.EncodeBytes(r.args)
+	if err := enc.EncodeUint(uint64(r.methodId)); err != nil {
+		return err
+	}
 
-	return err
+	if err := enc.EncodeUint(uint64(r.subObjectId)); err != nil {
+		return err
+	}
+
+	if err := enc.EncodeUint(uint64(r.rpcType)); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *RpcCall) DecodeMsgpack(dec *msgpack.Decoder) error {
-	arrLen, arrErr := dec.DecodeArrayLen()
-	id, err := dec.DecodeUint32()
+	if arrLen, err := dec.DecodeArrayLen(); err != nil || arrLen != 7 {
+		if arrLen != 7 {
+			return errors.New("Rpc call arr invalid")
+		}
 
-	if arrErr != nil {
-		return arrErr
-	}
-
-	if arrLen != 6 {
-		return errors.New("Rpc call arr invalid")
-	}
-
-	if err != nil {
 		return err
 	}
 
-	clientId, err := dec.DecodeUint32()
-
-	if err != nil {
+	if ptr, err := dec.DecodeUint32(); err != nil {
 		return err
+	} else {
+		r.arenaPtr = ptr
 	}
 
-	subId, err := dec.DecodeUint16()
-
-	if err != nil {
+	if len, err := dec.DecodeUint32(); err != nil {
 		return err
+	} else {
+		r.arenaLen = len
 	}
 
-	typeId, err := dec.DecodeUint8()
-
-	if err != nil {
+	if targetClient, err := dec.DecodeUint32(); err != nil {
 		return err
+	} else {
+		r.targetClient = targetClient
 	}
 
-	method, err := dec.DecodeUint16()
-
-	if err != nil {
+	if objectId, err := dec.DecodeUint32(); err != nil {
 		return err
+	} else {
+		r.objectId = objectId
 	}
 
-	args, err := dec.DecodeBytes()
+	if method, err := dec.DecodeUint16(); err != nil {
+		return err
+	} else {
+		r.methodId = method
+	}
 
-	r.objectId = id
-	r.targetClient = clientId
-	r.subObjectId = subId
-	r.rpcType = typeId
-	r.methodId = method
-	r.args = args
+	if subId, err := dec.DecodeUint16(); err != nil {
+		return err
+	} else {
+		r.subObjectId = subId
+	}
 
-	return err
+	if typeId, err := dec.DecodeUint8(); err != nil {
+		return err
+	} else {
+		r.rpcType = typeId
+	}
+
+	return nil
 }
 
 func (r *RpcCall) GetObjectId() uint32 {
@@ -156,17 +146,27 @@ func (r *RpcCall) GetMethodId() uint16 {
 	return r.methodId
 }
 
-func (r *RpcCall) GetArgs() []byte {
-	if r.args[0] == 1 {
-		return r.args[3:]
-	}
-
-	return r.args[1:]
+// ptr len
+func (r *RpcCall) GetDescriptors() (uint32, uint32) {
+	return r.arenaPtr, r.arenaLen
 }
 
-func (r *RpcCall) TryGetCreationId() (bool, uint16) {
-	if r.args[0] == 1 {
-		encoded := r.args[1:3]
+func (r *RpcCall) SetDescriptors(ptr, len uint32) {
+	r.arenaPtr = ptr
+	r.arenaLen = len
+}
+
+func GetRpcArgs(args []byte) []byte {
+	if args[0] == 1 {
+		return args[3:]
+	}
+
+	return args[1:]
+}
+
+func TryGetCreationIdRpc(args []byte) (bool, uint16) {
+	if args[0] == 1 {
+		encoded := args[1:3]
 		return true, binary.BigEndian.Uint16(encoded)
 	}
 

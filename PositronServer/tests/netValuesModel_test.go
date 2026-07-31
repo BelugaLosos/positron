@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"encoding/binary"
 	gameentities "positron/game/gameEntities"
 	roommodels "positron/game/room/roomModels"
 	"testing"
@@ -8,92 +9,123 @@ import (
 
 func TestAddValue(t *testing.T) {
 	model := roommodels.NewNetValuesModel()
-	model.AddOrModify(gameentities.NetValue{})
-	mod := model.GetTempMod()
+	arenaImitation := make([]byte, 0, 4)
+	arenaImitation = binary.BigEndian.AppendUint32(arenaImitation, 1245)
 
-	if len(mod) != 1 {
+	model.PutTransientDataIncoming(arenaImitation)
+	model.AddOrModify(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false))
+
+	modMeta, modArena := model.GetTempMod()
+
+	if len(modMeta) != 1 {
 		t.Error("No any mod while expected")
-	} else if mod[0].GetIsDeleting() == true || mod[0].GetValueId() != 0 || mod[0].GetParentObjectId() != 0 {
-		t.Errorf("Mod content error %v", mod[0])
+	} else if modMeta[0].GetIsDeleting() == true || modMeta[0].GetValueId() != 2 || modMeta[0].GetParentObjectId() != 1 {
+		t.Errorf("Mod content error %v", modMeta[0])
+	} else if len(modArena) != 4 {
+		t.Errorf("invalid arena len %v", len(modArena))
+	} else if binary.BigEndian.Uint32(modArena) != 1245 {
+		t.Errorf("arena data corrupted %v", binary.BigEndian.Uint32(modArena))
 	}
 }
 
 func TestReset(t *testing.T) {
 	model := roommodels.NewNetValuesModel()
-	model.AddOrModify(gameentities.NetValue{})
-	model.ResetTempBuffers()
-	mod := model.GetTempMod()
+	arenaImitation := make([]byte, 0, 4)
+	arenaImitation = binary.BigEndian.AppendUint32(arenaImitation, 1245)
 
-	if len(mod) != 0 {
+	model.PutTransientDataIncoming(arenaImitation)
+	model.AddOrModify(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false))
+
+	model.ResetTempBuffers()
+
+	modMeta, modArena := model.GetTempMod()
+
+	if len(modMeta) != 0 {
 		t.Error("Iefficient reset")
+	} else if len(modArena) != 0 {
+		t.Error("Arena not resetted")
 	}
 }
 
 func TestValueMod(t *testing.T) {
 	model := roommodels.NewNetValuesModel()
-	model.AddOrModify(gameentities.NetValue{})
+	arenaImitation := make([]byte, 4)
+	model.PutTransientDataIncoming(arenaImitation)
+	model.AddOrModify(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false))
+
 	model.ResetTempBuffers()
 
-	if len(model.GetValues()[0].GetPayload()) != 0 {
-		t.Error("Unexpected value payload")
-	}
-
-	modVal := gameentities.NetValue{}
-	modVal.ModifyPayload([]byte("hello"))
+	binary.BigEndian.PutUint32(arenaImitation, 67)
+	model.PutTransientDataIncoming(arenaImitation)
+	modVal := gameentities.NewNetValueAsTransient(0, 4, 1, 2, false)
 
 	model.AddOrModify(modVal)
 
-	mod := model.GetTempMod()
+	modMeta, modArena := model.GetTempMod()
 
-	if len(mod) != 1 {
-		t.Error("Mod is not collected")
-	} else if string(mod[0].GetPayload()) != "hello" {
-		t.Error("Data corruption")
-	} else if mod[0].GetIsDeleting() == true {
-		t.Error("Unexpected deletion")
+	if len(modMeta) != 1 {
+		t.Errorf("No any mod while expected %v != 1", len(modMeta))
+	} else if modMeta[0].GetIsDeleting() == true || modMeta[0].GetValueId() != 2 || modMeta[0].GetParentObjectId() != 1 {
+		t.Errorf("Mod content error %v", modMeta[0])
+	} else if len(modArena) != 4 {
+		t.Errorf("invalid arena len %v", len(modArena))
+	} else if binary.BigEndian.Uint32(modArena) != 67 {
+		t.Errorf("arena data corrupted %v", binary.BigEndian.Uint32(modArena))
 	}
 
 	model.ResetTempBuffers()
 
-	if len(model.GetTempMod()) != 0 {
-		t.Error("Unefficient reset hit")
+	modMeta, modArena = model.GetTempMod()
+
+	if len(modMeta) != 0 {
+		t.Error("Iefficient reset")
+	} else if len(modArena) != 0 {
+		t.Error("Arena not resetted")
 	}
 }
 
 func TestValueDeletion(t *testing.T) {
 	model := roommodels.NewNetValuesModel()
+	arenaImitation := make([]byte, 4)
+	model.PutTransientDataIncoming(arenaImitation)
 
 	for i := range uint16(10) {
-		model.AddOrModify(gameentities.NewNetValue([]byte("some"), 0, i, false))
+		model.AddOrModify(gameentities.NewNetValueAsTransient(0, 4, 1, i, false))
 	}
 
 	for i := range uint16(10) {
-		model.AddOrModify(gameentities.NewNetValue([]byte("some"), 1, i, false))
+		model.AddOrModify(gameentities.NewNetValueAsTransient(0, 4, 2, i, false))
 	}
 
 	model.ResetTempBuffers()
 
-	model.RemoveAllValuesFromObject(0)
+	model.RemoveAllValuesFromObject(1)
 
-	mod := model.GetTempMod()
+	modMeta, modArena := model.GetTempMod()
 
-	if len(mod) != 10 {
-		t.Errorf("Deletion mod is not collected %v", len(mod))
-	} else if mod[0].GetIsDeleting() == false {
+	if len(modMeta) != 10 {
+		t.Errorf("Deletion mod is not collected %v", len(modMeta))
+	} else if modMeta[0].GetIsDeleting() == false {
 		t.Error("Delete is not efficient")
+	} else if len(modArena) != 0 {
+		t.Errorf("Unexpected arena %v", modArena)
 	}
 }
 
 func TestGetValues(t *testing.T) {
 	model := roommodels.NewNetValuesModel()
+	arenaImitation := make([]byte, 0, 4)
+	arenaImitation = binary.BigEndian.AppendUint32(arenaImitation, 1245)
 
-	val := gameentities.NetValue{}
-	val.ModifyPayload([]byte("hello"))
+	model.PutTransientDataIncoming(arenaImitation)
+	model.AddOrModify(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false))
 
-	model.AddOrModify(val)
 	model.ResetTempBuffers()
 
-	if len(model.GetValues()) != 1 || string(val.GetPayload()) != "hello" {
-		t.Error("Data not registred or corruted")
+	meta, arena := model.GetValues()
+	dptr, dlen := meta[0].GetTransientMemoryDescriptor()
+
+	if len(meta) != 1 || binary.BigEndian.Uint32(arena[dptr:dlen]) != 1245 {
+		t.Error("data corruption")
 	}
 }

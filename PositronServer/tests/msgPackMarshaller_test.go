@@ -11,11 +11,10 @@ import (
 func TestUnmarshalling(t *testing.T) {
 	for range 1 {
 		obj := gameentities.NewGameObject(1, 2, 3, 4, gameentities.NewVector(5, 6, 7), gameentities.NewVector(8, 9, 10))
-		val := gameentities.NetValue{}
-		val.MarkAsDeleting()
-		val.ModifyPayload([]byte("jopa"))
+		val := gameentities.NewNetValueAsTransient(22, 33, 111, 123, true)
+		val.SetPersistentMemoryDescriptor(1)
 
-		rpc := gameentities.NewRpcCall(11, 12, 13, 14, 1, []byte("fff"), false)
+		rpc := gameentities.NewRpcCall(1, 2, 11, 12, 13, 14, 1)
 
 		testData := datatransferobjects.NewTickPacket(1, 15, 16, []gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []gameentities.NetValue{val}, []gameentities.RpcCall{rpc})
 
@@ -34,37 +33,144 @@ func TestUnmarshalling(t *testing.T) {
 			t.Error(err)
 		}
 
-		if testData.GetTick() != unmarshalled.GetTick() ||
-			testData.GetHost() != unmarshalled.GetHost() ||
-			testData.GetSourceClient() != unmarshalled.GetSourceClient() ||
-			testData.GetNewObjects()[0].GetId() != unmarshalled.GetNewObjects()[0].GetId() ||
-			testData.GetNewObjects()[0].GetOwnerId() != unmarshalled.GetNewObjects()[0].GetOwnerId() ||
-			testData.GetNewObjects()[0].GetAssetIndex() != unmarshalled.GetNewObjects()[0].GetAssetIndex() ||
-			testData.GetNewObjects()[0].GetCreationId() != unmarshalled.GetNewObjects()[0].GetCreationId() ||
-			testData.GetNewObjects()[0].GetPosition().GetX() != unmarshalled.GetNewObjects()[0].GetPosition().GetX() ||
-			testData.GetNewObjects()[0].GetPosition().GetY() != unmarshalled.GetNewObjects()[0].GetPosition().GetY() ||
-			testData.GetNewObjects()[0].GetPosition().GetZ() != unmarshalled.GetNewObjects()[0].GetPosition().GetZ() ||
-			testData.GetNewObjects()[0].GetRotation().GetX() != unmarshalled.GetNewObjects()[0].GetRotation().GetX() ||
-			testData.GetNewObjects()[0].GetRotation().GetY() != unmarshalled.GetNewObjects()[0].GetRotation().GetY() ||
-			testData.GetNewObjects()[0].GetRotation().GetZ() != unmarshalled.GetNewObjects()[0].GetRotation().GetZ() ||
-			testData.GetRemovedObjects()[0] != unmarshalled.GetRemovedObjects()[0] ||
-			testData.GetTranferedObjects()[0] != unmarshalled.GetTranferedObjects()[0] ||
-			testData.GetValueMod()[0].GetIsDeleting() != unmarshalled.GetValueMod()[0].GetIsDeleting() ||
-			testData.GetValueMod()[0].GetParentObjectId() != unmarshalled.GetValueMod()[0].GetParentObjectId() ||
-			string(testData.GetValueMod()[0].GetPayload()) != string(unmarshalled.GetValueMod()[0].GetPayload()) ||
-			testData.GetValueMod()[0].GetValueId() != unmarshalled.GetValueMod()[0].GetValueId() ||
-			string(testData.GetRpcs()[0].GetArgs()) != string(unmarshalled.GetRpcs()[0].GetArgs()) ||
-			testData.GetRpcs()[0].GetMethodId() != unmarshalled.GetRpcs()[0].GetMethodId() ||
-			testData.GetRpcs()[0].GetObjectId() != unmarshalled.GetRpcs()[0].GetObjectId() ||
-			testData.GetRpcs()[0].GetSubObjectId() != unmarshalled.GetRpcs()[0].GetSubObjectId() ||
-			testData.GetRpcs()[0].GetRpcType() != unmarshalled.GetRpcs()[0].GetRpcType() ||
-			testData.GetRpcs()[0].GetTargetClient() != unmarshalled.GetRpcs()[0].GetTargetClient() ||
-			len(testData.GetNewObjects()) != len(unmarshalled.GetNewObjects()) ||
-			len(testData.GetRemovedObjects()) != len(unmarshalled.GetRemovedObjects()) ||
-			len(testData.GetTranferedObjects()) != len(unmarshalled.GetTranferedObjects()) ||
-			len(testData.GetRpcs()) != len(unmarshalled.GetRpcs()) ||
-			len(testData.GetValueMod()) != len(unmarshalled.GetValueMod()) {
-			t.Error("Data corrupt")
+		tptr, tlen := testData.GetValueMod()[0].GetTransientMemoryDescriptor()
+		uptr, ulen := unmarshalled.GetValueMod()[0].GetTransientMemoryDescriptor()
+
+		rtptr, rtlen := testData.GetRpcs()[0].GetDescriptors()
+		ruptr, rulen := unmarshalled.GetRpcs()[0].GetDescriptors()
+
+		if testData.GetTick() != unmarshalled.GetTick() {
+			t.Errorf("Data corrupt: Tick mismatch (expected %v, got %v)", testData.GetTick(), unmarshalled.GetTick())
+		}
+		if testData.GetHost() != unmarshalled.GetHost() {
+			t.Errorf("Data corrupt: Host mismatch (expected %v, got %v)", testData.GetHost(), unmarshalled.GetHost())
+		}
+		if testData.GetSourceClient() != unmarshalled.GetSourceClient() {
+			t.Errorf("Data corrupt: SourceClient mismatch (expected %v, got %v)", testData.GetSourceClient(), unmarshalled.GetSourceClient())
+		}
+
+		if len(testData.GetNewObjects()) != len(unmarshalled.GetNewObjects()) {
+			t.Errorf("Data corrupt: NewObjects length mismatch (expected %d, got %d)", len(testData.GetNewObjects()), len(unmarshalled.GetNewObjects()))
+		} else if len(testData.GetNewObjects()) > 0 {
+			obj1 := testData.GetNewObjects()[0]
+			obj2 := unmarshalled.GetNewObjects()[0]
+
+			if obj1.GetId() != obj2.GetId() {
+				t.Errorf("Data corrupt: NewObjects[0].Id mismatch (expected %v, got %v)",
+					obj1.GetId(), obj2.GetId())
+			}
+			if obj1.GetOwnerId() != obj2.GetOwnerId() {
+				t.Errorf("Data corrupt: NewObjects[0].OwnerId mismatch (expected %v, got %v)",
+					obj1.GetOwnerId(), obj2.GetOwnerId())
+			}
+			if obj1.GetAssetIndex() != obj2.GetAssetIndex() {
+				t.Errorf("Data corrupt: NewObjects[0].AssetIndex mismatch (expected %v, got %v)",
+					obj1.GetAssetIndex(), obj2.GetAssetIndex())
+			}
+			if obj1.GetCreationId() != obj2.GetCreationId() {
+				t.Errorf("Data corrupt: NewObjects[0].CreationId mismatch (expected %v, got %v)",
+					obj1.GetCreationId(), obj2.GetCreationId())
+			}
+
+			if obj1.GetPosition().GetX() != obj2.GetPosition().GetX() {
+				t.Errorf("Data corrupt: NewObjects[0].Position.X mismatch (expected %v, got %v)",
+					obj1.GetPosition().GetX(), obj2.GetPosition().GetX())
+			}
+			if obj1.GetPosition().GetY() != obj2.GetPosition().GetY() {
+				t.Errorf("Data corrupt: NewObjects[0].Position.Y mismatch (expected %v, got %v)",
+					obj1.GetPosition().GetY(), obj2.GetPosition().GetY())
+			}
+			if obj1.GetPosition().GetZ() != obj2.GetPosition().GetZ() {
+				t.Errorf("Data corrupt: NewObjects[0].Position.Z mismatch (expected %v, got %v)",
+					obj1.GetPosition().GetZ(), obj2.GetPosition().GetZ())
+			}
+
+			if obj1.GetRotation().GetX() != obj2.GetRotation().GetX() {
+				t.Errorf("Data corrupt: NewObjects[0].Rotation.X mismatch (expected %v, got %v)",
+					obj1.GetRotation().GetX(), obj2.GetRotation().GetX())
+			}
+			if obj1.GetRotation().GetY() != obj2.GetRotation().GetY() {
+				t.Errorf("Data corrupt: NewObjects[0].Rotation.Y mismatch (expected %v, got %v)",
+					obj1.GetRotation().GetY(), obj2.GetRotation().GetY())
+			}
+			if obj1.GetRotation().GetZ() != obj2.GetRotation().GetZ() {
+				t.Errorf("Data corrupt: NewObjects[0].Rotation.Z mismatch (expected %v, got %v)",
+					obj1.GetRotation().GetZ(), obj2.GetRotation().GetZ())
+			}
+		}
+
+		if len(testData.GetRemovedObjects()) != len(unmarshalled.GetRemovedObjects()) {
+			t.Errorf("Data corrupt: RemovedObjects length mismatch (expected %d, got %d)", len(testData.GetRemovedObjects()), len(unmarshalled.GetRemovedObjects()))
+		} else if len(testData.GetRemovedObjects()) > 0 {
+			if testData.GetRemovedObjects()[0] != unmarshalled.GetRemovedObjects()[0] {
+				t.Errorf("Data corrupt: RemovedObjects[0] mismatch (expected %v, got %v)", testData.GetRemovedObjects()[0], unmarshalled.GetRemovedObjects()[0])
+			}
+		}
+
+		if len(testData.GetTranferedObjects()) != len(unmarshalled.GetTranferedObjects()) {
+			t.Errorf("Data corrupt: TranferedObjects length mismatch (expected %d, got %d)", len(testData.GetTranferedObjects()), len(unmarshalled.GetTranferedObjects()))
+		} else if len(testData.GetTranferedObjects()) > 0 {
+			if testData.GetTranferedObjects()[0] != unmarshalled.GetTranferedObjects()[0] {
+				t.Errorf("Data corrupt: TranferedObjects[0] mismatch (expected %v, got %v)", testData.GetTranferedObjects()[0], unmarshalled.GetTranferedObjects()[0])
+			}
+		}
+
+		if len(testData.GetValueMod()) != len(unmarshalled.GetValueMod()) {
+			t.Errorf("Data corrupt: ValueMod length mismatch (expected %d, got %d)", len(testData.GetValueMod()), len(unmarshalled.GetValueMod()))
+		} else if len(testData.GetValueMod()) > 0 {
+			vm1 := testData.GetValueMod()[0]
+			vm2 := unmarshalled.GetValueMod()[0]
+			if vm1.GetIsDeleting() != vm2.GetIsDeleting() {
+				t.Errorf("Data corrupt: ValueMod[0].IsDeleting mismatch (expected %v, got %v)",
+					vm1.GetIsDeleting(), vm2.GetIsDeleting())
+			}
+			if vm1.GetParentObjectId() != vm2.GetParentObjectId() {
+				t.Errorf("Data corrupt: ValueMod[0].ParentObjectId mismatch (expected %v, got %v)",
+					vm1.GetParentObjectId(), vm2.GetParentObjectId())
+			}
+			if vm1.GetPersistentMemoryDescriptor() == vm2.GetPersistentMemoryDescriptor() {
+				t.Errorf("Data corrupt: ValueMod[0].PersistentMemoryDescriptor mismatch MUST NOT BE SERIALIZED!!! (%v == %v)",
+					vm1.GetPersistentMemoryDescriptor(), vm2.GetPersistentMemoryDescriptor())
+			}
+			if vm1.GetValueId() != vm2.GetValueId() {
+				t.Errorf("Data corrupt: ValueMod[0].GetValueId mismatch (expected %v, got %v)",
+					vm1.GetValueId(), vm2.GetValueId())
+			}
+		}
+
+		if tptr != uptr {
+			t.Errorf("Data corrupt: tptr mismatch (expected %v, got %v)", tptr, uptr)
+		}
+		if tlen != ulen {
+			t.Errorf("Data corrupt: tlen mismatch (expected %v, got %v)", tlen, ulen)
+		}
+		if rtptr != ruptr {
+			t.Errorf("Data corrupt: rtptr mismatch (expected %v, got %v)", rtptr, ruptr)
+		}
+		if rtlen != rulen {
+			t.Errorf("Data corrupt: rtlen mismatch (expected %v, got %v)", rtlen, rulen)
+		}
+
+		if len(testData.GetRpcs()) != len(unmarshalled.GetRpcs()) {
+			t.Errorf("Data corrupt: Rpcs length mismatch (expected %d, got %d)", len(testData.GetRpcs()), len(unmarshalled.GetRpcs()))
+		} else if len(testData.GetRpcs()) > 0 {
+			rpc1 := testData.GetRpcs()[0]
+			rpc2 := unmarshalled.GetRpcs()[0]
+			if rpc1.GetMethodId() != rpc2.GetMethodId() {
+				t.Errorf("Data corrupt: Rpcs[0].MethodId mismatch (expected %v, got %v)", rpc1.GetMethodId(), rpc2.GetMethodId())
+			}
+			if rpc1.GetObjectId() != rpc2.GetObjectId() {
+				t.Errorf("Data corrupt: Rpcs[0].ObjectId mismatch (expected %v, got %v)", rpc1.GetObjectId(), rpc2.GetObjectId())
+			}
+			if rpc1.GetSubObjectId() != rpc2.GetSubObjectId() {
+				t.Errorf("Data corrupt: Rpcs[0].SubObjectId mismatch (expected %v, got %v)", rpc1.GetSubObjectId(), rpc2.GetSubObjectId())
+			}
+			if rpc1.GetRpcType() != rpc2.GetRpcType() {
+				t.Errorf("Data corrupt: Rpcs[0].RpcType mismatch (expected %v, got %v)", rpc1.GetRpcType(), rpc2.GetRpcType())
+			}
+			if rpc1.GetTargetClient() != rpc2.GetTargetClient() {
+				t.Errorf("Data corrupt: Rpcs[0].TargetClient mismatch (expected %v, got %v)", rpc1.GetTargetClient(), rpc2.GetTargetClient())
+			}
 		}
 
 		if len(marshalled) > 51 {
@@ -76,7 +182,7 @@ func TestUnmarshalling(t *testing.T) {
 }
 
 func TestBufferRace(t *testing.T) {
-	rpcCall := gameentities.NewRpcCall(1, 2, 3, 4, 1, []byte("A"), false)
+	rpcCall := gameentities.NewRpcCall(11, 22, 1, 2, 3, 4, 1)
 	marshalled, merr := marshaller.NewMessagePackMarshaller().Marshal(&rpcCall)
 
 	if merr != nil {
@@ -95,12 +201,15 @@ func TestBufferRace(t *testing.T) {
 		marshalled[i] = 0
 	}
 
-	if rpcCall.GetObjectId() != 1 ||
-		rpcCall.GetTargetClient() != 2 ||
-		rpcCall.GetSubObjectId() != 3 ||
-		rpcCall.GetRpcType() != 4 ||
-		rpcCall.GetMethodId() != 1 ||
-		(len(rpcCall.GetArgs()) != 1 || rpcCall.GetArgs()[0] != []byte("A")[0]) {
+	rptr, rlen := rpcCopy.GetDescriptors()
+
+	if rpcCopy.GetObjectId() != 1 ||
+		rpcCopy.GetTargetClient() != 2 ||
+		rpcCopy.GetSubObjectId() != 3 ||
+		rpcCopy.GetRpcType() != 4 ||
+		rpcCopy.GetMethodId() != 1 ||
+		rptr != 11 ||
+		rlen != 22 {
 		t.Error("Data corrupted!")
 	}
 }

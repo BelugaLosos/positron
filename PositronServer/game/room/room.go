@@ -120,9 +120,12 @@ func (r *Room) Unlock() {
 	r.mutex.Unlock()
 }
 
-func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatransferobjects.GameUnreliableTickPacket) {
+func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatransferobjects.GameUnreliableTickPacket, []byte, []byte) {
 	worldModAdd, worldModRemove, worldModTransfer := r.gameObjectsModel.GetModification()
 	ticksSinceStartup := r.clock.GetTicksAmountSinceStartup()
+
+	netValuesModMeta, netValuesModArena := r.netValuesModel.GetTempMod()
+	rpcsModMeta, rpcsModArena := r.rpcsModel.GetCurrentCallBuffer()
 
 	gameTick := r.tickPacketsPool.Get().(*datatransferobjects.GameTickPacket)
 	gameTick.ReassignTickPacketData(
@@ -132,8 +135,8 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 		worldModAdd,
 		worldModRemove,
 		worldModTransfer,
-		r.netValuesModel.GetTempMod(),
-		r.rpcsModel.GetCurrentCallBuffer(),
+		netValuesModMeta,
+		rpcsModMeta,
 	)
 
 	r.gameObjectsModel.EvaluateStaticScore()
@@ -146,7 +149,7 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 		0,
 	)
 
-	return gameTick, gamePositionsTick
+	return gameTick, gamePositionsTick, netValuesModArena, rpcsModArena
 }
 
 func (r *Room) ReleaseTickPackets(tick *datatransferobjects.GameTickPacket, unrTick *datatransferobjects.GameUnreliableTickPacket) {
@@ -160,7 +163,7 @@ func (r *Room) ResetTempBuffers() {
 	r.rpcsModel.ResetTempBuffers()
 }
 
-func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket) {
+func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket, netValuesArena, rpcsArena []byte) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
@@ -185,6 +188,8 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket) {
 		}
 	}
 
+	r.netValuesModel.PutTransientDataIncoming(netValuesArena)
+
 	for i := range packet.GetValueMod() {
 		r.netValuesModel.AddOrModify(packet.GetValueMod()[i])
 	}
@@ -192,6 +197,7 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket) {
 	r.gameObjectsModel.TransferObjectsOwnershipToTargetClient(packet.GetTranferedObjects(), packet.GetSourceClient())
 
 	addMod := r.gameObjectsModel.GetSpecificAddModification()
+	r.rpcsModel.PutTransientDataIncoming(rpcsArena)
 
 	for i := range packet.GetRpcs() {
 		r.rpcsModel.Call(packet.GetRpcs()[i], addMod)
@@ -272,11 +278,14 @@ func (r *Room) IsTimeFromLastLeaveOverTTL() bool {
 	return time.Now().UTC().Sub(r.lastLeaveTime) > r.ttl
 }
 
-func (r *Room) GetWorld() ([]gameentities.GameObject, []gameentities.NetValue, []gameentities.RpcCall) {
+func (r *Room) GetWorld() ([]gameentities.GameObject, []gameentities.NetValue, []gameentities.RpcCall, []byte, []byte) {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 
-	return r.gameObjectsModel.GetGameObjects(), r.netValuesModel.GetValues(), r.rpcsModel.GetCachedRpcs()
+	netValuesMeta, netValuesArena := r.netValuesModel.GetValues()
+	rpcsMeta, rpcsArena := r.rpcsModel.GetCachedRpcs()
+
+	return r.gameObjectsModel.GetGameObjects(), netValuesMeta, rpcsMeta, netValuesArena, rpcsArena
 }
 
 func (r *Room) AddPeer(uuid string) (uint32, error) {

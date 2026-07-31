@@ -7,50 +7,59 @@ import (
 )
 
 type NetValue struct {
-	payload        []byte
+	persistentMemoryDescriptor int // this is only local server value and MUST NOT BE serialized and transfered via network
+
+	arenaPtr       uint32
+	arenaLen       uint32
 	parentObjectId uint32
 	valueId        uint16
 	deleting       bool
 }
 
-func NewNetValue(payload []byte, parentObj uint32, valueId uint16, isDeleting bool) NetValue {
+func NewNetValueAsTransient(ptr, len, parentObj uint32, valueId uint16, isDeleting bool) NetValue {
 	return NetValue{
-		payload:        payload,
+		arenaPtr:       ptr,
+		arenaLen:       len,
 		parentObjectId: parentObj,
 		valueId:        valueId,
 		deleting:       isDeleting,
 	}
 }
 
+func NewNetValueAsPersistent(persistentDescriptor int, parentObj uint32, valueId uint16, isDeleting bool) NetValue {
+	return NetValue{
+		persistentMemoryDescriptor: persistentDescriptor,
+		parentObjectId:             parentObj,
+		valueId:                    valueId,
+		deleting:                   isDeleting,
+	}
+}
+
 func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
-	arrErr := enc.EncodeArrayLen(4)
-	err := enc.EncodeUint(uint64(n.valueId))
 
-	if arrErr != nil {
-		return arrErr
-	}
-
-	if err != nil {
+	if err := enc.EncodeArrayLen(5); err != nil {
 		return err
 	}
 
-	err = enc.EncodeUint(uint64(n.parentObjectId))
-
-	if err != nil {
+	if err := enc.EncodeUint(uint64(n.arenaPtr)); err != nil {
 		return err
 	}
 
-	err = enc.EncodeBool(n.deleting)
-
-	if err != nil {
+	if err := enc.EncodeUint(uint64(n.arenaLen)); err != nil {
 		return err
 	}
 
-	err = enc.EncodeBytes(n.payload)
+	if err := enc.EncodeUint(uint64(n.parentObjectId)); err != nil {
+		return err
+	}
 
-	if err != nil {
+	if err := enc.EncodeUint(uint64(n.valueId)); err != nil {
+		return err
+	}
+
+	if err := enc.EncodeBool(n.deleting); err != nil {
 		return err
 	}
 
@@ -58,41 +67,45 @@ func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
-	arrLen, arrErr := dec.DecodeArrayLen()
-	valueId, err := dec.DecodeUint16()
+	if arrLen, err := dec.DecodeArrayLen(); err != nil || arrLen != 5 {
+		if arrLen != 5 {
+			return errors.New("Net value arr len invalid!")
+		}
 
-	if arrErr != nil {
-		return arrErr
-	}
-
-	if arrLen != 4 {
-		return errors.New("Net value arr len invalid!")
-	}
-
-	if err != nil {
 		return err
 	}
 
-	parentObjectId, err := dec.DecodeUint32()
-
-	if err != nil {
+	if arenaPtr, err := dec.DecodeUint32(); err != nil {
 		return err
+	} else {
+		n.arenaPtr = arenaPtr
 	}
 
-	isDeleting, err := dec.DecodeBool()
-
-	if err != nil {
+	if arenaLen, err := dec.DecodeUint32(); err != nil {
 		return err
+	} else {
+		n.arenaLen = arenaLen
 	}
 
-	paylpad, err := dec.DecodeBytes()
+	if parentObjectId, err := dec.DecodeUint32(); err != nil {
+		return err
+	} else {
+		n.parentObjectId = parentObjectId
+	}
 
-	n.valueId = valueId
-	n.parentObjectId = parentObjectId
-	n.deleting = isDeleting
-	n.payload = paylpad
+	if valueId, err := dec.DecodeUint16(); err != nil {
+		return err
+	} else {
+		n.valueId = valueId
+	}
 
-	return err
+	if isDeleting, err := dec.DecodeBool(); err != nil {
+		return err
+	} else {
+		n.deleting = isDeleting
+	}
+
+	return nil
 }
 
 func (n *NetValue) GetValueId() uint16 {
@@ -103,12 +116,22 @@ func (n *NetValue) GetParentObjectId() uint32 {
 	return n.parentObjectId
 }
 
-func (n *NetValue) GetPayload() []byte {
-	return n.payload
+func (n *NetValue) GetPersistentMemoryDescriptor() int {
+	return n.persistentMemoryDescriptor
 }
 
-func (n *NetValue) ModifyPayload(newPayload []byte) {
-	n.payload = newPayload
+func (n *NetValue) SetPersistentMemoryDescriptor(descriptor int) {
+	n.persistentMemoryDescriptor = descriptor
+}
+
+// ptr len
+func (n *NetValue) GetTransientMemoryDescriptor() (uint32, uint32) {
+	return n.arenaPtr, n.arenaLen
+}
+
+func (n *NetValue) SetTransientMemoryDescriptors(ptr, len uint32) {
+	n.arenaPtr = ptr
+	n.arenaLen = len
 }
 
 func (n *NetValue) GetIsDeleting() bool {

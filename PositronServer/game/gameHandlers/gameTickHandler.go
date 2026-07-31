@@ -6,6 +6,7 @@ import (
 	eventtypes "positron/game/gameHandlers/eventTypes"
 	"positron/game/room"
 	"positron/internal"
+	networkio "positron/internal/networkIo"
 )
 
 type GameTickHandler struct {
@@ -15,6 +16,7 @@ type GameTickHandler struct {
 	clientId                  uint32
 	marsahller                internal.MarshalService
 	cachedTickPacketContainer *datatransferobjects.GameTickPacket
+	reader                    *networkio.NetworkIoReader
 }
 
 func NewGameTickHandler() *GameTickHandler {
@@ -26,6 +28,7 @@ func (g *GameTickHandler) Init(transport internal.PositronTransportServer, gServ
 	g.uuid = connectionUuid
 	g.marsahller = gServer.GetMarshaller()
 	g.cachedTickPacketContainer = &datatransferobjects.GameTickPacket{}
+	g.reader = networkio.NewNetworkReader()
 }
 
 func (g *GameTickHandler) GetType() byte {
@@ -37,7 +40,18 @@ func (g *GameTickHandler) PassHandle(packet []byte) {
 		return
 	}
 
-	err := g.marsahller.Unmarshal(packet, g.cachedTickPacketContainer)
+	g.reader.Wrap(packet)
+
+	metaLen := g.reader.ReadUint32()
+	metaSegment := g.reader.ReadSegment(metaLen)
+
+	netValuesLen := g.reader.ReadUint32()
+	netValuesSegment := g.reader.ReadSegment(netValuesLen)
+
+	rpcsLen := g.reader.ReadUint32()
+	rpcsSegment := g.reader.ReadSegment(rpcsLen)
+
+	err := g.marsahller.Unmarshal(metaSegment, g.cachedTickPacketContainer)
 
 	if err != nil {
 		log.Println(err)
@@ -50,7 +64,9 @@ func (g *GameTickHandler) PassHandle(packet []byte) {
 		return
 	}
 
-	g.room.ProcessTick(g.cachedTickPacketContainer)
+	g.room.ProcessTick(g.cachedTickPacketContainer, netValuesSegment, rpcsSegment)
+
+	g.reader.Free()
 }
 
 func (g *GameTickHandler) SetRoom(room *room.Room, inRoomId uint32) {
