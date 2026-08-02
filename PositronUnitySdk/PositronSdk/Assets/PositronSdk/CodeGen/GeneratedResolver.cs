@@ -359,7 +359,7 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.DataTransferObjects.JoinRoomResponse value, global::MessagePack.MessagePackSerializerOptions options)
         {
             global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
-            writer.WriteArrayHeader(7);
+            writer.WriteArrayHeader(9);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetGameObject[]>(formatterResolver).Serialize(ref writer, value.GameObjects, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.NetValue[]>(formatterResolver).Serialize(ref writer, value.Values, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::Positron.Client.GameEntities.RpcCall[]>(formatterResolver).Serialize(ref writer, value.CachedRpcCalls, options);
@@ -367,6 +367,8 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
             writer.Write(value.SelfId);
             writer.Write(value.Host);
             writer.Write(value.Scene);
+            writer.Write(value.NetValuesDataArena);
+            writer.Write(value.RpcsDataArena);
         }
 
         public global::Positron.Client.DataTransferObjects.JoinRoomResponse Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -405,6 +407,12 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
                         break;
                     case 6:
                         ____result.Scene = reader.ReadUInt32();
+                        break;
+                    case 7:
+                        ____result.NetValuesDataArena = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
+                        break;
+                    case 8:
+                        ____result.RpcsDataArena = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
                         break;
                     default:
                         reader.Skip();
@@ -702,11 +710,11 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.GameEntities.NetValue value, global::MessagePack.MessagePackSerializerOptions options)
         {
             writer.WriteArrayHeader(5);
-            writer.Write(value.ValueId);
+            writer.Write(value.ArenaPtr);
+            writer.Write(value.ArenaLen);
             writer.Write(value.ParentObjectId);
-            writer.Write(value.SubObjectId);
+            writer.Write(value.ValueId);
             writer.Write(value.Deleting);
-            writer.Write(value.Payload);
         }
 
         public global::Positron.Client.GameEntities.NetValue Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -725,19 +733,19 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
                 switch (i)
                 {
                     case 0:
-                        ____result.ValueId = reader.ReadUInt16();
+                        ____result.ArenaPtr = reader.ReadUInt32();
                         break;
                     case 1:
-                        ____result.ParentObjectId = reader.ReadUInt32();
+                        ____result.ArenaLen = reader.ReadUInt32();
                         break;
                     case 2:
-                        ____result.SubObjectId = reader.ReadUInt16();
+                        ____result.ParentObjectId = reader.ReadUInt32();
                         break;
                     case 3:
-                        ____result.Deleting = reader.ReadBoolean();
+                        ____result.ValueId = reader.ReadUInt16();
                         break;
                     case 4:
-                        ____result.Payload = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
+                        ____result.Deleting = reader.ReadBoolean();
                         break;
                     default:
                         reader.Skip();
@@ -755,13 +763,14 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.GameEntities.RpcCall value, global::MessagePack.MessagePackSerializerOptions options)
         {
-            writer.WriteArrayHeader(6);
-            writer.Write(value.ObjectId);
+            writer.WriteArrayHeader(7);
+            writer.Write(value.ArenaPtr);
+            writer.Write(value.ArenaLen);
             writer.Write(value.TargetClientId);
+            writer.Write(value.ObjectId);
+            writer.Write(value.MethodId);
             writer.Write(value.SubObjectId);
             writer.Write(value.Type);
-            writer.Write(value.MethodId);
-            writer.Write(value.Args);
         }
 
         public global::Positron.Client.GameEntities.RpcCall Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
@@ -780,22 +789,25 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
                 switch (i)
                 {
                     case 0:
-                        ____result.ObjectId = reader.ReadUInt32();
+                        ____result.ArenaPtr = reader.ReadUInt32();
                         break;
                     case 1:
-                        ____result.TargetClientId = reader.ReadUInt32();
+                        ____result.ArenaLen = reader.ReadUInt32();
                         break;
                     case 2:
-                        ____result.SubObjectId = reader.ReadUInt16();
+                        ____result.TargetClientId = reader.ReadUInt32();
                         break;
                     case 3:
-                        ____result.Type = reader.ReadByte();
+                        ____result.ObjectId = reader.ReadUInt32();
                         break;
                     case 4:
                         ____result.MethodId = reader.ReadUInt16();
                         break;
                     case 5:
-                        ____result.Args = global::MessagePack.Internal.CodeGenHelpers.GetArrayFromNullableSequence(reader.ReadBytes());
+                        ____result.SubObjectId = reader.ReadUInt16();
+                        break;
+                    case 6:
+                        ____result.Type = reader.ReadByte();
                         break;
                     default:
                         reader.Skip();

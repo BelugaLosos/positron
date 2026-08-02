@@ -133,7 +133,7 @@ namespace Positron.NetworkIoAPI
         /// <param name="data">binary span (can be passed as ordinary byte[] it automatically casts into ReadOnlySpan)</param>
         public void WriteBytes(ReadOnlySpan<byte> data)
         {
-            WriteInt(data.Length);
+            WriteUint((uint)data.Length);
 
             if (data.Length != 0)
             {
@@ -173,7 +173,7 @@ namespace Positron.NetworkIoAPI
                 throw new ArgumentNullException();
             }
 
-            const int SIZE_HEADER = 2;
+            const int SIZE_HEADER = 4;
             int bytesWritten;
 
             try
@@ -190,7 +190,7 @@ namespace Positron.NetworkIoAPI
                 throw new InternalBufferOverflowException("PositronNetworkWriter overloaded, please clear it!");
             }
 
-            WriteInt(bytesWritten);
+            WriteUint((uint)bytesWritten);
             _tempComplexDataSerializeBuffer.AsSpan(0, bytesWritten).CopyTo(_buffer.AsSpan(_pointerPosition, bytesWritten));
             _pointerPosition += bytesWritten;
         }

@@ -77,7 +77,7 @@ namespace Positron.Client
             _transport.Send(buffer.Slice(0, serializedAmount), eventType, reliable);
         }
 
-        public void SendRaw(Span<byte> payloadData, EventTypes eventType, bool reliable)
+        public void SendRaw(ReadOnlySpan<byte> payloadData, EventTypes eventType, bool reliable)
         {
             _transport.Send(payloadData, eventType, reliable);
         }

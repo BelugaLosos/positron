@@ -7,11 +7,13 @@ namespace Positron.Client.DataTransferObjects
     public struct JoinRoomResponse
     {
         [Key(0)] public NetGameObject[] GameObjects { get; set; }
-        [Key(1)] public NetValue[] Values { get; set; } // NOT POD!!!
-        [Key(2)] public RpcCall[] CachedRpcCalls { get; set; } // NOT POD!!!
+        [Key(1)] public NetValue[] Values { get; set; }
+        [Key(2)] public RpcCall[] CachedRpcCalls { get; set; }
         [Key(3)] public uint Tickrate { get; set; }
         [Key(4)] public uint SelfId { get; set; }
         [Key(5)] public uint Host { get; set; }
         [Key(6)] public uint Scene { get; set; }
+        [Key(7)] public byte[] NetValuesDataArena { get; set; }
+        [Key(8)] public byte[] RpcsDataArena { get; set; }
     }
 }

@@ -7,6 +7,7 @@ namespace Positron.Client.Room.Models
     public sealed class NetworkValuesModel : IDisposable
     {
         private readonly PooledDynamicArraySegment<NetValue> _currentDelta = new(128);
+        private byte[] _arena = new byte[16];
 
         public void Dispose()
         {
@@ -20,7 +21,7 @@ namespace Positron.Client.Room.Models
 
         }
 
-        public void AddOrModifyValues(ArraySegment<NetValue> values)
+        public void AddOrModifyValues(ArraySegment<NetValue> values, ReadOnlyMemory<byte> arena)
         {
             foreach (NetValue value in values)
             {
@@ -34,6 +35,7 @@ namespace Positron.Client.Room.Models
         }
 
         public ArraySegment<NetValue> GetValuesDelta() => _currentDelta.ToArray();
+        public ReadOnlySpan<byte> GetArena() => _arena;
         public void ClearDelta() => _currentDelta.Clear();
     }
 }

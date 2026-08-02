@@ -16,4 +16,18 @@ namespace Positron.Client.DataTransferObjects
         [Key(6)] public ArraySegment<NetValue> ValueModification { get; set; }
         [Key(7)] public ArraySegment<RpcCall> Rpcs { get; set; }
     }
+
+    public readonly struct GameTickDataAndMeta
+    {
+        public GameTickPacket Meta { get; }
+        public ReadOnlyMemory<byte> ValuesArena { get; }
+        public ReadOnlyMemory<byte> RpcsArena { get; }
+
+        public GameTickDataAndMeta(GameTickPacket meta, ReadOnlyMemory<byte> valuesArena, ReadOnlyMemory<byte> rpcsArena)
+        {
+            Meta = meta;
+            ValuesArena = valuesArena;
+            RpcsArena = rpcsArena;
+        }
+    }
 }

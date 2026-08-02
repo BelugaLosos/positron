@@ -5,11 +5,12 @@ namespace Positron.Client.GameEntities
     [MessagePackObject]
     public struct RpcCall
     {
-        [Key(0)] public uint ObjectId { get; set; }
-        [Key(1)] public uint TargetClientId { get; set; }
-        [Key(2)] public ushort SubObjectId { get; set; }
-        [Key(3)] public byte Type { get; set; }
+        [Key(0)] public uint ArenaPtr { get; set; }
+        [Key(1)] public uint ArenaLen { get; set; }
+        [Key(2)] public uint TargetClientId { get; set; }
+        [Key(3)] public uint ObjectId { get; set; }
         [Key(4)] public ushort MethodId { get; set; }
-        [Key(5)] public byte[] Args { get; set; }
+        [Key(5)] public ushort SubObjectId { get; set; }
+        [Key(6)] public byte Type { get; set; }
     }
 }

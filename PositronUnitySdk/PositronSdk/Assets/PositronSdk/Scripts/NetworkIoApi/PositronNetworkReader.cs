@@ -44,7 +44,25 @@ namespace Positron.NetworkIoAPI
             FreeAll();
 
             sourceBuffer.CopyTo(_buffer.AsSpan(0, sourceBuffer.Length));
-            _pointerPosition = sourceBuffer.Length - 1;
+            _pointerPosition = 0;
+        }
+
+        /// <summary>
+        /// Copies given buffer to reader
+        /// </summary>
+        /// <param name="sourceBuffer">Source bytes buffer</param>
+        /// <exception cref="ArgumentException">occurs when given data too large and can`t be placed correctly</exception>
+        public void AllocFrom(ReadOnlyMemory<byte> sourceBuffer)
+        {
+            if (sourceBuffer.Length > _buffer.Length)
+            {
+                throw new ArgumentException("Source buffer can`t be larger than readers buffer");
+            }
+
+            FreeAll();
+
+            sourceBuffer.CopyTo(_buffer.AsMemory(0, sourceBuffer.Length));
+            _pointerPosition = 0;
         }
 
         /// <summary>
@@ -127,16 +145,16 @@ namespace Positron.NetworkIoAPI
         /// Reads piece of buffer by size header
         /// </summary>
         /// <returns>read only span of internal buffer`s bytes</returns>
-        public ReadOnlySpan<byte> ReadBytes()
+        public ReadOnlyMemory<byte> ReadBytes()
         {
-            int size = ReadInt();
+            uint size = ReadUint();
 
             if (size != 0)
             {
-                return Bfree(size);
+                return BfreeAsMemory((int)size);
             }
 
-            return _emptyBuffer.AsSpan();
+            return _emptyBuffer.AsMemory();
         }
 
         /// <summary>
@@ -157,36 +175,38 @@ namespace Positron.NetworkIoAPI
         /// <exception cref="InvalidOperationException">Occurs when size is 0 (invalid data source)</exception>
         public T ReadComplex<T>()
         {
-            int size = ReadInt();
+            uint size = ReadUint();
 
             if (size == 0)
             {
                 throw new InvalidOperationException("Can`t read 0 size complex object");
             }
 
-            return _complexDataSerializer.Deserialize<T>(BfreeAsMemory(size));
+            return _complexDataSerializer.Deserialize<T>(BfreeAsMemory((int)size));
         }
 
         private ReadOnlySpan<byte> Bfree(int size)
         {
-            int offset = size - 1;
-            CheckSizeAndThrow(offset);
-            _pointerPosition -= offset;
-            return _buffer.AsSpan(_pointerPosition, size);
+            CheckSizeAndThrow(size);
+            ReadOnlySpan<byte> result = _buffer.AsSpan(_pointerPosition, size);
+            _pointerPosition += size;
+
+            return result;
         }
 
         private ReadOnlyMemory<byte> BfreeAsMemory(int size)
         {
-            int offset = size - 1;
-            CheckSizeAndThrow(offset);
-            _pointerPosition -= offset;
-            return _buffer.AsMemory(_pointerPosition, size);
+            CheckSizeAndThrow(size);
+            ReadOnlyMemory<byte> result = _buffer.AsMemory(_pointerPosition, size);
+            _pointerPosition += size;
+
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckSizeAndThrow(int size)
         {
-            if (_pointerPosition - size < 0)
+            if (_pointerPosition + size > _buffer.Length)
             {
                 ThrowErr();
             }

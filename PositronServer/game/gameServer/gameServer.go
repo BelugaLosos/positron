@@ -38,7 +38,8 @@ var bufferPool = sync.Pool{
 
 var rawBuffersPool = sync.Pool{
 	New: func() interface{} {
-		return make([]byte, 4096)
+		buf := make([]byte, 4096)
+		return &buf
 	},
 }
 
@@ -156,17 +157,19 @@ func (g *GameServer) roomTick(room *room.Room) {
 			peers := room.GetAllConnectedPeers()
 
 			packetMarshallBuffer := bufferPool.Get().(*bytes.Buffer)
-			packetArensBuf := rawBuffersPool.Get().([]byte)
+			rlBuffPtr := rawBuffersPool.Get().(*[]byte)
 			packetUnrMarshalled := bufferPool.Get().(*bytes.Buffer)
 
 			packetMarshallBuffer.Reset()
-			packetArensBuf = packetArensBuf[:0]
 			packetUnrMarshalled.Reset()
 
 			err := g.marhaller.MarshalNonAlloc(packetMarshallBuffer, packet)
 
 			targetLen := 16 + packetMarshallBuffer.Len() + len(netValuesArena) + len(rpcsArena)
-			checkAndResizeBuffer(packetArensBuf, targetLen)
+
+			checkAndResizeBuffer(rlBuffPtr, targetLen)
+			packetArensBuf := (*rlBuffPtr)[:targetLen]
+
 			writer.Wrap(packetArensBuf)
 
 			writer.WriteUint32(uint32(packetMarshallBuffer.Len()))
@@ -177,8 +180,6 @@ func (g *GameServer) roomTick(room *room.Room) {
 
 			writer.WriteUint32(uint32(len(rpcsArena)))
 			writer.WriteSegment(rpcsArena)
-
-			packetArensBuf = packetArensBuf[:targetLen]
 
 			unrErr := g.marhaller.MarshalNonAlloc(packetUnrMarshalled, unreliablePacket)
 
@@ -203,14 +204,14 @@ func (g *GameServer) roomTick(room *room.Room) {
 
 			writer.Free()
 			bufferPool.Put(packetMarshallBuffer)
-			rawBuffersPool.Put(packetArensBuf)
+			rawBuffersPool.Put(rlBuffPtr)
 			bufferPool.Put(packetUnrMarshalled)
 		}
 	}
 }
 
-func checkAndResizeBuffer(buf []byte, need int) {
-	for len(buf) < need {
-		buf = append(buf, make([]byte, 2048)...)
+func checkAndResizeBuffer(buf *[]byte, need int) {
+	for len(*buf) < need {
+		*buf = append(*buf, make([]byte, 2048)...)
 	}
 }

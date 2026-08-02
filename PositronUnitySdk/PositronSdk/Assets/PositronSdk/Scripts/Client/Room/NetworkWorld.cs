@@ -10,17 +10,19 @@ using Positron.Client.ConstantHolders;
 using Positron.Client.Settings;
 using Positron.Client.Mono;
 using Positron.Client.Handlers;
+using Positron.NetworkIoAPI;
 
 namespace Positron.Client.Room
 {
     public class NetworkWorld : IDisposable
     {
         private NetworkClock _clock;
+        private PositronNetworkWriter _writer;
 
         private IPositronClient _client;
         private RoomLeaveHandler _leaveHandler;
         private IPositronObservableHandler<JoinRoomResponse> _joinHandler;
-        private IPositronObservableHandler<GameTickPacket> _gameTickHandler;
+        private IPositronObservableHandler<GameTickDataAndMeta> _gameTickHandler;
         private IPositronObservableHandler<GameUnreliableTick> _unreliableTickHandler;
         
         private CancellationTokenSource _ctx;
@@ -44,19 +46,20 @@ namespace Positron.Client.Room
         public event Action hostChanged;
         public event Action roomLeaved;
 
-        public NetworkWorld(PositronSettings settings)
+        public NetworkWorld(PositronSettings settings, IPositronSerializer serializer)
         {
             _gameObjectsModel = new(this, settings);
             _valuesModel = new();
             _rpcsModel = new();
             _clock = new(settings.TickOffset, settings.Tickrate);
+            _writer = new(serializer);
         }
 
         public void Init(
             IPositronClient client,
             RoomLeaveHandler leaveRoomHandler,
             IPositronObservableHandler<JoinRoomResponse> joinHandler,
-            IPositronObservableHandler<GameTickPacket> gameTickHandler,
+            IPositronObservableHandler<GameTickDataAndMeta> gameTickHandler,
             IPositronObservableHandler<GameUnreliableTick> unreliableTickHandler)
         {
             _client = client;
@@ -196,24 +199,24 @@ namespace Positron.Client.Room
             }
         }
 
-        private void ProcessReliableTickPacket(GameTickPacket tickPacket)
+        private void ProcessReliableTickPacket(GameTickDataAndMeta tickPacket)
         {
-            if (HostId != tickPacket.Host)
+            if (HostId != tickPacket.Meta.Host)
             {
-                HostId = tickPacket.Host;
+                HostId = tickPacket.Meta.Host;
                 hostChanged?.Invoke();
             }
 
-            _clock.TryInitTime(tickPacket.Tick);
-            _clock.UpdateServerTime(tickPacket.Tick);
+            _clock.TryInitTime(tickPacket.Meta.Tick);
+            _clock.UpdateServerTime(tickPacket.Meta.Tick);
 
-            _gameObjectsModel.CreateObjects(tickPacket.NewGameObjects);
-            _gameObjectsModel.RemoveObjects(tickPacket.RemovedObjects);
-            _gameObjectsModel.TransferObjects(tickPacket.TransferedObjects);
+            _gameObjectsModel.CreateObjects(tickPacket.Meta.NewGameObjects);
+            _gameObjectsModel.RemoveObjects(tickPacket.Meta.RemovedObjects);
+            _gameObjectsModel.TransferObjects(tickPacket.Meta.TransferedObjects);
 
-            _valuesModel.AddOrModifyValues(tickPacket.ValueModification);
+            _valuesModel.AddOrModifyValues(tickPacket.Meta.ValueModification, tickPacket.ValuesArena);
 
-            _rpcsModel.MultiCall(tickPacket.Rpcs);
+            _rpcsModel.MultiCall(tickPacket.Meta.Rpcs, tickPacket.RpcsArena);
         }
 
         private void ProcessUnreliableTickPacket(GameUnreliableTick unreliableTickPaclet)
@@ -244,6 +247,13 @@ namespace Positron.Client.Room
                 tickPacket.ValueModification = _valuesModel.GetValuesDelta();
                 tickPacket.Rpcs = _rpcsModel.GetCurrentDelta();
 
+                _writer.Clear();
+                _writer.WriteComplexObject(tickPacket);
+                _writer.WriteBytes(_valuesModel.GetArena());
+                _writer.WriteBytes(_rpcsModel.GetArena());
+                _client.SendRaw(_writer.Data, EventTypes.TICK, true);
+
+
                 GameUnreliableTick unreliableTick = new();
                 unreliableTick.ClientId = LocalClientId;
 
@@ -251,7 +261,6 @@ namespace Positron.Client.Room
                 _gameObjectsModel.CollectCurrentObjectsStaticDeltaIfRequired();
                 unreliableTick.MovedObjects = _gameObjectsModel.GetMoveDelta();
 
-                _client.Send(tickPacket, EventTypes.TICK, true);
                 _client.Send(unreliableTick, EventTypes.UNRELIABLE_TICK, false);
 
                 _gameObjectsModel.ClearDelta();
@@ -275,8 +284,8 @@ namespace Positron.Client.Room
             HostId = _joinDataPacket.Host;
 
             _gameObjectsModel.CreateObjects(_joinDataPacket.GameObjects);
-            _valuesModel.AddOrModifyValues(_joinDataPacket.Values);
-            _rpcsModel.MultiCall(_joinDataPacket.CachedRpcCalls);
+            _valuesModel.AddOrModifyValues(_joinDataPacket.Values, _joinDataPacket.NetValuesDataArena);
+            _rpcsModel.MultiCall(_joinDataPacket.CachedRpcCalls, _joinDataPacket.RpcsDataArena);
 
             Tick().Forget();
 

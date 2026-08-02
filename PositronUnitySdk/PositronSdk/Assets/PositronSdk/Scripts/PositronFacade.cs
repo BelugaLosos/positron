@@ -89,14 +89,16 @@ namespace Positron
 
             _settings = settings;
 
+            IPositronSerializer serializer = new MsgPackSerializer();
+
             _pingModel = new();
-            _world = new(settings);
+            _world = new(settings, serializer);
 
             RoomLeaveHandler roomLeaveHandler = new();
 
             _client = new
                 (
-                    settings, new MsgPackSerializer(), new WebSocketTransport(), 
+                    settings, serializer, new WebSocketTransport(), 
                     new PingHandler(_pingModel),
                     new GetRoomsHandler(),
                     new RoomCreatedHandler(),
