@@ -11,6 +11,7 @@ using Positron.Client.DataTransferObjects;
 using Positron.Client.Interfaces;
 using Positron.Client.Room;
 using Positron.Client.Mono;
+using Positron.NetworkIoAPI;
 
 namespace Positron
 {
@@ -22,6 +23,7 @@ namespace Positron
 
         private static PingModel _pingModel;
         private static NetworkWorld _world;
+        private static PositronNetworkIoPool _networkIoPool;
 
         private static bool _initialized;
         private static bool _connected;
@@ -71,10 +73,12 @@ namespace Positron
             _monoHook = null;
             _settings = null;
             _pingModel = null;
+            _world = null;
+            _networkIoPool = null;
+
             _initialized = false;
             _connected = false;
             _pending = false;
-            _world = null;
 
             Debug.Log("Positron hooked and handled domain reload");
         }
@@ -93,6 +97,7 @@ namespace Positron
 
             _pingModel = new();
             _world = new(settings, serializer);
+            _networkIoPool = new(serializer);
 
             RoomLeaveHandler roomLeaveHandler = new();
 

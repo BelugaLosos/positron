@@ -2,6 +2,10 @@ using Positron.Client.Mono;
 using System.Linq;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace Positron.Client.Settings
 {
     [CreateAssetMenu(fileName = "PositronSettings", menuName = "Positron/NetworkSettings")]
@@ -18,8 +22,11 @@ namespace Positron.Client.Settings
         [field: SerializeField] public uint TicksAmountToMarkObjectAsStatic = 150;
         [field: SerializeField] public uint MaximalObjectsCountForRetransmitPerPacket = 50;
         [field: SerializeField] public PositronNetworkIdentity[] SpawnableObjects { get; private set; }
+        [field: SerializeField] public string[] RpcMethodsNames { get; private set; }
 
         public int Tickrate => _tickrate;
+
+        public static readonly string RESOURCES_PATH = "PositronSettings";
 
         private void OnValidate()
         {
@@ -29,5 +36,13 @@ namespace Positron.Client.Settings
                 Debug.LogError("Too many objects to spawn");
             }
         }
+
+#if UNITY_EDITOR
+        public void SetRpcMapping(string[] names)
+        {
+            RpcMethodsNames = names;
+            EditorUtility.SetDirty(this);
+        }
+#endif
     }
 }

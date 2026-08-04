@@ -1,4 +1,5 @@
 using Positron.Client.ConstantHolders;
+using Positron.Client.GameEntities;
 using UnityEngine;
 
 namespace TeGst.F.A.V.C
@@ -14,13 +15,13 @@ namespace TeGst.F.A.V.C
         [Rpc]
         private void Foo1(string s, Vector3 v)
         {
-               
+                  
         }
 
         [Rpc]
         private void Foo2()
         {
 
-        }
+        } 
     }
 }

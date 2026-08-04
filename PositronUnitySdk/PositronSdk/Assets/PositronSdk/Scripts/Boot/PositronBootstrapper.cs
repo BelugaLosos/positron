@@ -15,7 +15,7 @@ namespace Positron.Boot
                 return;
             }
 
-            PositronSettings settings = Resources.Load<PositronSettings>("PositronSettings");
+            PositronSettings settings = Resources.Load<PositronSettings>(PositronSettings.RESOURCES_PATH);
             PositronFacade.InitSdk(settings);
 
             if (settings.Autoconnect)
