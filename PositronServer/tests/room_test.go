@@ -9,6 +9,7 @@ import (
 	"positron/game/room"
 	"positron/internal"
 	"positron/internal/marshaller"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -272,10 +273,14 @@ func BenchmarkRoomTickColdPath(b *testing.B) {
 	b.ReportAllocs()
 
 	for i := 0; i < b.N; i++ {
-		handler.PassHandle(dataMock)
+		handler.PassHandle(dataMock) // this shit must come from net
 
-		room.CreateTickPackets()
+		room.CreateTickPackets() // do shit
 
-		room.ResetTempBuffers()
+		room.ResetTempBuffers() // reset shit
+
+		//this test does NOT mocks network
 	}
+
+	runtime.GC()
 }

@@ -5,11 +5,14 @@ import (
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
 	"positron/internal/marshaller"
+	"sync"
 	"testing"
 )
 
 func TestUnmarshalling(t *testing.T) {
-	for range 1 {
+	mrsh := marshaller.NewMessagePackMarshaller()
+
+	for range 1_000_000 {
 		obj := gameentities.NewGameObject(1, 2, 3, 4, gameentities.NewVector(5, 6, 7), gameentities.NewVector(8, 9, 10))
 		val := gameentities.NewNetValueAsTransient(22, 33, 111, 123, true)
 		val.SetPersistentMemoryDescriptor(1)
@@ -19,7 +22,7 @@ func TestUnmarshalling(t *testing.T) {
 		testData := datatransferobjects.NewTickPacket(1, 15, 16, []gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []gameentities.NetValue{val}, []gameentities.RpcCall{rpc})
 
 		buf := &bytes.Buffer{}
-		err := marshaller.NewMessagePackMarshaller().MarshalNonAlloc(buf, testData)
+		err := mrsh.MarshalNonAlloc(buf, testData)
 		marshalled := buf.Bytes()
 
 		if err != nil {
@@ -27,7 +30,7 @@ func TestUnmarshalling(t *testing.T) {
 		}
 
 		var unmarshalled datatransferobjects.GameTickPacket
-		err = marshaller.NewMessagePackMarshaller().Unmarshal(marshalled, &unmarshalled)
+		err = mrsh.Unmarshal(marshalled, &unmarshalled)
 
 		if err != nil {
 			t.Error(err)
@@ -215,11 +218,13 @@ func TestBufferRace(t *testing.T) {
 }
 
 func TestUnreliable(t *testing.T) {
-	for range 1 {
+	mrsh := marshaller.NewMessagePackMarshaller()
+
+	for range 1_000_000 {
 		tick := datatransferobjects.NewGameUnreliableTickPacket(0, []gameentities.Tranform{gameentities.NewTransform(gameentities.NewGameObject(1, 2, 3, 4, gameentities.NewVector(5, 6, 7), gameentities.NewVector(8, 9, 10)))}, 1)
 
 		buf := &bytes.Buffer{}
-		err := marshaller.NewMessagePackMarshaller().MarshalNonAlloc(buf, tick)
+		err := mrsh.MarshalNonAlloc(buf, tick)
 		marshalled := buf.Bytes()
 
 		if err != nil {
@@ -227,7 +232,7 @@ func TestUnreliable(t *testing.T) {
 		}
 
 		var unmarshalled datatransferobjects.GameUnreliableTickPacket
-		err = marshaller.NewMessagePackMarshaller().Unmarshal(marshalled, &unmarshalled)
+		err = mrsh.Unmarshal(marshalled, &unmarshalled)
 
 		if err != nil {
 			t.Error(err)
@@ -246,4 +251,72 @@ func TestUnreliable(t *testing.T) {
 			t.Error("Data corrupt")
 		}
 	}
+}
+
+type TestPacket struct {
+	ID     uint32
+	Value  int64
+	Name   string
+	Values []int
+}
+
+func TestUnmarshalParallel(t *testing.T) {
+	m := marshaller.NewMessagePackMarshaller()
+
+	const goroutines = 1024
+	const iterations = 5000
+
+	packets := make([][]byte, goroutines)
+	expected := make([]TestPacket, goroutines)
+
+	for i := 0; i < goroutines; i++ {
+		expected[i] = TestPacket{
+			ID:     uint32(i),
+			Value:  int64(i * 1000),
+			Name:   "goroutine-" + string(rune(i)),
+			Values: []int{i, i * 2, i * 3, i * 4},
+		}
+
+		data, err := m.Marshal(expected[i])
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		packets[i] = data
+	}
+
+	var wg sync.WaitGroup
+
+	wg.Add(goroutines)
+
+	for g := 0; g < goroutines; g++ {
+		g := g
+
+		go func() {
+			defer wg.Done()
+
+			var dst TestPacket
+
+			for i := 0; i < iterations; i++ {
+				if err := m.Unmarshal(packets[g], &dst); err != nil {
+					t.Error(err)
+				}
+
+				if dst.ID != expected[g].ID ||
+					dst.Value != expected[g].Value ||
+					dst.Name != expected[g].Name ||
+					len(dst.Values) != len(expected[g].Values) {
+					t.Errorf("decoded invalid data: %+v expected %+v", dst, expected[g])
+				}
+
+				for j := range dst.Values {
+					if dst.Values[j] != expected[g].Values[j] {
+						t.Error("slice mismatch")
+					}
+				}
+			}
+		}()
+	}
+
+	wg.Wait()
 }
