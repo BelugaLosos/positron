@@ -41,16 +41,16 @@ func NewGameObjectsModel(rtLinmit, rtThrashold int, rtForceDisable bool) *GameOb
 		mutex:                             &sync.Mutex{},
 		defaultEmptyObject:                gameentities.GameObject{},
 		defaultEmptyTransform:             gameentities.Tranform{},
-		worldCache:                        make([]gameentities.GameObject, 0, 32),
-		flatObjectsContainer:              make([]gameentities.GameObject, 0, 32),
-		flatTransformsContainer:           make([]gameentities.Tranform, 0, 32),
-		freedIds:                          make([]uint32, 0, 16),
+		worldCache:                        make([]gameentities.GameObject, 32),
+		flatObjectsContainer:              make([]gameentities.GameObject, 32),
+		flatTransformsContainer:           make([]gameentities.Tranform, 32),
+		freedIds:                          make([]uint32, 0, 32),
 		lastId:                            0,
 		currntObjectsCount:                0,
-		addCache:                          make([]gameentities.GameObject, 0, 16),
-		moveCache:                         make([]gameentities.Tranform, 0, 16),
-		removeCache:                       make([]uint32, 0, 16),
-		transferCache:                     make([]uint32, 0, 16),
+		addCache:                          make([]gameentities.GameObject, 0, 32),
+		moveCache:                         make([]gameentities.Tranform, 0, 32),
+		removeCache:                       make([]uint32, 0, 32),
+		transferCache:                     make([]uint32, 0, 32),
 		staticRetransmissionsPerTickLimit: rtLinmit,
 		staticScoreToRetransmitThrashold:  rtThrashold,
 		isRetransmissionForceDisabled:     rtForceDisable,
@@ -283,12 +283,9 @@ func (g *GameObjectsModel) generateId() uint32 {
 }
 
 func (g *GameObjectsModel) allocateChunkIfNeed(id uint32) {
-	if id >= uint32(len(g.flatObjectsContainer)) {
-		toAppendObjs := make([]gameentities.GameObject, ALLOCATION_CHUNK)
-		g.flatObjectsContainer = append(g.flatObjectsContainer, toAppendObjs...)
-
-		toAppendTransforms := make([]gameentities.Tranform, ALLOCATION_CHUNK)
-		g.flatTransformsContainer = append(g.flatTransformsContainer, toAppendTransforms...)
+	if id >= uint32(cap(g.flatObjectsContainer)) {
+		g.flatObjectsContainer = append(g.flatObjectsContainer, make([]gameentities.GameObject, ALLOCATION_CHUNK)...)
+		g.flatTransformsContainer = append(g.flatTransformsContainer, make([]gameentities.Tranform, ALLOCATION_CHUNK)...)
 	}
 }
 

@@ -42,8 +42,8 @@ type Room struct {
 	rpcsModel        *roommodels.RpcsModel
 	clock            *RoomClock
 
-	tickPacketsPool           *sync.Pool
-	unreliableTickPacketsPool *sync.Pool
+	gameTickPointer    *datatransferobjects.GameTickPacket
+	gameUnrTickPointer *datatransferobjects.GameUnreliableTickPacket
 
 	Ticker *time.Ticker
 }
@@ -64,35 +64,27 @@ func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickr
 	log.Printf("Created room with params N: %v P_CAP: %v TTL: %v SC: %v T_RATE: %v DATA_SEGMENT: %v RT_L: %v RT_Th: %v RT_FORCE_DISABLE: %v", name, maxSlots, ttl, scene, tickrate, externalData, rtLimit, rtThrashold, rtForceDisable)
 
 	return &Room{
-		mutex:            &sync.RWMutex{},
-		Termination:      make(chan struct{}),
-		name:             name,
-		uuid:             uuid.New().String(),
-		connectedPeers:   make(map[uint32]string),
-		peerUuids:        make([]string, 0),
-		hostIndex:        0,
-		lastClientId:     0,
-		maxClientsSlots:  maxSlots,
-		lastLeaveTime:    time.Now().UTC(),
-		ttl:              ttl,
-		tickrate:         clamp(int(tickrate), 1, 256),
-		scene:            scene,
-		ExternalData:     externalData,
-		gameObjectsModel: roommodels.NewGameObjectsModel(rtLimit, rtThrashold, rtForceDisable),
-		netValuesModel:   roommodels.NewNetValuesModel(),
-		rpcsModel:        roommodels.NewRpcsModel(),
-		clock:            NewRoomClock(tickrate),
-		tickPacketsPool: &sync.Pool{
-			New: func() interface{} {
-				return &datatransferobjects.GameTickPacket{}
-			},
-		},
-		unreliableTickPacketsPool: &sync.Pool{
-			New: func() interface{} {
-				return &datatransferobjects.GameUnreliableTickPacket{}
-			},
-		},
-		Ticker: time.NewTicker((1 * time.Second) / time.Duration(tickrate)),
+		mutex:              &sync.RWMutex{},
+		Termination:        make(chan struct{}),
+		name:               name,
+		uuid:               uuid.New().String(),
+		connectedPeers:     make(map[uint32]string),
+		peerUuids:          make([]string, 0),
+		hostIndex:          0,
+		lastClientId:       0,
+		maxClientsSlots:    maxSlots,
+		lastLeaveTime:      time.Now().UTC(),
+		ttl:                ttl,
+		tickrate:           clamp(int(tickrate), 1, 256),
+		scene:              scene,
+		ExternalData:       externalData,
+		gameObjectsModel:   roommodels.NewGameObjectsModel(rtLimit, rtThrashold, rtForceDisable),
+		netValuesModel:     roommodels.NewNetValuesModel(),
+		rpcsModel:          roommodels.NewRpcsModel(),
+		clock:              NewRoomClock(tickrate),
+		gameTickPointer:    &datatransferobjects.GameTickPacket{},
+		gameUnrTickPointer: &datatransferobjects.GameUnreliableTickPacket{},
+		Ticker:             time.NewTicker((1 * time.Second) / time.Duration(tickrate)),
 	}
 }
 
@@ -127,8 +119,7 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 	netValuesModMeta, netValuesModArena := r.netValuesModel.GetTempMod()
 	rpcsModMeta, rpcsModArena := r.rpcsModel.GetCurrentCallBuffer()
 
-	gameTick := r.tickPacketsPool.Get().(*datatransferobjects.GameTickPacket)
-	gameTick.ReassignTickPacketData(
+	r.gameTickPointer.ReassignTickPacketData(
 		ticksSinceStartup,
 		r.hostIndex,
 		0,
@@ -142,19 +133,13 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 	r.gameObjectsModel.EvaluateStaticScore()
 	r.gameObjectsModel.StickStaticsToMoveDelta()
 
-	gamePositionsTick := r.unreliableTickPacketsPool.Get().(*datatransferobjects.GameUnreliableTickPacket)
-	gamePositionsTick.ReassignUnreliableTickPacket(
+	r.gameUnrTickPointer.ReassignUnreliableTickPacket(
 		ticksSinceStartup,
 		r.gameObjectsModel.GetPositionMod(),
 		0,
 	)
 
-	return gameTick, gamePositionsTick, netValuesModArena, rpcsModArena
-}
-
-func (r *Room) ReleaseTickPackets(tick *datatransferobjects.GameTickPacket, unrTick *datatransferobjects.GameUnreliableTickPacket) {
-	r.tickPacketsPool.Put(tick)
-	r.unreliableTickPacketsPool.Put(unrTick)
+	return r.gameTickPointer, r.gameUnrTickPointer, netValuesModArena, rpcsModArena
 }
 
 func (r *Room) ResetTempBuffers() {

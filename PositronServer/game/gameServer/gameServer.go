@@ -180,7 +180,6 @@ func (g *GameServer) roomTick(room *room.Room) {
 
 			unrErr := g.marhaller.MarshalNonAlloc(packetUnrMarshalled, unreliablePacket)
 
-			room.ReleaseTickPackets(packet, unreliablePacket)
 			room.ResetTempBuffers()
 
 			room.Unlock()

@@ -5,12 +5,34 @@ import (
 	"log"
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
+	gamehandlers "positron/game/gameHandlers"
 	"positron/game/room"
+	"positron/internal"
 	"positron/internal/marshaller"
 	"sync"
 	"testing"
 	"time"
 )
+
+type mockGameServerForZeroAllocTest struct {
+	mrsh *marshaller.MessagePackMarshaller
+}
+
+func (m *mockGameServerForZeroAllocTest) GetRoom(roomUuid string) *room.Room {
+	return nil
+}
+func (m *mockGameServerForZeroAllocTest) GetAllRooms() []*room.Room {
+	return nil
+}
+func (m *mockGameServerForZeroAllocTest) CreateRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte) string {
+	return "nil"
+}
+func (m *mockGameServerForZeroAllocTest) GetMarshaller() internal.MarshalService {
+	return m.mrsh
+}
+func (m *mockGameServerForZeroAllocTest) GetVersion() string {
+	return "nil"
+}
 
 func TestRoomGetters(t *testing.T) {
 	room := room.NewRoom("test", 10, 10*time.Second, 0, 30, make([]byte, 3), 50, 30, false)
@@ -182,7 +204,7 @@ func TestRaceInTick(t *testing.T) {
 				packet, unrel, _, _ := r.CreateTickPackets()
 				_ = m.MarshalNonAlloc(buf, packet)
 				_ = m.MarshalNonAlloc(ubuf, unrel)
-				r.ReleaseTickPackets(packet, unrel)
+
 				r.ResetTempBuffers()
 
 				r.Unlock()
@@ -227,5 +249,33 @@ func passTickrate(t *testing.T, tickrate uint32) {
 
 	if ticked != int(tickrate) {
 		t.Errorf("Inaccurate ticks! %v(EXPECTED) != %v(REAL TICKED BY SECOND)", tickrate, ticked)
+	}
+}
+
+func BenchmarkRoomTickColdPath(b *testing.B) {
+	srv := &mockGameServerForZeroAllocTest{
+		mrsh: marshaller.NewMessagePackMarshaller(),
+	}
+
+	room := room.NewRoom("room", 1, time.Hour, 1, 30, nil, 50, 30, false)
+	handler := gamehandlers.NewGameTickHandler()
+	handler.Init(nil, srv, "")
+	handler.SetRoom(room, 1)
+	room.AddPeer("")
+
+	//this data is fully authentic tick snaphsot that requests creation of a single entity (cube gameObject) and passes 16 bytes of arena to arenas
+	dataMock := []byte{0, 0, 0, 46, 152, 0, 1, 1, 145, 150, 0, 1, 0, 1, 147, 202, 192, 65, 125, 172, 202, 64, 75, 174, 8, 202, 64, 163, 221, 144, 147, 202, 128, 0, 0, 0, 202, 0, 0, 0, 0, 202, 0, 0, 0, 0, 144, 144, 144, 144, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+
+	log.Println(b.N)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		handler.PassHandle(dataMock)
+
+		room.CreateTickPackets()
+
+		room.ResetTempBuffers()
 	}
 }
