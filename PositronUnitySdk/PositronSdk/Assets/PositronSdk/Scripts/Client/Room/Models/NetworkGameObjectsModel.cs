@@ -381,6 +381,16 @@ namespace Positron.Client.Room.Models
             _requestOwnershipDelta.Clear();
         }
 
+        public PositronNetworkIdentity GetObjectByIds(uint objectId, ushort subObjectId)
+        {
+            if (subObjectId == 0)
+            {
+                return _currentGameObjectsOnScene[objectId];
+            }
+
+            return _currentGameObjectsOnScene[objectId].GetSubObject(subObjectId);
+        }
+
         private void AddTransformDeltaDataToDeltaArray(KeyValuePair<uint, PositronNetworkIdentity> networkObjectPair)
         {
             NetTransform deltaData = new();

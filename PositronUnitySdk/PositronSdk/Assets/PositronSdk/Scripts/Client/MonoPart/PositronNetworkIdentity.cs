@@ -8,6 +8,8 @@ namespace Positron.Client.Mono
 {
     public class PositronNetworkIdentity : MonoBehaviour
     {
+        [SerializeField] private PositronNetworkIdentity[] _trackedSubObjects;
+
         private IPositronSyncer[] _syncers;
         private Dictionary<Type, IPositronSyncer> _syncersMap = new();
 
@@ -27,6 +29,18 @@ namespace Positron.Client.Mono
         public event Action<PositronNetworkIdentity> transfered;
         public event Action transferedWithEmptyCallback;
 
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (Application.isPlaying)
+            {
+                return;
+            }
+
+            _trackedSubObjects = GetComponentsInChildren<PositronNetworkIdentity>();
+        }
+#endif
+
         public void LocalInit(ushort creationId, uint owner)
         {
             if (_isLocallyInited)
@@ -41,6 +55,8 @@ namespace Positron.Client.Mono
             _isLocallyInited = true;
 
             _syncers = GetComponents<IPositronSyncer>();
+
+            InitTrackedSubObjects();
             InitSyncers();
         }
 
@@ -60,6 +76,8 @@ namespace Positron.Client.Mono
             _isLocallyInited = true;
 
             _syncers = GetComponents<IPositronSyncer>();
+            
+            InitTrackedSubObjects();
             InitSyncers();
 
             completeInitialize?.Invoke(this);
@@ -92,6 +110,12 @@ namespace Positron.Client.Mono
             return false;
         }
 
+        public PositronNetworkIdentity GetSubObject(ushort subObjectId)
+        {
+            int index = subObjectId - 1;
+            return _trackedSubObjects[index];
+        }
+
         private void InitSyncers()
         {
             _syncersMap.Clear();
@@ -100,6 +124,19 @@ namespace Positron.Client.Mono
             {
                 syncer.Init(this);
                 _syncersMap.Add(syncer.GetType(), syncer);
+            }
+        }
+
+        private void InitTrackedSubObjects()
+        {
+            for (int i = 0; i < _trackedSubObjects.Length; i++)
+            {
+                if (_trackedSubObjects[i] == null)
+                {
+                    continue;
+                }
+
+                _trackedSubObjects[i].SubObjectId = (ushort)((ushort)i + 1);
             }
         }
     }

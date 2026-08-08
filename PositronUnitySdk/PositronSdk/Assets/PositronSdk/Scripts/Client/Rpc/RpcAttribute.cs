@@ -1,4 +1,7 @@
 using System;
 
-[AttributeUsage(AttributeTargets.Method)]
-public class RpcAttribute : Attribute { }
+namespace Positron.Client.Rpc
+{
+    [AttributeUsage(AttributeTargets.Method)]
+    public class RpcAttribute : Attribute { }
+}

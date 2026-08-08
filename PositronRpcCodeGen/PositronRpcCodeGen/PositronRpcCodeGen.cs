@@ -29,6 +29,7 @@ namespace PositronRpcCodeGen
             UsagesGenerator usagesGenerator = new UsagesGenerator();
             ClassGenerator classGenerator = new ClassGenerator();
             MethodGenerator methodGenerator = new MethodGenerator();
+            ServiceInterfaceImplementationGenerator serviceCodeGenerator = new ServiceInterfaceImplementationGenerator();
 
             usagesGenerator.GenerateUsages(sourceBuilder);
 
@@ -55,6 +56,7 @@ namespace PositronRpcCodeGen
                 }
 
                 classGenerator.AppendInitial(sourceBuilder, type.Type.Name, type.GetNamespaceName());
+                serviceCodeGenerator.GenerateInterfaceImplementationAccordingTo(sourceBuilder, methods.ToArray());
 
                 foreach (ParsedMethodData method in methods)
                 {

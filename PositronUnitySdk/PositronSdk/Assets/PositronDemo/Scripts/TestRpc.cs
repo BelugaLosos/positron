@@ -1,5 +1,5 @@
 using Positron.Client.ConstantHolders;
-using Positron.Client.GameEntities;
+using Positron.Client.Rpc;
 using UnityEngine;
 
 namespace TeGst.F.A.V.C

@@ -14,7 +14,7 @@ namespace PositronRpcCodeGen.Generators
                 str.AppendLine("{");
             }
             
-            str.AppendLine($"public partial class {className}");
+            str.AppendLine($"public partial class {className} : global::Positron.Client.Rpc.IRpcTarget");
             str.AppendLine("{");
         }
 

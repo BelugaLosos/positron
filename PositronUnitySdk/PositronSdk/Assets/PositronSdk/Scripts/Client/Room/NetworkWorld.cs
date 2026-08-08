@@ -216,7 +216,7 @@ namespace Positron.Client.Room
 
             _valuesModel.AddOrModifyValues(tickPacket.Meta.ValueModification, tickPacket.ValuesArena);
 
-            _rpcsModel.MultiCall(tickPacket.Meta.Rpcs, tickPacket.RpcsArena);
+            _rpcsModel.ProcessServerRpcEvents(tickPacket.Meta.Rpcs, tickPacket.RpcsArena);
         }
 
         private void ProcessUnreliableTickPacket(GameUnreliableTick unreliableTickPaclet)
@@ -282,10 +282,11 @@ namespace Positron.Client.Room
             _tickRate = (int)_joinDataPacket.Tickrate;
             LocalClientId = _joinDataPacket.SelfId;
             HostId = _joinDataPacket.Host;
+            _rpcsModel.Init(LocalClientId, _gameObjectsModel);
 
             _gameObjectsModel.CreateObjects(_joinDataPacket.GameObjects);
             _valuesModel.AddOrModifyValues(_joinDataPacket.Values, _joinDataPacket.NetValuesDataArena);
-            _rpcsModel.MultiCall(_joinDataPacket.CachedRpcCalls, _joinDataPacket.RpcsDataArena);
+            _rpcsModel.ProcessServerRpcEvents(_joinDataPacket.CachedRpcCalls, _joinDataPacket.RpcsDataArena);
 
             Tick().Forget();
 

@@ -3,11 +3,11 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
-using UnityEditor.Compilation;
 using Assembly = System.Reflection.Assembly;
 using System.Linq;
 using System.Reflection;
 using Positron.Client.Settings;
+using Positron.Client.Rpc;
 
 namespace Positron.UnsafeEditor
 {
