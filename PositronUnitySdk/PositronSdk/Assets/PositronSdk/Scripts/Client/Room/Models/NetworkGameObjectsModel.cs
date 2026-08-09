@@ -7,10 +7,11 @@ using Positron.Client.Mono;
 using Positron.Client.GameEntities.Premitive;
 using Positron.Client.Mono.Syncers;
 using Positron.Utility;
+using Positron.Client.Room.Models.Interfaces;
 
 namespace Positron.Client.Room.Models
 {
-    public sealed class NetworkGameObjectsModel : IDisposable
+    public sealed class NetworkGameObjectsModel : IDisposable, IReadOnlyGameObjectsModel
     {
         private readonly uint _ticksToMarkObjectAsStatic;
         private readonly uint _maxObjectsCountForRetransmitPosition;

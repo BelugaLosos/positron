@@ -2,19 +2,21 @@ using Positron.BytesArena;
 using Positron.Client.ConstantHolders;
 using Positron.Client.GameEntities;
 using Positron.Client.Mono;
+using Positron.Client.Room.Models.Interfaces;
+using Positron.Client.Rpc;
 using Positron.NetworkIoAPI;
 using Positron.Utility;
 using System;
 
 namespace Positron.Client.Room.Models
 {
-    public sealed class RpcsModel : IDisposable
+    public sealed class RpcsModel : IDisposable, ISendOnlyRpcModel
     {
         private uint _selfClientId;
 
         private readonly PooledDynamicArraySegment<RpcCall> _currentCallBuffer = new(128);
 
-        private NetworkGameObjectsModel _gameObjectsModel;
+        private IReadOnlyGameObjectsModel _gameObjectsModel;
         private TransientArena _incomingDataArena = new();
         private TransientArena _outgoingDataArena = new();
 
@@ -24,7 +26,7 @@ namespace Positron.Client.Room.Models
             _currentCallBuffer.Dispose();
         }
 
-        public void Init(uint selfClientId, NetworkGameObjectsModel objectsMode)
+        public void Init(uint selfClientId, IReadOnlyGameObjectsModel objectsMode)
         {
             _selfClientId = selfClientId;
             _gameObjectsModel = objectsMode;
@@ -40,9 +42,10 @@ namespace Positron.Client.Room.Models
             }
         }
 
-        public void SendRpcToServer(PositronNetworkIdentity obj, string methodName, uint specifiedTargetClient, RpcTargets targets, PositronNetworkWriter writer)
+        public void SendRpcToServer(IRpcTarget obj, string methodName, uint specifiedTargetClient, RpcTargets targets, PositronNetworkWriter writer)
         {
             //GIANT TODOOOS
+            //put a writer to pool
             //Get all ids
             //Convert method name to id
             //Validate and rewrite soecified target client according to targets param
@@ -101,10 +104,13 @@ namespace Positron.Client.Room.Models
             ReadOnlySpan<byte> data = _incomingDataArena.Read(call.ArenaLen, call.ArenaLen);
             
             // GIANT TODOOOOS
+            // rent a reader
             // getting all IRpc from this object and cache it
             // reversive mapping from method id to string name
             // check IRpc suitable by method for EACH IRpc
             // if is it suitable call it... if NOT pass througth and get another IRpc
+
+            // if not found put reader to pool and log error
         }
 
         public ArraySegment<RpcCall> GetCurrentDelta() => _currentCallBuffer.ToArray();

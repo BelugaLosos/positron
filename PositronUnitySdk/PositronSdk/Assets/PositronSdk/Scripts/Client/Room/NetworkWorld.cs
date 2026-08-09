@@ -11,6 +11,7 @@ using Positron.Client.Settings;
 using Positron.Client.Mono;
 using Positron.Client.Handlers;
 using Positron.NetworkIoAPI;
+using Positron.Client.Room.Models.Interfaces;
 
 namespace Positron.Client.Room
 {
@@ -42,6 +43,7 @@ namespace Positron.Client.Room
         public uint LocalClientId { get; private set; }
         public bool InRoom { get; private set; }
         public double NetworkTime => _clock.ClientTimeWithPastOffset;
+        public ISendOnlyRpcModel RpcModel => _rpcsModel;
 
         public event Action hostChanged;
         public event Action roomLeaved;

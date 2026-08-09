@@ -1,5 +1,7 @@
+using Positron;
 using Positron.Client.ConstantHolders;
 using Positron.Client.Rpc;
+using System;
 using UnityEngine;
 
 namespace TeGst.F.A.V.C
@@ -10,6 +12,7 @@ namespace TeGst.F.A.V.C
         {
             SendRPC_Foo1(RpcTargets.RPC_ALL, "", Vector3.zero);
             SendRPC_Foo2(RpcTargets.RPC_ALL);
+            
         }
 
         [Rpc]

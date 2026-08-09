@@ -23,7 +23,6 @@ namespace Positron
 
         private static PingModel _pingModel;
         private static NetworkWorld _world;
-        private static PositronNetworkIoPool _networkIoPool;
 
         private static bool _initialized;
         private static bool _connected;
@@ -33,6 +32,7 @@ namespace Positron
         public static IPositronObservableHandler<RoomListResponse> GetRoomsHandler => _client.GetHandler<GetRoomsHandler>();
         public static IPositronObservableHandler<RoomCreationResponse> RoomCreatedHandler => _client.GetHandler<RoomCreatedHandler>();
         public static NetworkWorld World => _world;
+        public static PositronNetworkIoPool NetworkIoPool { get; private set; }
 
         public static event Action connectionRequested;
         public static event Action connected;
@@ -74,7 +74,7 @@ namespace Positron
             _settings = null;
             _pingModel = null;
             _world = null;
-            _networkIoPool = null;
+            NetworkIoPool = null;
 
             _initialized = false;
             _connected = false;
@@ -97,7 +97,7 @@ namespace Positron
 
             _pingModel = new();
             _world = new(settings, serializer);
-            _networkIoPool = new(serializer);
+            NetworkIoPool = new(serializer);
 
             RoomLeaveHandler roomLeaveHandler = new();
 
