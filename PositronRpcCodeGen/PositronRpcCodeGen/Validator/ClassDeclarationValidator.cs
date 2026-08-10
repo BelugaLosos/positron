@@ -1,13 +1,12 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
 using System.Linq;
 
 namespace PositronRpcCodeGen.Validator
 {
-    internal class ClassPartialsValidator
+    internal class ClassDeclarationValidator
     {
-        public bool ClassIsPartial(INamedTypeSymbol type)
+        public bool ClassIsDeclaredCorrectly(INamedTypeSymbol type)
         {
             if (type.TypeKind != TypeKind.Class)
             {
@@ -18,6 +17,11 @@ namespace PositronRpcCodeGen.Validator
             {
                 if (syntaxRef.GetSyntax() is ClassDeclarationSyntax classDeclaraction)
                 {
+                    if (classDeclaraction.Modifiers.Where(m => m.ValueText == "abstract" || m.ValueText == "static").Any())
+                    {
+                        return false;
+                    }
+
                     if (classDeclaraction.Modifiers.Where(m => m.ValueText == "partial").Any())
                     {
                         return true;
@@ -31,9 +35,9 @@ namespace PositronRpcCodeGen.Validator
         public DiagnosticDescriptor GenerateDiagnosticsDescriptor()
         {
             return new DiagnosticDescriptor(
-                    "RPC Codegen " + Guid.NewGuid().ToString(),
-                    "Class with RPCs must be declared as PARTIAL !!!",
-                    "Class {0} must be declared as PARTIAL !!!",
+                    "RPC Codegen",
+                    "Class (only Classes supported) with RPCs must be declared as PARTIAL, not STATIC and not ABSTRACT !!!",
+                    "Rpc-constaining code {0} must be declared as PARTIAL, not STATIC and not ABSTRACT class!!!",
                     "Positron codegen report",
                     DiagnosticSeverity.Error,
                     true

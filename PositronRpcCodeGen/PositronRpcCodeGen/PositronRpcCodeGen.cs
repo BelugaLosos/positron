@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
+using PositronRpcCodeGen.ConstantsHolder;
 using PositronRpcCodeGen.Extractors;
 using PositronRpcCodeGen.Extractors.Data;
 using PositronRpcCodeGen.Generators;
@@ -13,8 +14,6 @@ namespace PositronRpcCodeGen
     [Generator]
     public class PositronRpcCodeGen : ISourceGenerator
     {
-        private const string RPC_ATTR_NAME = "RpcAttribute";
-
         public void Execute(GeneratorExecutionContext context)
         {
             Compilation compiler = context.Compilation;
@@ -23,7 +22,7 @@ namespace PositronRpcCodeGen
             TypesExtractor typesExtractor = new TypesExtractor();
             MethodsExtractor methodsExtractor = new MethodsExtractor();
 
-            ClassPartialsValidator partialsValidator = new ClassPartialsValidator();
+            ClassDeclarationValidator partialsValidator = new ClassDeclarationValidator();
             MethodValidator methodValidator = new MethodValidator();
 
             UsagesGenerator usagesGenerator = new UsagesGenerator();
@@ -35,9 +34,9 @@ namespace PositronRpcCodeGen
 
             foreach (ParsedTypeData type in typesExtractor.ExtractAllTypesFromAssembly(compiler, TypeKind.Class))
             {
-                List<ParsedMethodData> methods = methodsExtractor.ExtractMethodsFromType(type.Type, RPC_ATTR_NAME).ToList();
+                List<ParsedMethodData> methods = methodsExtractor.ExtractMethodsFromType(type.Type, ConstantsHolderContainer.RPC_ATTR_NAME).ToList();
 
-                if (!partialsValidator.ClassIsPartial(type.Type) && methods.Count > 0)
+                if (!partialsValidator.ClassIsDeclaredCorrectly(type.Type) && methods.Count > 0)
                 {
                     Diagnostic diagnosticsReport = Diagnostic.Create(
                             partialsValidator.GenerateDiagnosticsDescriptor(),
@@ -54,8 +53,8 @@ namespace PositronRpcCodeGen
                 {  
                     continue;
                 }
-
-                classGenerator.AppendInitial(sourceBuilder, type.Type.Name, type.GetNamespaceName());
+                
+                classGenerator.AppendInitial(sourceBuilder, type.Type.DeclaredAccessibility, type.Type.IsSealed, type.Type.Name, type.GetNamespaceName());
                 serviceCodeGenerator.GenerateInterfaceImplementationAccordingTo(sourceBuilder, methods.ToArray());
 
                 foreach (ParsedMethodData method in methods)

@@ -1,12 +1,23 @@
-﻿using System.Text;
+﻿using PositronRpcCodeGen.ConstantsHolder;
+using Microsoft.CodeAnalysis;
+using System.Text;
+using PositronRpcCodeGen.Util;
 
 namespace PositronRpcCodeGen.Generators
 {
     internal class ClassGenerator
     {
-        public void AppendInitial(StringBuilder str, string className, string namespaceName)
+        public void AppendInitial(StringBuilder str, Accessibility accessModifier, bool isSealed, string className, string namespaceName)
         {
+            string accessModifierString = AccessDeclarationToStringConverter.AccesebilityDeclarationToString(accessModifier);
+            string sealedMod = " ";
+
             str.AppendLine($"\n\n//Generated encoders for RPCs in this file (DO NOT TOUCH AND EDIT BY HANDS)");
+
+            if (isSealed)
+            {
+                sealedMod = " sealed ";
+            }
 
             if (!string.IsNullOrEmpty(namespaceName))
             {
@@ -14,7 +25,7 @@ namespace PositronRpcCodeGen.Generators
                 str.AppendLine("{");
             }
             
-            str.AppendLine($"public partial class {className} : global::Positron.Client.Rpc.IRpcTarget");
+            str.AppendLine($"{accessModifierString}{sealedMod}partial class {className} : {ConstantsHolderContainer.RPC_TARGETS_INTERFACE_DEFINITION}");
             str.AppendLine("{");
         }
 

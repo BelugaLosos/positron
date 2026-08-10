@@ -1,4 +1,5 @@
-﻿using PositronRpcCodeGen.Extractors.Data;
+﻿using PositronRpcCodeGen.ConstantsHolder;
+using PositronRpcCodeGen.Extractors.Data;
 using System.Text;
 
 namespace PositronRpcCodeGen.Generators
@@ -7,7 +8,7 @@ namespace PositronRpcCodeGen.Generators
     {
         public void GenerateInterfaceImplementationAccordingTo(StringBuilder str, ParsedMethodData[] methods)
         {
-            str.AppendLine("    public bool IsSuitableTargetFor(string name)");
+            str.AppendLine($"    public bool {ConstantsHolderContainer.SUITABILITY_METHOD_DEFINITION}(string name)");
             str.AppendLine("    {");
             str.AppendLine("        switch (name)");
             str.AppendLine("        {");
@@ -23,13 +24,13 @@ namespace PositronRpcCodeGen.Generators
             str.AppendLine();
 
 
-            str.AppendLine("    public void Call(string name, global::Positron.NetworkIoAPI.PositronNetworkReader reader)");
+            str.AppendLine($"    public void {ConstantsHolderContainer.CALL_METHOD_DEFINITION}(string name, {ConstantsHolderContainer.NETWORK_READER_DEFINITION} reader)");
             str.AppendLine("    {");
             str.AppendLine("        switch (name)");
             str.AppendLine("        {");
             foreach (ParsedMethodData method in methods)
             {
-                str.AppendLine($"            case {'"'}{method.MethodSymbol.Name}{'"'}: CODEGEN_SERVICE_METHOD_ReadRPC_{method.MethodSymbol.Name}(reader); break;");
+                str.AppendLine($"            case \"{method.MethodSymbol.Name}\": {ConstantsHolderContainer.RPC_READ_PREFIX}{method.MethodSymbol.Name}(reader); break;");
             }
             str.AppendLine("        }");
             str.AppendLine("    }");

@@ -42,8 +42,13 @@ namespace Positron.Client.Room.Models
             }
         }
 
-        public void SendRpcToServer(IRpcTarget obj, string methodName, uint specifiedTargetClient, RpcTargets targets, PositronNetworkWriter writer)
+        public void SendRpcToServer(IRpcTarget obj, string methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer)
         {
+            if (targets == RpcTargets.RPC_TARGET && !hasSpecifiedTarget)
+            {
+                throw new ArgumentException("Can`t call RPC_TARGET with no specified target argument (declare an argument like 'uint targetClientId')");
+            }
+
             //GIANT TODOOOS
             //put a writer to pool
             //Get all ids
