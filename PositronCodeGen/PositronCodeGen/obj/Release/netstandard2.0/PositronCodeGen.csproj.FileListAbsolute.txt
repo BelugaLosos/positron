@@ -1,0 +1,11 @@
+E:\positron\positron\PositronCodeGen\PositronCodeGen\bin\Release\netstandard2.0\PositronCodeGen.deps.json
+E:\positron\positron\PositronCodeGen\PositronCodeGen\bin\Release\netstandard2.0\PositronCodeGen.dll
+E:\positron\positron\PositronCodeGen\PositronCodeGen\bin\Release\netstandard2.0\PositronCodeGen.pdb
+E:\positron\positron\PositronCodeGen\PositronCodeGen\obj\Release\netstandard2.0\PositronCodeGen.csproj.AssemblyReference.cache
+E:\positron\positron\PositronCodeGen\PositronCodeGen\obj\Release\netstandard2.0\PositronCodeGen.GeneratedMSBuildEditorConfig.editorconfig
+E:\positron\positron\PositronCodeGen\PositronCodeGen\obj\Release\netstandard2.0\PositronCodeGen.AssemblyInfoInputs.cache
+E:\positron\positron\PositronCodeGen\PositronCodeGen\obj\Release\netstandard2.0\PositronCodeGen.AssemblyInfo.cs
+E:\positron\positron\PositronCodeGen\PositronCodeGen\obj\Release\netstandard2.0\PositronCodeGen.csproj.CoreCompileInputs.cache
+E:\positron\positron\PositronCodeGen\PositronCodeGen\obj\Release\netstandard2.0\PositronCodeGen.sourcelink.json
+E:\positron\positron\PositronCodeGen\PositronCodeGen\obj\Release\netstandard2.0\PositronCodeGen.dll
+E:\positron\positron\PositronCodeGen\PositronCodeGen\obj\Release\netstandard2.0\PositronCodeGen.pdb
