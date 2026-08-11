@@ -42,7 +42,7 @@ namespace Positron.Client.Room.Models
             }
         }
 
-        public void SendRpcToServer(IRpcTarget obj, string methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer)
+        public void SendRpcToServer(IRpcTarget obj, ulong methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer)
         {
             if (targets == RpcTargets.RPC_TARGET && !hasSpecifiedTarget)
             {

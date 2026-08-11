@@ -6,6 +6,6 @@ namespace Positron.Client.Room.Models.Interfaces
 {
     public interface ISendOnlyRpcModel
     {
-        void SendRpcToServer(IRpcTarget obj, string methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer);
+        void SendRpcToServer(IRpcTarget obj, ulong methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer);
     }
 }

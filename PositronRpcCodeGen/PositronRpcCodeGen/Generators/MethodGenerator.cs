@@ -4,16 +4,20 @@ using PositronRpcCodeGen.Extractors.Data;
 using PositronRpcCodeGen.Util;
 using System.Linq;
 using System.Text;
+using System.Security.Cryptography;
+using System;
 
 namespace PositronRpcCodeGen.Generators
 {
     internal class MethodGenerator
     {
         private readonly TypeDefinitionToIoMethodNameConverter _typesNamesConverter;
+        private readonly NamesHasher _namesHasher;
 
         public MethodGenerator()
         {
             _typesNamesConverter = new TypeDefinitionToIoMethodNameConverter();
+            _namesHasher = new NamesHasher();   
         }
 
         public void GenerateMethodWithClosure(StringBuilder str, ParsedMethodData data)
@@ -29,6 +33,9 @@ namespace PositronRpcCodeGen.Generators
                 $"{ConstantsHolderContainer.RPC_SPECIFIED_TARGET_PARAM_NAME}, true" :
                 "0, false";
 
+            string methodName = data.MethodSymbol.Name;
+            ulong hash = _namesHasher.To64BitHash(methodName);
+
             for (int i = 0; i < data.Args.Length; i++)
             {
                 if (i != 0)
@@ -43,11 +50,11 @@ namespace PositronRpcCodeGen.Generators
                 parameterNames.Append(data.Args[i].Name);
             }
 
-            str.AppendLine($"    {accessModifier} void {ConstantsHolderContainer.RPC_SEND_PREFIX}{data.MethodSymbol.Name}({ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION} targets{parametersDefinition})");
+            str.AppendLine($"    {accessModifier} void {ConstantsHolderContainer.RPC_SEND_PREFIX}{methodName}({ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION} targets{parametersDefinition})");
             str.AppendLine("    {");
             str.AppendLine($"        if(targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL})");
             str.AppendLine("        {");
-            str.AppendLine($"            {data.MethodSymbol.Name}({parameterNames});");
+            str.AppendLine($"            {methodName}({parameterNames});");
             str.AppendLine("        }");
             str.AppendLine();
             str.AppendLine($"        {ConstantsHolderContainer.NETWORK_WRITER_DEFINITION} w = {ConstantsHolderContainer.NETWORK_IO_POOL_DEFINITION}.{ConstantsHolderContainer.NETWORK_IO_POOL_GET_WRITTER_METHOD}();");
@@ -58,12 +65,12 @@ namespace PositronRpcCodeGen.Generators
                 str.AppendLine($"        w.{_typesNamesConverter.ToWriterMethods(arg.DefinitionString)}({arg.Name});");
             }
             str.AppendLine();
-            str.AppendLine($"        {ConstantsHolderContainer.NETWORK_RPCS_MODEL_SEND_TO_SERVER_METHOD}(this, \"{data.MethodSymbol.Name}\", {specifiedTargetCall}, targets, w);");
+            str.AppendLine($"        {ConstantsHolderContainer.NETWORK_RPCS_MODEL_SEND_TO_SERVER_METHOD}(this, {hash}, {specifiedTargetCall}, targets, w);");
             str.AppendLine("    }");
 
             str.AppendLine();
 
-            str.AppendLine($"    private void {ConstantsHolderContainer.RPC_READ_PREFIX}{data.MethodSymbol.Name}({ConstantsHolderContainer.NETWORK_READER_DEFINITION} reader)");
+            str.AppendLine($"    private void {ConstantsHolderContainer.RPC_READ_PREFIX}{methodName}({ConstantsHolderContainer.NETWORK_READER_DEFINITION} reader)");
             str.AppendLine("    {");
             for (int i = 0; i < data.Args.Length; i++)
             {
@@ -80,7 +87,7 @@ namespace PositronRpcCodeGen.Generators
                 }
             }
             str.AppendLine();
-            str.AppendLine($"        {data.MethodSymbol.Name}({serviceReadCallParametersDefinition});");
+            str.AppendLine($"        {methodName}({serviceReadCallParametersDefinition});");
             str.AppendLine($"        {ConstantsHolderContainer.NETWORK_IO_POOL_DEFINITION}.{ConstantsHolderContainer.NETWORK_IO_POOL_PUT_READER_METHOD}(reader);");
             str.AppendLine("    }");
 
