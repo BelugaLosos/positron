@@ -16,6 +16,7 @@
         public static readonly string RPC_SEND_PREFIX = "SendRPC_";
         public static readonly string RPC_TARGETS_ENUM_DEFINITION = "global::Positron.Client.ConstantHolders.RpcTargets";
         public static readonly string RPC_TARGETS_ENUM_VALUE_RPC_ALL = "RPC_ALL";
-        public static readonly string RPC_SPECIFIED_TARGET_PARAM_NAME = "targetClientId";
+        public static readonly string RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED = "RPC_ALL_CACHED";
+        public static readonly string RPC_SPECIFIED_TARGET_STRUCT_NAME = "global::Positron.Client.Rpc.RpcPlayerRef";
     }
 }

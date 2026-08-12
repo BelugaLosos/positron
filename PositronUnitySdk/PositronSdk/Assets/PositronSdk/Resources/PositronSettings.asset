@@ -24,4 +24,4 @@ MonoBehaviour:
   MaximalObjectsCountForRetransmitPerPacket: 50
   <SpawnableObjects>k__BackingField:
   - {fileID: 330245913734207282, guid: 31010728a1cb0c24db0e36ca0c47a3e0, type: 3}
-  <RpcMethodsNames>k__BackingField: beed03a59fbf02f7415513d5f78818704e385e72a65de68d
+  <RpcMethodsNames>k__BackingField: 48a8ef744ead0ecbcc57fe69d49fbff7

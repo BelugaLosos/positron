@@ -52,7 +52,7 @@ namespace Positron.Client.Room
         {
             _gameObjectsModel = new(this, settings);
             _valuesModel = new();
-            _rpcsModel = new();
+            _rpcsModel = new(settings);
             _clock = new(settings.TickOffset, settings.Tickrate);
             _writer = new(serializer);
         }

@@ -66,6 +66,16 @@ namespace Positron.Extras.HandTests.Object
             {
                 ProcessRotationByAxis(Vector3.forward);
             }
+
+            if (Input.GetKeyUp(KeyCode.S))
+            {
+                PositronNetworkIdentity obj = Hitscan();
+
+                if (obj != null)
+                {
+                    obj.GetComponent<ObjectRpcTest>().GenerateRandomScale();
+                }
+            }
         }
 
         private void ProcessRotationByAxis(Vector3 rotAxis)

@@ -4,9 +4,12 @@ using Positron.Client.GameEntities;
 using Positron.Client.Mono;
 using Positron.Client.Room.Models.Interfaces;
 using Positron.Client.Rpc;
+using Positron.Client.Settings;
 using Positron.NetworkIoAPI;
 using Positron.Utility;
 using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace Positron.Client.Room.Models
 {
@@ -16,9 +19,26 @@ namespace Positron.Client.Room.Models
 
         private readonly PooledDynamicArraySegment<RpcCall> _currentCallBuffer = new(128);
 
+        private readonly Dictionary<IRpcTarget, PositronNetworkIdentity> _rpcToObj = new();
+        private readonly Dictionary<ulong, ushort> _hashToIdx = new();
+        private readonly ulong[] _idxToHash;
+
         private IReadOnlyGameObjectsModel _gameObjectsModel;
         private TransientArena _incomingDataArena = new();
         private TransientArena _outgoingDataArena = new();
+
+        public RpcsModel(PositronSettings settings) 
+        {
+            _idxToHash = new ulong[settings.RpcMethodsNames.Length];
+
+            for (int i = 0; i < settings.RpcMethodsNames.Length; i++)
+            {
+                ulong nameHash = settings.RpcMethodsNames[i];
+
+                _hashToIdx.Add(nameHash, (ushort)i);
+                _idxToHash[i] = nameHash;
+            }
+        }
 
         public void Dispose()
         {
@@ -42,46 +62,54 @@ namespace Positron.Client.Room.Models
             }
         }
 
-        public void SendRpcToServer(IRpcTarget obj, ulong methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer)
+        public void SendRpcToServer(IRpcTarget obj, GameObject bindedGameObject, ulong methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer)
         {
             if (targets == RpcTargets.RPC_TARGET && !hasSpecifiedTarget)
             {
                 throw new ArgumentException("Can`t call RPC_TARGET with no specified target argument (declare an argument like 'uint targetClientId')");
             }
 
-            //GIANT TODOOOS
-            //put a writer to pool
-            //Get all ids
-            //Convert method name to id
-            //Validate and rewrite soecified target client according to targets param
-            //write to arena and PUT writter back
+            if (!_rpcToObj.TryGetValue(obj, out PositronNetworkIdentity identity))
+            {
+                identity = bindedGameObject.GetComponent<PositronNetworkIdentity>();
+                _rpcToObj.Add(obj, identity);
+            }
 
-            //AND MOST OF LOGIC MUST BE CODE GENERATED HERE!
+            RpcCall rpcCallMeta = new();
+
+            int ptr = _outgoingDataArena.Alloc(writer.Data, out int len);
+            PositronFacade.NetworkIoPool.PutWriter(writer);
+
+            rpcCallMeta.ArenaPtr = (uint)ptr;
+            rpcCallMeta.ArenaLen = (uint)len;
+            rpcCallMeta.TargetClientId = hasSpecifiedTarget ? specifiedTargetClient : _selfClientId;
+            rpcCallMeta.ObjectId = identity.ObjectId;
+            rpcCallMeta.MethodId = _hashToIdx[methodName];
+            rpcCallMeta.SubObjectId = identity.SubObjectId;
+            rpcCallMeta.Type = (byte)targets;
+
+            _currentCallBuffer.Add(rpcCallMeta);
         }
 
         private void Call(RpcCall call)
         {
             RpcTargets target = (RpcTargets)call.Type;
 
-            switch (target)
+            if (target == RpcTargets.RPC_ALL || target == RpcTargets.RPC_ALL_CACHED || target == RpcTargets.RPC_OTHERS || target == RpcTargets.RPC_OTHERS_CACHED)
             {
-                case RpcTargets.RPC_ALL | RpcTargets.RPC_ALL_CACHED:
-                    RouteRpcAll(call);
-                    break;
-                case RpcTargets.RPC_OTHERS | RpcTargets.RPC_OTHERS_CACHED:
-                    RouteRpcOthers(call);
-                    break;
-                case RpcTargets.RPC_TARGET | RpcTargets.RPC_TARGET_CACHED:
-                    RouteRpcTarget(call);
-                    break;
-                default: 
-                    throw new ArgumentException($"Unsupported target {target}");
+                RouteRpcWide(call);
+            }
+            else if (target == RpcTargets.RPC_TARGET || target == RpcTargets.RPC_TARGET_CACHED)
+            {
+                RouteRpcTarget(call);
+            }
+            else
+            {
+                throw new ArgumentException($"Unsupported target {target}");
             }
         }
 
-        private void RouteRpcAll(RpcCall call) => CallRpcLocal(call);
-
-        private void RouteRpcOthers(RpcCall call)
+        private void RouteRpcWide(RpcCall call)
         {
             uint excludingTargetClient = call.TargetClientId;
 
@@ -105,17 +133,36 @@ namespace Positron.Client.Room.Models
 
         private void CallRpcLocal(RpcCall call)
         {
-            PositronNetworkIdentity obj = _gameObjectsModel.GetObjectByIds(call.ObjectId, call.SubObjectId);
-            ReadOnlySpan<byte> data = _incomingDataArena.Read(call.ArenaLen, call.ArenaLen);
-            
-            // GIANT TODOOOOS
-            // rent a reader
-            // getting all IRpc from this object and cache it
-            // reversive mapping from method id to string name
-            // check IRpc suitable by method for EACH IRpc
-            // if is it suitable call it... if NOT pass througth and get another IRpc
+            PositronNetworkReader reader = PositronFacade.NetworkIoPool.GetReader();
+            ReadOnlySpan<byte> data = _incomingDataArena.Read(call.ArenaPtr, call.ArenaLen);
+            reader.AllocFrom(data);
 
-            // if not found put reader to pool and log error
+            PositronNetworkIdentity identity = _gameObjectsModel.GetObjectByIds(call.ObjectId, call.SubObjectId);
+
+            IRpcTarget[] observedTargets = identity.GetObservedRpcTargets();
+            ulong nameHash = _idxToHash[call.MethodId];
+            bool founded = false;
+
+            foreach (IRpcTarget rpcTarget in observedTargets)
+            {
+                if (rpcTarget == null)
+                {
+                    continue;
+                }
+
+                if (rpcTarget.IsSuitableTargetFor(nameHash))
+                {
+                    rpcTarget.Call(nameHash, reader);
+                    founded = true;
+                    break;
+                }
+            }
+
+            if (!founded)
+            {
+                PositronFacade.NetworkIoPool.PutReader(reader);
+                Debug.LogError($"Critical positron error -> unable to find any rpc at object {identity}", identity.gameObject);
+            }
         }
 
         public ArraySegment<RpcCall> GetCurrentDelta() => _currentCallBuffer.ToArray();

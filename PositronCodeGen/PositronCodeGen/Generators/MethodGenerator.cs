@@ -29,8 +29,8 @@ namespace PositronCodeGen.Generators
             StringBuilder serviceReadCallParametersDefinition = new StringBuilder("");
 
             string specifiedTargetCall = data.Args.
-                Where(a => a.Name == ConstantsHolderContainer.RPC_SPECIFIED_TARGET_PARAM_NAME && a.DefinitionString == "uint").Any() ?
-                $"{ConstantsHolderContainer.RPC_SPECIFIED_TARGET_PARAM_NAME}, true" :
+                Where(a => a.DefinitionString == ConstantsHolderContainer.RPC_SPECIFIED_TARGET_STRUCT_NAME).Any() ?
+                $"{data.Args.Where(a => a.DefinitionString == ConstantsHolderContainer.RPC_SPECIFIED_TARGET_STRUCT_NAME).First().Name}.TargetClientId, true" :
                 "0, false";
 
             string methodName = data.MethodSymbol.Name;
@@ -52,7 +52,7 @@ namespace PositronCodeGen.Generators
 
             str.AppendLine($"    {accessModifier} void {ConstantsHolderContainer.RPC_SEND_PREFIX}{methodName}({ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION} targets{parametersDefinition})");
             str.AppendLine("    {");
-            str.AppendLine($"        if(targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL})");
+            str.AppendLine($"        if(targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL} || targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED})");
             str.AppendLine("        {");
             str.AppendLine($"            {methodName}({parameterNames});");
             str.AppendLine("        }");
@@ -62,10 +62,16 @@ namespace PositronCodeGen.Generators
             for (int i = 0; i < data.Args.Length; i++)
             {
                 ParsedMethodArgData arg = data.Args[i];
+
+                if (arg.DefinitionString == ConstantsHolderContainer.RPC_SPECIFIED_TARGET_STRUCT_NAME)
+                {
+                    continue;
+                }
+
                 str.AppendLine($"        w.{_typesNamesConverter.ToWriterMethods(arg.DefinitionString)}({arg.Name});");
             }
             str.AppendLine();
-            str.AppendLine($"        {ConstantsHolderContainer.NETWORK_RPCS_MODEL_SEND_TO_SERVER_METHOD}(this, {hash}, {specifiedTargetCall}, targets, w);");
+            str.AppendLine($"        {ConstantsHolderContainer.NETWORK_RPCS_MODEL_SEND_TO_SERVER_METHOD}(this, gameObject, {hash}, {specifiedTargetCall}, targets, w);");
             str.AppendLine("    }");
 
             str.AppendLine();
@@ -75,7 +81,15 @@ namespace PositronCodeGen.Generators
             for (int i = 0; i < data.Args.Length; i++)
             {
                 ParsedMethodArgData arg = data.Args[i];
-                str.AppendLine($"        {arg.DefinitionString} p{i} = reader.{_typesNamesConverter.ToReaderMethods(arg.DefinitionString)}();");
+
+                if (arg.DefinitionString == ConstantsHolderContainer.RPC_SPECIFIED_TARGET_STRUCT_NAME)
+                {
+                    str.AppendLine($"        {ConstantsHolderContainer.RPC_SPECIFIED_TARGET_STRUCT_NAME} p{i} = new(0);");
+                }
+                else
+                {
+                    str.AppendLine($"        {arg.DefinitionString} p{i} = reader.{_typesNamesConverter.ToReaderMethods(arg.DefinitionString)}();");
+                }
 
                 if (i == 0)
                 {

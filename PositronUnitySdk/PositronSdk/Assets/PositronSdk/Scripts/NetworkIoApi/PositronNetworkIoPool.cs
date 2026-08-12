@@ -47,7 +47,16 @@ namespace Positron.NetworkIoAPI
             return _readersPool.Pop();
         }
 
-        public void PutWriter(PositronNetworkWriter writer) => _writersPool.Push(writer);
-        public void PutReader(PositronNetworkReader reader) => _readersPool.Push(reader);
+        public void PutWriter(PositronNetworkWriter writer)
+        {
+            writer.Clear(true);
+            _writersPool.Push(writer);
+        }
+
+        public void PutReader(PositronNetworkReader reader)
+        {
+            reader.FreeAll();
+            _readersPool.Push(reader);
+        }
     }
 }

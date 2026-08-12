@@ -1,5 +1,6 @@
 using Positron.Client.GameEntities;
 using Positron.Client.Mono.Syncers.Interface;
+using Positron.Client.Rpc;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -11,6 +12,7 @@ namespace Positron.Client.Mono
         [SerializeField] private PositronNetworkIdentity[] _trackedSubObjects;
 
         private IPositronSyncer[] _syncers;
+        private IRpcTarget[] _observedRpcTargets;
         private Dictionary<Type, IPositronSyncer> _syncersMap = new();
 
         private bool _isLocallyInited;
@@ -114,6 +116,22 @@ namespace Positron.Client.Mono
         {
             int index = subObjectId - 1;
             return _trackedSubObjects[index];
+        }
+
+        public IRpcTarget[] GetObservedRpcTargets()
+        {
+            if (_observedRpcTargets == null)
+            {
+                List<IRpcTarget> rpcTargets = new()
+                {
+                    GetComponent<IRpcTarget>()
+                };
+
+                rpcTargets.AddRange(GetComponentsInChildren<IRpcTarget>());
+                _observedRpcTargets = rpcTargets.ToArray();
+            }
+
+            return _observedRpcTargets;
         }
 
         private void InitSyncers()

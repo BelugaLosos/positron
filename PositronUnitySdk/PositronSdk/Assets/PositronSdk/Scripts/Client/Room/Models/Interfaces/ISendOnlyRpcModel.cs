@@ -1,11 +1,12 @@
 using Positron.Client.ConstantHolders;
 using Positron.Client.Rpc;
 using Positron.NetworkIoAPI;
+using UnityEngine;
 
 namespace Positron.Client.Room.Models.Interfaces
 {
     public interface ISendOnlyRpcModel
     {
-        void SendRpcToServer(IRpcTarget obj, ulong methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer);
+        void SendRpcToServer(IRpcTarget obj, GameObject bindedGameObject, ulong methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer);
     }
 }

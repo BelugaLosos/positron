@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 
 namespace Positron.BytesArena
 {
@@ -27,7 +28,7 @@ namespace Positron.BytesArena
         public void CloneFrom(ReadOnlyMemory<byte> data)
         {
             Flush();
-            Alloc(data.Span);
+            Alloc(data.Span, out int _);
         }
 
         /// <summary>
@@ -35,7 +36,7 @@ namespace Positron.BytesArena
         /// </summary>
         /// <param name="data">raw bytes</param>
         /// <returns>pointer to internal buffer</returns>
-        public int Alloc(ReadOnlySpan<byte> data)
+        public int Alloc(ReadOnlySpan<byte> data, out int len)
         {
             int size = data.Length;
             int ptr = _writePtr;
@@ -44,6 +45,7 @@ namespace Positron.BytesArena
             data.CopyTo(_buffer.AsSpan(_writePtr, size));
             _writePtr += size;
 
+            len = size;
             return ptr;
         }
 
@@ -81,6 +83,23 @@ namespace Positron.BytesArena
                 _buffer.AsSpan().CopyTo(doubled.AsSpan());
                 _buffer = doubled;
             }
+        }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new StringBuilder();
+
+            sb.AppendLine($"PTR: {_writePtr}");
+            sb.AppendLine("DAT: ");
+
+            for (int i = 0; i < _writePtr; i++)
+            {
+                sb.Append(' ');
+                sb.Append(_buffer[i]);
+                sb.Append(' ');
+            }
+            
+            return sb.ToString();
         }
     }
 }
