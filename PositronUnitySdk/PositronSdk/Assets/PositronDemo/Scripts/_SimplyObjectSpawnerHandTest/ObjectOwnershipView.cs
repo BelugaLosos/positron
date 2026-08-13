@@ -18,6 +18,8 @@ namespace Positron.Extras.HandTests
             _identity = GetComponent<PositronNetworkIdentity>();
             _identity.completeInitWithEmptyCallback += DisplayOwnership;
             _identity.transferedWithEmptyCallback += DisplayOwnership;
+
+            DisplayOwnership();
         }
 
         private void OnDestroy()

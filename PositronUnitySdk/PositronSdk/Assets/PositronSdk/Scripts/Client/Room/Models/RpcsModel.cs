@@ -8,6 +8,7 @@ using Positron.Client.Settings;
 using Positron.NetworkIoAPI;
 using Positron.Utility;
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,14 +19,18 @@ namespace Positron.Client.Room.Models
         private uint _selfClientId;
 
         private readonly PooledDynamicArraySegment<RpcCall> _currentCallBuffer = new(128);
+        private readonly Dictionary<PositronNetworkIdentity, DellayedCall> _dellayedCalls = new(24);
 
-        private readonly Dictionary<IRpcTarget, PositronNetworkIdentity> _rpcToObj = new();
-        private readonly Dictionary<ulong, ushort> _hashToIdx = new();
+        private readonly Dictionary<IRpcTarget, PositronNetworkIdentity> _rpcToObj = new(256);
+        private readonly Dictionary<ulong, ushort> _hashToIdx = new(256);
         private readonly ulong[] _idxToHash;
 
         private IReadOnlyGameObjectsModel _gameObjectsModel;
         private TransientArena _incomingDataArena = new();
         private TransientArena _outgoingDataArena = new();
+
+        private readonly byte[] _flag = new byte[1];
+        private readonly byte[] _creationIdSection = new byte[2];
 
         public RpcsModel(PositronSettings settings) 
         {
@@ -44,12 +49,18 @@ namespace Positron.Client.Room.Models
         {
             _selfClientId = 0;
             _currentCallBuffer.Dispose();
+
+            _gameObjectsModel.localObjectGoingRemove -= OnObjectRemove;
+            _gameObjectsModel.localObjectRemotelyInitedSuccessfully -= OnLocalTargetInitedSuccesfully;
         }
 
         public void Init(uint selfClientId, IReadOnlyGameObjectsModel objectsMode)
         {
             _selfClientId = selfClientId;
             _gameObjectsModel = objectsMode;
+
+            _gameObjectsModel.localObjectGoingRemove += OnObjectRemove;
+            _gameObjectsModel.localObjectRemotelyInitedSuccessfully += OnLocalTargetInitedSuccesfully;
         }
 
         public void ProcessServerRpcEvents(ArraySegment<RpcCall> calls, ReadOnlyMemory<byte> arena)
@@ -75,11 +86,44 @@ namespace Positron.Client.Room.Models
                 _rpcToObj.Add(obj, identity);
             }
 
-            RpcCall rpcCallMeta = new();
+            bool needToWriteCreationId = false;
+            int len = 0;
 
-            int ptr = _outgoingDataArena.Alloc(writer.Data, out int len);
+            _flag[0] = 0;
+            _creationIdSection[0] = 0;
+            _creationIdSection[1] = 0;
+
+            if (!identity.IsFullyInitialized)
+            {
+                if (_gameObjectsModel.HasObjectInCreationDeltaNow(identity.CreationId))
+                {
+                    needToWriteCreationId = true;
+
+                    _flag[0] = 1;
+                    BinaryPrimitives.WriteUInt16BigEndian(_creationIdSection, identity.CreationId);
+                }
+                else
+                {
+                    _dellayedCalls.Add(identity, new(obj, bindedGameObject, methodName, specifiedTargetClient, hasSpecifiedTarget, targets, writer));
+                    return;
+                }
+            }
+
+            int ptr = _outgoingDataArena.Alloc(_flag, out int _);
+            len++;
+
+            if (needToWriteCreationId)
+            {
+                _outgoingDataArena.Alloc(_creationIdSection, out int _);
+                len += 2;
+            }
+
+            _outgoingDataArena.Alloc(writer.Data, out int customLen);
+            len += customLen;
+
             PositronFacade.NetworkIoPool.PutWriter(writer);
 
+            RpcCall rpcCallMeta = new();
             rpcCallMeta.ArenaPtr = (uint)ptr;
             rpcCallMeta.ArenaLen = (uint)len;
             rpcCallMeta.TargetClientId = hasSpecifiedTarget ? specifiedTargetClient : _selfClientId;
@@ -89,6 +133,26 @@ namespace Positron.Client.Room.Models
             rpcCallMeta.Type = (byte)targets;
 
             _currentCallBuffer.Add(rpcCallMeta);
+        }
+
+        private void OnObjectRemove(PositronNetworkIdentity identity)
+        {
+            if (_dellayedCalls.TryGetValue(identity, out DellayedCall call))
+            {
+                PositronNetworkWriter w = call.Writer;
+                PositronFacade.NetworkIoPool.PutWriter(w);
+
+                _dellayedCalls.Remove(identity);
+            }
+        }
+
+        private void OnLocalTargetInitedSuccesfully(PositronNetworkIdentity creationId)
+        {
+            if (_dellayedCalls.TryGetValue(creationId, out DellayedCall call))
+            {
+                _dellayedCalls.Remove(creationId);
+                SendRpcToServer(call.Obj, call.BindedGameObject, call.MethodName, call.SpecifiedTargetClient, call.HasSpecifiedTarget, call.Targets, call.Writer);
+            }
         }
 
         private void Call(RpcCall call)
@@ -139,6 +203,12 @@ namespace Positron.Client.Room.Models
 
             PositronNetworkIdentity identity = _gameObjectsModel.GetObjectByIds(call.ObjectId, call.SubObjectId);
 
+            if (identity == null)
+            {
+                PositronFacade.NetworkIoPool.PutReader(reader);
+                return;
+            }
+
             IRpcTarget[] observedTargets = identity.GetObservedRpcTargets();
             ulong nameHash = _idxToHash[call.MethodId];
             bool founded = false;
@@ -171,6 +241,28 @@ namespace Positron.Client.Room.Models
         {
             _outgoingDataArena.Flush();
             _currentCallBuffer.Clear();
+        }
+
+        private struct DellayedCall
+        {
+            public IRpcTarget Obj;
+            public GameObject BindedGameObject;
+            public ulong MethodName;
+            public uint SpecifiedTargetClient;
+            public bool HasSpecifiedTarget;
+            public RpcTargets Targets;
+            public PositronNetworkWriter Writer;
+
+            public DellayedCall(IRpcTarget obj, GameObject bindedGameObject, ulong methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer)
+            {
+                Obj = obj;
+                BindedGameObject = bindedGameObject;
+                MethodName = methodName;
+                SpecifiedTargetClient = specifiedTargetClient;
+                HasSpecifiedTarget = hasSpecifiedTarget;
+                Targets = targets;
+                Writer = writer;
+            }
         }
     }
 }

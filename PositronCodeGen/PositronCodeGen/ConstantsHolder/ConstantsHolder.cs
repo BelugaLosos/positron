@@ -18,5 +18,6 @@
         public static readonly string RPC_TARGETS_ENUM_VALUE_RPC_ALL = "RPC_ALL";
         public static readonly string RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED = "RPC_ALL_CACHED";
         public static readonly string RPC_SPECIFIED_TARGET_STRUCT_NAME = "global::Positron.Client.Rpc.RpcPlayerRef";
+        public static readonly string POSITRON_NETWORK_IDENTITY_DEFINITION = "global::Positron.Client.Mono.PositronNetworkIdentity";
     }
 }

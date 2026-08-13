@@ -24,7 +24,8 @@ namespace PositronCodeGen.Generators
                 str.AppendLine($"namespace {namespaceName}");
                 str.AppendLine("{");
             }
-            
+
+            str.AppendLine($"[RequireComponent(typeof({ConstantsHolderContainer.POSITRON_NETWORK_IDENTITY_DEFINITION}))]");
             str.AppendLine($"{accessModifierString}{sealedMod}partial class {className} : {ConstantsHolderContainer.RPC_TARGETS_INTERFACE_DEFINITION}");
             str.AppendLine("{");
         }

@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"log"
 	gameentities "positron/game/gameEntities"
 	eventtypes "positron/game/gameHandlers/eventTypes"
 	roommodels "positron/game/room/roomModels"
@@ -9,14 +10,17 @@ import (
 
 func TestCallNonBuffered(t *testing.T) {
 	model := roommodels.NewRpcsModel()
-	arenaImitation := []byte("helloallgholleh") // hello allgh olleh
+	arenaImitation := []byte("XhelloXallghXolleh")   // hello allgh olleh WITH HEADERS
+	expectedArenaOutput := []byte("helloallgholleh") // hello allgh olleh
 	model.PutTransientDataIncoming(arenaImitation)
+
+	log.Println(arenaImitation[0], arenaImitation[1])
 
 	addMod := []gameentities.GameObject{}
 
-	model.Call(gameentities.NewRpcCall(0, 5, 1, 4, 9, eventtypes.RPC_ALL, 5), addMod)
-	model.Call(gameentities.NewRpcCall(5, 5, 2, 5, 10, eventtypes.RPC_OTHERS, 6), addMod)
-	model.Call(gameentities.NewRpcCall(10, 5, 3, 6, 11, eventtypes.RPC_TARGET, 7), addMod)
+	model.Call(gameentities.NewRpcCall(0, 6, 1, 4, 9, eventtypes.RPC_ALL, 5), addMod)
+	model.Call(gameentities.NewRpcCall(6, 6, 2, 5, 10, eventtypes.RPC_OTHERS, 6), addMod)
+	model.Call(gameentities.NewRpcCall(12, 6, 3, 6, 11, eventtypes.RPC_TARGET, 7), addMod)
 
 	modMeta, modArena := model.GetCurrentCallBuffer()
 	buffered, bufferedArena := model.GetCachedRpcs()
@@ -25,14 +29,14 @@ func TestCallNonBuffered(t *testing.T) {
 		modMeta[0] != gameentities.NewRpcCall(0, 5, 1, 4, 9, eventtypes.RPC_ALL, 5) ||
 		modMeta[1] != gameentities.NewRpcCall(5, 5, 2, 5, 10, eventtypes.RPC_OTHERS, 6) ||
 		modMeta[2] != gameentities.NewRpcCall(10, 5, 3, 6, 11, eventtypes.RPC_TARGET, 7) {
-		t.Error("Meta corruption")
+		t.Errorf("Meta corruption %v", modMeta)
 	}
 
 	if len(buffered) != 0 || len(bufferedArena) != 0 {
 		t.Error("Cache for what ?")
 	}
 
-	if string(modArena) != string(arenaImitation) {
+	if string(modArena) != string(expectedArenaOutput) {
 		t.Errorf("arena corruption %s", string(modArena))
 	}
 }
@@ -56,14 +60,17 @@ func TestResetCalls(t *testing.T) {
 
 func TestBufferedCall(t *testing.T) {
 	model := roommodels.NewRpcsModel()
-	arenaImitation := []byte("helloallgholleh") // hello allgh olleh
+	arenaImitation := []byte("XhelloXallghXolleh")   // hello allgh olleh WITH HEADERS
+	expectedArenaOutput := []byte("helloallgholleh") // hello allgh olleh
 	model.PutTransientDataIncoming(arenaImitation)
+
+	log.Println(arenaImitation[0], arenaImitation[1])
 
 	addMod := []gameentities.GameObject{}
 
-	model.Call(gameentities.NewRpcCall(0, 5, 1, 4, 9, eventtypes.RPC_ALL_CACHED, 5), addMod)
-	model.Call(gameentities.NewRpcCall(5, 5, 2, 5, 10, eventtypes.RPC_OTHERS_CACHED, 6), addMod)
-	model.Call(gameentities.NewRpcCall(10, 5, 3, 6, 11, eventtypes.RPC_TARGET_CACHED, 7), addMod)
+	model.Call(gameentities.NewRpcCall(0, 6, 1, 4, 9, eventtypes.RPC_ALL_CACHED, 5), addMod)
+	model.Call(gameentities.NewRpcCall(6, 6, 2, 5, 10, eventtypes.RPC_OTHERS_CACHED, 6), addMod)
+	model.Call(gameentities.NewRpcCall(12, 6, 3, 6, 11, eventtypes.RPC_TARGET_CACHED, 7), addMod)
 	model.ResetTempBuffers()
 
 	meta, arena := model.GetCachedRpcs()
@@ -75,7 +82,7 @@ func TestBufferedCall(t *testing.T) {
 		t.Error("Meta corruption")
 	}
 
-	if string(arena) != string(arenaImitation) {
+	if string(arena) != string(expectedArenaOutput) {
 		t.Errorf("arena corruption %s", string(arena))
 	}
 }
@@ -87,7 +94,7 @@ func TestRpcDto(t *testing.T) {
 		t.Errorf("corrupting of args %v", gameentities.GetRpcArgs(arena))
 	}
 
-	if has, id := gameentities.TryGetCreationIdRpc(arena); has != true || id != 0x1234 {
+	if has, id, payload := gameentities.DeconstructRpc(arena); has != true || id != 0x1234 || len(payload) != 2 || payload[0] != 0x22 || payload[1] != 0x22 {
 		t.Errorf("Corrupted the creation id %v %v", id, has)
 	}
 
@@ -97,7 +104,7 @@ func TestRpcDto(t *testing.T) {
 		t.Errorf("corrupting of args %v", gameentities.GetRpcArgs(arena))
 	}
 
-	if has, id := gameentities.TryGetCreationIdRpc(arena); has != false || id != 0x0 {
+	if has, id, payload := gameentities.DeconstructRpc(arena); has != false || id != 0x0 || len(payload) != 2 || payload[0] != 0x22 || payload[1] != 0x22 {
 		t.Errorf("Corrupted the creation id %v %v", id, has)
 	}
 }

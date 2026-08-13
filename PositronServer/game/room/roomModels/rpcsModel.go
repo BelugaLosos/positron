@@ -65,16 +65,15 @@ func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameenti
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	incomingPayload, err := r.incomingCallBufferTransientArena.Read(call.GetDescriptors())
+	incomingRawPayload, err := r.incomingCallBufferTransientArena.Read(call.GetDescriptors())
 
 	if err != nil {
 		log.Printf("Unable to call rpc due to memory error %v", err)
 		return
 	}
 
-	incominfDataLen := uint32(len(incomingPayload))
-
-	isCallForFreshObject, creationId := gameentities.TryGetCreationIdRpc(incomingPayload)
+	isCallForFreshObject, creationId, payload := gameentities.DeconstructRpc(incomingRawPayload)
+	incomingDataLen := uint32(len(payload))
 
 	if isCallForFreshObject {
 		for i := range gameObjectsAddMod {
@@ -86,16 +85,16 @@ func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameenti
 		}
 	}
 
-	deltaPtr := r.callBufferTransientArena.Alloc(incomingPayload)
-	call.SetDescriptors(deltaPtr, incominfDataLen)
+	deltaPtr := r.callBufferTransientArena.Alloc(payload)
+	call.SetDescriptors(deltaPtr, incomingDataLen)
 
 	r.callBuffer = append(r.callBuffer, call)
 
 	target := call.GetRpcType()
 
 	if target == eventtypes.RPC_ALL_CACHED || target == eventtypes.RPC_OTHERS_CACHED || target == eventtypes.RPC_TARGET_CACHED {
-		cachePtr := r.cachedRpcsTransientArena.Alloc(incomingPayload)
-		call.SetDescriptors(cachePtr, incominfDataLen)
+		cachePtr := r.cachedRpcsTransientArena.Alloc(payload)
+		call.SetDescriptors(cachePtr, incomingDataLen)
 
 		r.cachedRpcs = append(r.cachedRpcs, call)
 	}

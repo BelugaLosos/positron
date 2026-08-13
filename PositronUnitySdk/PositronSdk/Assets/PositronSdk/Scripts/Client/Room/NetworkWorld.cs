@@ -212,7 +212,7 @@ namespace Positron.Client.Room
             _clock.TryInitTime(tickPacket.Meta.Tick);
             _clock.UpdateServerTime(tickPacket.Meta.Tick);
 
-            _gameObjectsModel.CreateObjects(tickPacket.Meta.NewGameObjects);
+            _gameObjectsModel.CreateObjects(tickPacket.Meta.NewGameObjects, false);
             _gameObjectsModel.RemoveObjects(tickPacket.Meta.RemovedObjects);
             _gameObjectsModel.TransferObjects(tickPacket.Meta.TransferedObjects);
 
@@ -286,9 +286,10 @@ namespace Positron.Client.Room
             HostId = _joinDataPacket.Host;
             _rpcsModel.Init(LocalClientId, _gameObjectsModel);
 
-            _gameObjectsModel.CreateObjects(_joinDataPacket.GameObjects);
+            _gameObjectsModel.CreateObjects(_joinDataPacket.GameObjects, true);
             _valuesModel.AddOrModifyValues(_joinDataPacket.Values, _joinDataPacket.NetValuesDataArena);
             _rpcsModel.ProcessServerRpcEvents(_joinDataPacket.CachedRpcCalls, _joinDataPacket.RpcsDataArena);
+            _gameObjectsModel.ActivateAllObjectsAfterSilentCreation();
 
             Tick().Forget();
 

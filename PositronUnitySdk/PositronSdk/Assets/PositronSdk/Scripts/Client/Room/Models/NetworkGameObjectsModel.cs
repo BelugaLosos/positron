@@ -34,6 +34,9 @@ namespace Positron.Client.Room.Models
         private ushort _lastCrationId;
         private uint _recentTick;
 
+        public event Action<PositronNetworkIdentity> localObjectGoingRemove;
+        public event Action<PositronNetworkIdentity> localObjectRemotelyInitedSuccessfully;
+
         public NetworkGameObjectsModel(NetworkWorld world, PositronSettings settings)
         {
             _world = world;
@@ -116,11 +119,19 @@ namespace Positron.Client.Room.Models
             networkObject.Position = new NetVector3(position.x, position.y, position.z);
             networkObject.Rotation = new NetVector3(rotation.eulerAngles.x, rotation.eulerAngles.y, rotation.eulerAngles.z);
 
+            bool originalState = prefab.gameObject.activeSelf;
+            prefab.gameObject.SetActive(false);
+
             PositronNetworkIdentity created = GameObject.Instantiate(prefab, position, rotation);
             created.LocalInit(networkObject.CreationId, networkObject.OwnerClientId);
 
+            prefab.gameObject.SetActive(originalState);
+
             _creationDelta.Add(networkObject);
             _localCreationMapping.Add(networkObject.CreationId, created);
+
+            created.InitActivityState(originalState);
+            created.gameObject.SetActive(originalState);
         }
 
         public void DeleteObjectAndSendToServer(PositronNetworkIdentity instance)
@@ -139,6 +150,8 @@ namespace Positron.Client.Room.Models
             {
                 throw new ArgumentException($"Positron error -> object instance {instance.gameObject} is not found in current approved network objects or network objects local mapping!");
             }
+
+            localObjectGoingRemove?.Invoke(instance);
 
             if (_localCreationMapping.ContainsKey(instance.CreationId))
             {
@@ -191,15 +204,23 @@ namespace Positron.Client.Room.Models
             _requestOwnershipDelta.Add(networkIdentity.ObjectId);
         }
 
-        public void CreateObjects(ArraySegment<NetGameObject> objs)
+        public void CreateObjects(ArraySegment<NetGameObject> objs, bool silentCreation)
         {
             foreach (NetGameObject obj in objs)
             {
-                SpawnObject(obj);
+                SpawnObject(obj, silentCreation);
             }
         }
 
-        public void SpawnObject(NetGameObject obj)
+        public void ActivateAllObjectsAfterSilentCreation()
+        {
+            foreach (KeyValuePair<uint, PositronNetworkIdentity> obj in _currentGameObjectsOnScene)
+            {
+                obj.Value.gameObject.SetActive(obj.Value.OriginalActivityState);
+            }
+        }
+           
+        public void SpawnObject(NetGameObject obj, bool silentCreation)
         {
             if (obj.OwnerClientId == _world.LocalClientId && _localCreationMapping.TryGetValue(obj.CreationId, out PositronNetworkIdentity localCopy))
             {
@@ -221,6 +242,8 @@ namespace Positron.Client.Room.Models
                 localCopy.NetworkInit(obj);
 
                 _currentGameObjectsOnScene.Add(obj.ObjectId, localCopy);
+
+                localObjectRemotelyInitedSuccessfully?.Invoke(localCopy);
             }
             else
             {
@@ -230,10 +253,21 @@ namespace Positron.Client.Room.Models
                     return;
                 }
 
-                PositronNetworkIdentity created = GameObject.Instantiate(_reverseAssetsIndex[obj.AssetIndex], obj.Position.ToUnity(), Quaternion.Euler(obj.Rotation.ToUnity()));
+                PositronNetworkIdentity prefab = _reverseAssetsIndex[obj.AssetIndex];
+                bool originalState = prefab.gameObject.activeSelf;
+
+                prefab.gameObject.SetActive(false);
+                PositronNetworkIdentity created = GameObject.Instantiate(prefab, obj.Position.ToUnity(), Quaternion.Euler(obj.Rotation.ToUnity()));
                 created.NetworkInit(obj);
+                prefab.gameObject.SetActive(originalState);
                 
                 _currentGameObjectsOnScene.Add(obj.ObjectId, created);
+                created.InitActivityState(originalState);
+
+                if (!silentCreation)
+                {
+                    created.gameObject.SetActive(originalState);
+                }
             }
         }
 
@@ -382,14 +416,37 @@ namespace Positron.Client.Room.Models
             _requestOwnershipDelta.Clear();
         }
 
+        public bool HasObjectInCreationDeltaNow(ushort creationId)
+        {
+            for (int i = 0; i < _creationDelta.Count; i++)
+            {
+                if (_creationDelta[i].CreationId == creationId)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public PositronNetworkIdentity GetObjectByIds(uint objectId, ushort subObjectId)
         {
             if (subObjectId == 0)
             {
-                return _currentGameObjectsOnScene[objectId];
+                if (_currentGameObjectsOnScene.TryGetValue(objectId, out PositronNetworkIdentity obj))
+                {
+                    return obj;
+                }
+
+                return null;
             }
 
-            return _currentGameObjectsOnScene[objectId].GetSubObject(subObjectId);
+            if (_currentGameObjectsOnScene.TryGetValue(objectId, out PositronNetworkIdentity obj1))
+            {
+                return obj1.GetSubObject(subObjectId);
+            }
+
+            return null;
         }
 
         private void AddTransformDeltaDataToDeltaArray(KeyValuePair<uint, PositronNetworkIdentity> networkObjectPair)

@@ -164,11 +164,11 @@ func GetRpcArgs(args []byte) []byte {
 	return args[1:]
 }
 
-func TryGetCreationIdRpc(args []byte) (bool, uint16) {
+func DeconstructRpc(args []byte) (bool, uint16, []byte) {
 	if args[0] == 1 {
 		encoded := args[1:3]
-		return true, binary.BigEndian.Uint16(encoded)
+		return true, binary.BigEndian.Uint16(encoded), args[3:]
 	}
 
-	return false, 0
+	return false, 0, args[1:]
 }

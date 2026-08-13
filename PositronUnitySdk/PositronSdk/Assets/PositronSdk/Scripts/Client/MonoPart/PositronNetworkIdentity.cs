@@ -3,6 +3,7 @@ using Positron.Client.Mono.Syncers.Interface;
 using Positron.Client.Rpc;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Positron.Client.Mono
@@ -16,12 +17,14 @@ namespace Positron.Client.Mono
         private Dictionary<Type, IPositronSyncer> _syncersMap = new();
 
         private bool _isLocallyInited;
+        private bool _activityStateInited;
 
         public ushort CreationId { get; private set; }
         public uint ObjectId { get; private set; }
         public ushort SubObjectId { get; private set; }
         public uint OwnerClientId { get; private set; }
         public bool IsFullyInitialized { get; private set; }
+        public bool OriginalActivityState { get; private set; }
 
         public bool IsMine => PositronFacade.World.LocalClientId == OwnerClientId || !PositronFacade.World.InRoom;
         public bool IsHost => PositronFacade.World.HostId == OwnerClientId || !PositronFacade.World.InRoom;
@@ -39,9 +42,20 @@ namespace Positron.Client.Mono
                 return;
             }
 
-            _trackedSubObjects = GetComponentsInChildren<PositronNetworkIdentity>();
+            _trackedSubObjects = GetComponentsInChildren<PositronNetworkIdentity>().Where(o => o != this).ToArray();
         }
 #endif
+
+        public void InitActivityState(bool activity)
+        {
+            if (_activityStateInited)
+            {
+                return;
+            }
+
+            OriginalActivityState = activity;
+            _activityStateInited = true;
+        }
 
         public void LocalInit(ushort creationId, uint owner)
         {
@@ -122,13 +136,7 @@ namespace Positron.Client.Mono
         {
             if (_observedRpcTargets == null)
             {
-                List<IRpcTarget> rpcTargets = new()
-                {
-                    GetComponent<IRpcTarget>()
-                };
-
-                rpcTargets.AddRange(GetComponentsInChildren<IRpcTarget>());
-                _observedRpcTargets = rpcTargets.ToArray();
+                _observedRpcTargets = GetComponentsInChildren<IRpcTarget>();
             }
 
             return _observedRpcTargets;
