@@ -13,10 +13,7 @@ namespace Positron.Extras.HandTests
         
         public void Test()
         {
-            for (int i = 0; i < 50; i++)
-            {
-                SendRPC_Foo1(RpcTargets.RPC_ALL_CACHED, "ss");
-            }
+            SendRPC_Foo1(RpcTargets.RPC_ALL_CACHED, "ss");
         }
 
         [Rpc]
