@@ -2,11 +2,14 @@ package tests
 
 import (
 	"bytes"
+	"log"
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
 	"positron/internal/marshaller"
 	"sync"
 	"testing"
+
+	"github.com/pierrec/lz4/v4"
 )
 
 func TestUnmarshalling(t *testing.T) {
@@ -251,6 +254,26 @@ func TestUnreliable(t *testing.T) {
 			t.Error("Data corrupt")
 		}
 	}
+}
+
+func TestUnrSize(t *testing.T) {
+	mrsh := marshaller.NewMessagePackMarshaller()
+	transforms := []gameentities.Tranform{}
+
+	for j := range 70 {
+		i := uint32(j)
+		i16 := uint16(j)
+		f32 := float32(j)
+		transforms = append(transforms, gameentities.NewTransform(gameentities.NewGameObject(1*i, 2*i, 3*i16, 4*i16, gameentities.NewVector(5*f32, 6*f32, 7*f32), gameentities.NewVector(8*f32, 9*f32, 10*f32))))
+	}
+
+	tick := datatransferobjects.NewGameUnreliableTickPacket(0, transforms, 1)
+	b, _ := mrsh.Marshal(tick)
+	p := make([]byte, len(b)*2)
+	w, _ := lz4.CompressBlock(b, p, nil)
+	p = p[:w]
+
+	log.Println(len(b), len(p))
 }
 
 type TestPacket struct {

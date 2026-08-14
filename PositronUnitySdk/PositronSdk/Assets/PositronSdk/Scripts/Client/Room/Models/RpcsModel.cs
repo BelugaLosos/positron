@@ -32,6 +32,8 @@ namespace Positron.Client.Room.Models
         private readonly byte[] _flag = new byte[1];
         private readonly byte[] _creationIdSection = new byte[2];
 
+        public bool IsInRollbufferMode { get; private set; }
+
         public RpcsModel(PositronSettings settings) 
         {
             _idxToHash = new ulong[settings.RpcMethodsNames.Length];
@@ -61,6 +63,11 @@ namespace Positron.Client.Room.Models
 
             _gameObjectsModel.localObjectGoingRemove += OnObjectRemove;
             _gameObjectsModel.localObjectRemotelyInitedSuccessfully += OnLocalTargetInitedSuccesfully;
+        }
+
+        public void SetRollBufferMode(bool mode)
+        {
+            IsInRollbufferMode = mode;
         }
 
         public void ProcessServerRpcEvents(ArraySegment<RpcCall> calls, ReadOnlyMemory<byte> arena)

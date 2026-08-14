@@ -149,7 +149,8 @@ namespace Positron.NetworkIoAPI
         {
             if (string.IsNullOrEmpty(toWrite))
             {
-                throw new ArgumentNullException();
+                WriteInt(0);
+                return;
             }
 
             int size = Encoding.UTF8.GetByteCount(toWrite);

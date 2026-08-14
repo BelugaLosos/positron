@@ -291,7 +291,9 @@ namespace Positron.Client.Room
 
             _gameObjectsModel.WakeAllObjectsAfterSilentCreation();
 
+            _rpcsModel.SetRollBufferMode(true);
             _rpcsModel.ProcessServerRpcEvents(_joinDataPacket.CachedRpcCalls, _joinDataPacket.RpcsDataArena);
+            _rpcsModel.SetRollBufferMode(false);
 
             _gameObjectsModel.SetAllObjectsAvailable();
 

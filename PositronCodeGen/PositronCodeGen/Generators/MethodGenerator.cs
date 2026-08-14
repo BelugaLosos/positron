@@ -52,12 +52,13 @@ namespace PositronCodeGen.Generators
 
             str.AppendLine($"    {accessModifier} void {ConstantsHolderContainer.RPC_SEND_PREFIX}{methodName}({ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION} targets{parametersDefinition})");
             str.AppendLine("    {");
-            str.AppendLine($"        if(targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL} || targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED})");
-            str.AppendLine("        {");
-            str.AppendLine($"            {methodName}({parameterNames});");
-            str.AppendLine("        }");
+            str.AppendLine("        bool exceptionRaised = false;");
             str.AppendLine();
-            str.AppendLine($"        {ConstantsHolderContainer.NETWORK_WRITER_DEFINITION} w = {ConstantsHolderContainer.NETWORK_IO_POOL_DEFINITION}.{ConstantsHolderContainer.NETWORK_IO_POOL_GET_WRITTER_METHOD}();");
+            str.AppendLine($"        if(!{ConstantsHolderContainer.RPCS_MODEL_DEFINITION}.IsInRollbufferMode)");
+            str.AppendLine("        {");
+            str.AppendLine("            try");
+            str.AppendLine("            {");
+            str.AppendLine($"                {ConstantsHolderContainer.NETWORK_WRITER_DEFINITION} w = {ConstantsHolderContainer.NETWORK_IO_POOL_DEFINITION}.{ConstantsHolderContainer.NETWORK_IO_POOL_GET_WRITTER_METHOD}();");
             str.AppendLine();
             for (int i = 0; i < data.Args.Length; i++)
             {
@@ -68,12 +69,28 @@ namespace PositronCodeGen.Generators
                     continue;
                 }
 
-                str.AppendLine($"        w.{_typesNamesConverter.ToWriterMethods(arg.DefinitionString)}({arg.Name});");
+                str.AppendLine($"                w.{_typesNamesConverter.ToWriterMethods(arg.DefinitionString)}({arg.Name});");
             }
             str.AppendLine();
-            str.AppendLine($"        {ConstantsHolderContainer.NETWORK_RPCS_MODEL_SEND_TO_SERVER_METHOD}(this, gameObject, {hash}, {specifiedTargetCall}, targets, w);");
+            str.AppendLine($"                {ConstantsHolderContainer.NETWORK_RPCS_MODEL_SEND_TO_SERVER_METHOD}(this, gameObject, {hash}, {specifiedTargetCall}, targets, w);");
+            str.AppendLine("            }");
+            str.AppendLine("            catch(global::System.Exception e)");
+            str.AppendLine("            {");
+            str.AppendLine("                exceptionRaised = true;");
+            str.AppendLine("                Debug.LogException(e);");
+            str.AppendLine("            }");
+            str.AppendLine("        }");
+            str.AppendLine();
+            str.AppendLine("        if(exceptionRaised)");
+            str.AppendLine("        {");
+            str.AppendLine("            return;");
+            str.AppendLine("        }");
+            str.AppendLine();
+            str.AppendLine($"        if(targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL} || targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED})");
+            str.AppendLine("        {");
+            str.AppendLine($"            {methodName}({parameterNames});");
+            str.AppendLine("        }");
             str.AppendLine("    }");
-
             str.AppendLine();
 
             str.AppendLine($"    private void {ConstantsHolderContainer.RPC_READ_PREFIX}{methodName}({ConstantsHolderContainer.NETWORK_READER_DEFINITION} reader)");

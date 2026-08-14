@@ -164,6 +164,12 @@ namespace Positron.NetworkIoAPI
         public string ReadString()
         {
             int size = ReadInt();
+
+            if (size == 0)
+            {
+                return string.Empty;
+            }
+
             return Encoding.UTF8.GetString(Bfree(size));
         }
 

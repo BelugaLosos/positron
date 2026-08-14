@@ -9,6 +9,7 @@
         public static readonly string NETWORK_IO_POOL_DEFINITION = "global::Positron.PositronFacade.NetworkIoPool";
         public static readonly string NETWORK_IO_POOL_GET_WRITTER_METHOD = "GetWriter";
         public static readonly string NETWORK_IO_POOL_PUT_READER_METHOD = "PutReader";
+        public static readonly string RPCS_MODEL_DEFINITION = "global::Positron.PositronFacade.World.RpcModel";
         public static readonly string NETWORK_RPCS_MODEL_SEND_TO_SERVER_METHOD = "global::Positron.PositronFacade.World.RpcModel.SendRpcToServer";
         public static readonly string SUITABILITY_METHOD_DEFINITION = "IsSuitableTargetFor";
         public static readonly string CALL_METHOD_DEFINITION = "Call";

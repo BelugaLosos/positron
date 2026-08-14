@@ -73,7 +73,7 @@ namespace Positron.Extras.HandTests.Object
 
                 if (obj != null)
                 {
-                    obj.GetComponent<ObjectRpcTest>().GenerateRandomScale();
+                    obj.GetComponent<ObjectRpcTest>().Test();
                 }
             }
         }
