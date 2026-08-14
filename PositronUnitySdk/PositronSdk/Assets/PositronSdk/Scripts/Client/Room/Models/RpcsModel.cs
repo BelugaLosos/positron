@@ -32,6 +32,8 @@ namespace Positron.Client.Room.Models
         private readonly byte[] _flag = new byte[1];
         private readonly byte[] _creationIdSection = new byte[2];
 
+        private const byte INVALID_RPC_CODE = 0xFF;
+
         public bool IsInRollbufferMode { get; private set; }
 
         public RpcsModel(PositronSettings settings) 
@@ -171,6 +173,11 @@ namespace Positron.Client.Room.Models
 
         private void Call(RpcCall call)
         {
+            if (call.Type == INVALID_RPC_CODE)
+            {
+                return;
+            }
+
             RpcTargets target = (RpcTargets)call.Type;
 
             if (target == RpcTargets.RPC_ALL || target == RpcTargets.RPC_ALL_CACHED || target == RpcTargets.RPC_OTHERS || target == RpcTargets.RPC_OTHERS_CACHED)

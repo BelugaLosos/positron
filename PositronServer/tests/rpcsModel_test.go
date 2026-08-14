@@ -108,3 +108,17 @@ func TestRpcDto(t *testing.T) {
 		t.Errorf("Corrupted the creation id %v %v", id, has)
 	}
 }
+
+func TestRpcInRemovedObjects(t *testing.T) {
+	model := roommodels.NewRpcsModel()
+	arenaImitation := []byte("Xhello")
+	model.PutTransientDataIncoming(arenaImitation)
+	model.Call(gameentities.NewRpcCall(0, 6, 1, 1, 0, eventtypes.RPC_ALL_CACHED, 0), nil)
+	model.ResetTempBuffers()
+	model.MarkRemovedRpcCacheInvalid(1)
+	meta, _ := model.GetCachedRpcs()
+
+	if len(meta) != 1 || meta[0].GetRpcType() != eventtypes.RPC_INVALID {
+		t.Errorf("not work: %v (len %v)", meta[0], len(meta))
+	}
+}

@@ -99,3 +99,17 @@ func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameenti
 		r.cachedRpcs = append(r.cachedRpcs, call)
 	}
 }
+
+func (r *RpcsModel) SanetizeBufferedCalls(objId uint32) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	for i := range r.cachedRpcs {
+		rpc := r.cachedRpcs[i]
+
+		if rpc.GetObjectId() == objId {
+			rpc.MarkRpcInvalid()
+			r.cachedRpcs[i] = rpc
+		}
+	}
+}

@@ -3,6 +3,7 @@ package gameentities
 import (
 	"encoding/binary"
 	"errors"
+	eventtypes "positron/game/gameHandlers/eventTypes"
 
 	"github.com/vmihailenco/msgpack/v5"
 )
@@ -154,6 +155,10 @@ func (r *RpcCall) GetDescriptors() (uint32, uint32) {
 func (r *RpcCall) SetDescriptors(ptr, len uint32) {
 	r.arenaPtr = ptr
 	r.arenaLen = len
+}
+
+func (r *RpcCall) MarkRpcInvalid() {
+	r.rpcType = eventtypes.RPC_INVALID
 }
 
 func GetRpcArgs(args []byte) []byte {
