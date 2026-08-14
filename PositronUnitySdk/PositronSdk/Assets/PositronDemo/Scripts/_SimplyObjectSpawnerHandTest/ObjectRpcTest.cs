@@ -1,15 +1,15 @@
 using Positron.Client.ConstantHolders;
-using Positron.Client.Mono;
+using Positron.Client.Mono.Interfaces;
 using Positron.Client.Rpc;
 using UnityEngine;
 
 namespace Positron.Extras.HandTests
 {
-    public partial class ObjectRpcTest : MonoBehaviour
+    public partial class ObjectRpcTest : MonoBehaviour, INetworkAwakeble
     {
         private float _next = 1;
 
-        private void Awake()
+        public void OnNetworkAwake()
         {
             GenerateRandomScale();
         }
@@ -19,13 +19,13 @@ namespace Positron.Extras.HandTests
             _next++;
 
             _next = Mathf.Clamp(_next, 1, 1.6434458f);
-            
-            if (_next > 1.4f)
-            {
-                _next = 1.28f;
-            }
 
             SendRPC_SetScaleFloat(RpcTargets.RPC_ALL_CACHED, _next);
+
+            if (_next > 1.4f)
+            {
+                _next = 0f;
+            }
         }
 
         [Rpc]

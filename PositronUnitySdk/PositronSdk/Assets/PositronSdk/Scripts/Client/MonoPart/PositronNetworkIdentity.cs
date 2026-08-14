@@ -1,4 +1,5 @@
 using Positron.Client.GameEntities;
+using Positron.Client.Mono.Interfaces;
 using Positron.Client.Mono.Syncers.Interface;
 using Positron.Client.Rpc;
 using System;
@@ -25,6 +26,7 @@ namespace Positron.Client.Mono
         public uint OwnerClientId { get; private set; }
         public bool IsFullyInitialized { get; private set; }
         public bool OriginalActivityState { get; private set; }
+        public bool IsObjectFullyAvailable { get; private set; }  
 
         public bool IsMine => PositronFacade.World.LocalClientId == OwnerClientId || !PositronFacade.World.InRoom;
         public bool IsHost => PositronFacade.World.HostId == OwnerClientId || !PositronFacade.World.InRoom;
@@ -55,6 +57,24 @@ namespace Positron.Client.Mono
 
             OriginalActivityState = activity;
             _activityStateInited = true;
+        }
+
+        public void SetObjectFullyAvailable()
+        {
+            IsObjectFullyAvailable = true;
+
+            foreach (INetworkAwakeble awakeble in GetComponentsInChildren<INetworkAwakeble>())
+            {
+                awakeble.OnNetworkAwake(); 
+            }
+        }
+
+        public void SendDestroyCallbacks()
+        {
+            foreach (INetworkDestructable destructable in GetComponentsInChildren<INetworkDestructable>())
+            {
+                destructable.OnNetworkDestroy();
+            }
         }
 
         public void LocalInit(ushort creationId, uint owner)

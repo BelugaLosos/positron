@@ -77,6 +77,7 @@ namespace Positron.Client.Room.Models
         {
             if (targets == RpcTargets.RPC_TARGET && !hasSpecifiedTarget)
             {
+                PositronFacade.NetworkIoPool.PutWriter(writer);
                 throw new ArgumentException("Can`t call RPC_TARGET with no specified target argument (declare an argument like 'uint targetClientId')");
             }
 
@@ -84,6 +85,12 @@ namespace Positron.Client.Room.Models
             {
                 identity = bindedGameObject.GetComponent<PositronNetworkIdentity>();
                 _rpcToObj.Add(obj, identity);
+            }
+
+            if (!identity.IsObjectFullyAvailable)
+            {
+                PositronFacade.NetworkIoPool.PutWriter(writer);
+                throw new Exception("Unable to call RPC while object is not available yet. are you trying Awake method? Thats BAD! Use INetworkAwakeble / INetworkDestructable instead");
             }
 
             bool needToWriteCreationId = false;

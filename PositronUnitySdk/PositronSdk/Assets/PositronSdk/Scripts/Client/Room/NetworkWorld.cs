@@ -288,8 +288,12 @@ namespace Positron.Client.Room
 
             _gameObjectsModel.CreateObjects(_joinDataPacket.GameObjects, true);
             _valuesModel.AddOrModifyValues(_joinDataPacket.Values, _joinDataPacket.NetValuesDataArena);
+
+            _gameObjectsModel.WakeAllObjectsAfterSilentCreation();
+
             _rpcsModel.ProcessServerRpcEvents(_joinDataPacket.CachedRpcCalls, _joinDataPacket.RpcsDataArena);
-            _gameObjectsModel.ActivateAllObjectsAfterSilentCreation();
+
+            _gameObjectsModel.SetAllObjectsAvailable();
 
             Tick().Forget();
 

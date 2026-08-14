@@ -131,6 +131,7 @@ namespace Positron.Client.Room.Models
             _localCreationMapping.Add(networkObject.CreationId, created);
 
             created.InitActivityState(originalState);
+            created.SetObjectFullyAvailable();
             created.gameObject.SetActive(originalState);
         }
 
@@ -176,11 +177,14 @@ namespace Positron.Client.Room.Models
                     _localCreationMapping.Remove(instance.CreationId);
                 }
 
+                instance.SendDestroyCallbacks();
                 GameObject.Destroy(instance.gameObject);
                 return;
             }
 
             _destroyDelta.Add(instance.ObjectId);
+
+            instance.SendDestroyCallbacks();
             GameObject.Destroy(instance.gameObject);
         }
 
@@ -212,14 +216,22 @@ namespace Positron.Client.Room.Models
             }
         }
 
-        public void ActivateAllObjectsAfterSilentCreation()
+        public void WakeAllObjectsAfterSilentCreation()
         {
             foreach (KeyValuePair<uint, PositronNetworkIdentity> obj in _currentGameObjectsOnScene)
             {
                 obj.Value.gameObject.SetActive(obj.Value.OriginalActivityState);
             }
         }
-           
+
+        public void SetAllObjectsAvailable()
+        {
+            foreach (KeyValuePair<uint, PositronNetworkIdentity> obj in _currentGameObjectsOnScene)
+            {
+                obj.Value.SetObjectFullyAvailable();
+            }
+        }
+
         public void SpawnObject(NetGameObject obj, bool silentCreation)
         {
             if (obj.OwnerClientId == _world.LocalClientId && _localCreationMapping.TryGetValue(obj.CreationId, out PositronNetworkIdentity localCopy))
@@ -266,6 +278,7 @@ namespace Positron.Client.Room.Models
 
                 if (!silentCreation)
                 {
+                    created.SetObjectFullyAvailable();
                     created.gameObject.SetActive(originalState);
                 }
             }
@@ -291,6 +304,8 @@ namespace Positron.Client.Room.Models
                 }
 
                 GameObject sceneObj = localInstance.gameObject;
+
+                localInstance.SendDestroyCallbacks();
                 GameObject.Destroy(sceneObj);
             }
         }
