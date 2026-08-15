@@ -115,7 +115,7 @@ func TestRpcInRemovedObjects(t *testing.T) {
 	model.PutTransientDataIncoming(arenaImitation)
 	model.Call(gameentities.NewRpcCall(0, 6, 1, 1, 0, eventtypes.RPC_ALL_CACHED, 0), nil)
 	model.ResetTempBuffers()
-	model.MarkRemovedRpcCacheInvalid(1)
+	model.SanetizeBufferedCalls(1)
 	meta, _ := model.GetCachedRpcs()
 
 	if len(meta) != 1 || meta[0].GetRpcType() != eventtypes.RPC_INVALID {
