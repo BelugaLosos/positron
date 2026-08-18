@@ -274,6 +274,11 @@ func TestUnrSize(t *testing.T) {
 	p = p[:w]
 
 	log.Println(len(b), len(p))
+
+	v := gameentities.NewVector(2.1, 2.1, 2.1)
+	mv, e := mrsh.Marshal(&v)
+
+	log.Println(len(mv), mv, e)
 }
 
 type TestPacket struct {

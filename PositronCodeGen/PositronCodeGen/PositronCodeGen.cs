@@ -75,7 +75,7 @@ namespace PositronCodeGen
                     methodGenerator.GenerateMethodWithClosure(sourceBuilder, method);
                 }
 
-                classGenerator.AppendClosure(sourceBuilder, type.NameSpace.ToDisplayString());
+                classGenerator.AppendClosure(sourceBuilder, type.GetNamespaceName());
             }
 
             context.AddSource("RpcLowLevelInteractors.gen.cs", SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));

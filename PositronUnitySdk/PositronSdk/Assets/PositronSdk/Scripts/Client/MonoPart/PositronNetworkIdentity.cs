@@ -63,6 +63,11 @@ namespace Positron.Client.Mono
         {
             IsObjectFullyAvailable = true;
 
+            foreach (PositronNetworkIdentity obj in _trackedSubObjects)
+            {   
+                obj.IsObjectFullyAvailable = true;
+            }
+
             foreach (INetworkAwakeble awakeble in GetComponentsInChildren<INetworkAwakeble>())
             {
                 awakeble.OnNetworkAwake(); 
@@ -85,14 +90,11 @@ namespace Positron.Client.Mono
                 return;
             }
 
-            CreationId = creationId;
-            OwnerClientId = owner;
-
-            _isLocallyInited = true;
+            InitLocally(creationId, owner);
 
             _syncers = GetComponents<IPositronSyncer>();
 
-            InitTrackedSubObjects();
+            InitTrackedSubObjects(true, creationId, owner, default);
             InitSyncers();
         }
 
@@ -104,16 +106,11 @@ namespace Positron.Client.Mono
                 return;
             }
 
-            CreationId = 0;
-            ObjectId = networkData.ObjectId;
-            OwnerClientId = networkData.OwnerClientId;
-
-            IsFullyInitialized = true;
-            _isLocallyInited = true;
+            InitGlobally(networkData);
 
             _syncers = GetComponents<IPositronSyncer>();
             
-            InitTrackedSubObjects();
+            InitTrackedSubObjects(false, 0, 0, networkData);
             InitSyncers();
 
             completeInitialize?.Invoke(this);
@@ -162,6 +159,24 @@ namespace Positron.Client.Mono
             return _observedRpcTargets;
         }
 
+        private void InitLocally(ushort creationId, uint owner)
+        {
+            CreationId = creationId;
+            OwnerClientId = owner;
+
+            _isLocallyInited = true;
+        }
+
+        private void InitGlobally(NetGameObject networkData)
+        {
+            CreationId = 0;
+            ObjectId = networkData.ObjectId;
+            OwnerClientId = networkData.OwnerClientId;
+
+            IsFullyInitialized = true;
+            _isLocallyInited = true;
+        }
+
         private void InitSyncers()
         {
             _syncersMap.Clear();
@@ -173,7 +188,7 @@ namespace Positron.Client.Mono
             }
         }
 
-        private void InitTrackedSubObjects()
+        private void InitTrackedSubObjects(bool isLocalInit, ushort creationId, uint owner, NetGameObject networkData)
         {
             for (int i = 0; i < _trackedSubObjects.Length; i++)
             {
@@ -183,6 +198,15 @@ namespace Positron.Client.Mono
                 }
 
                 _trackedSubObjects[i].SubObjectId = (ushort)((ushort)i + 1);
+
+                if (isLocalInit)
+                {
+                    _trackedSubObjects[i].InitLocally(creationId, owner);
+                }
+                else
+                {
+                    _trackedSubObjects[i].InitGlobally(networkData);
+                }
             }
         }
     }

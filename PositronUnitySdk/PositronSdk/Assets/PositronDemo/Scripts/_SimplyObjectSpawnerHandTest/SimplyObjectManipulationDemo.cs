@@ -73,7 +73,8 @@ namespace Positron.Extras.HandTests.Object
 
                 if (obj != null)
                 {
-                    obj.GetComponent<ObjectRpcTest>().Test();
+                    obj.GetComponentInChildren<ObjectRpcTest>().Test();
+                    obj.GetComponentInChildren<ObjectRpcColorTest>().CallColorTransfer();
                 }
             }
         }

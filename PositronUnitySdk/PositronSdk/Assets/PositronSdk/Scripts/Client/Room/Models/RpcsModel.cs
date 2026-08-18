@@ -90,6 +90,13 @@ namespace Positron.Client.Room.Models
                 throw new ArgumentException("Can`t call RPC_TARGET with no specified target argument (declare an argument like 'uint targetClientId')");
             }
 
+            if ((targets == RpcTargets.RPC_ALL || targets == RpcTargets.RPC_ALL_CACHED ||
+                targets == RpcTargets.RPC_OTHERS || targets == RpcTargets.RPC_OTHERS_CACHED) && hasSpecifiedTarget)
+            {
+                PositronFacade.NetworkIoPool.PutWriter(writer);
+                throw new ArgumentException($"Can call targeted rpc (declared with {typeof(RpcPlayerRef)}) only as RPC_TARGET or RPC_TARGET_CACHED");
+            }
+
             if (!_rpcToObj.TryGetValue(obj, out PositronNetworkIdentity identity))
             {
                 identity = bindedGameObject.GetComponent<PositronNetworkIdentity>();
