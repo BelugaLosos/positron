@@ -10,28 +10,34 @@ import (
 type NetValuesModel struct {
 	mutex *sync.Mutex
 
-	worldManagedContainer map[uint64]gameentities.NetValue
+	worldFlatContainer    []gameentities.NetValue
+	worldFlatFreeIdsStack []uint32
+	lastId                uint32
 	worldPersistentArena  *arena.PersistentArena
 
 	worldCache               []gameentities.NetValue
 	worldCacheTransientArena *arena.TransientArena
 
-	modificationCache          []gameentities.NetValue
-	modificationTransientArena *arena.TransientArena
+	additionModidificationCache []gameentities.NetValue
+	modificationCache           []gameentities.PersistentNetValue
+	modificationTransientArena  *arena.TransientArena
 
 	incomingTransientArena *arena.TransientArena
 }
 
 func NewNetValuesModel() *NetValuesModel {
 	return &NetValuesModel{
-		mutex:                      &sync.Mutex{},
-		worldManagedContainer:      make(map[uint64]gameentities.NetValue),
-		worldPersistentArena:       arena.NewPersistentArena(),
-		worldCache:                 make([]gameentities.NetValue, 0, 16),
-		worldCacheTransientArena:   arena.NewTransfientArena(),
-		modificationCache:          make([]gameentities.NetValue, 0, 16),
-		modificationTransientArena: arena.NewTransfientArena(),
-		incomingTransientArena:     arena.NewTransfientArena(),
+		mutex:                       &sync.Mutex{},
+		worldFlatContainer:          make([]gameentities.NetValue, 0, 256),
+		worldFlatFreeIdsStack:       make([]uint32, 0, 256),
+		lastId:                      0,
+		worldPersistentArena:        arena.NewPersistentArena(),
+		worldCache:                  make([]gameentities.NetValue, 0, 32),
+		worldCacheTransientArena:    arena.NewTransfientArena(),
+		additionModidificationCache: make([]gameentities.NetValue, 0, 32),
+		modificationCache:           make([]gameentities.PersistentNetValue, 0, 32),
+		modificationTransientArena:  arena.NewTransfientArena(),
+		incomingTransientArena:      arena.NewTransfientArena(),
 	}
 }
 
@@ -43,17 +49,32 @@ func (n *NetValuesModel) GetValues() ([]gameentities.NetValue, []byte) {
 	return n.worldCache, n.worldCacheTransientArena.ReadAll()
 }
 
-func (n *NetValuesModel) GetTempMod() ([]gameentities.NetValue, []byte) {
+func (n *NetValuesModel) GetAdden() []gameentities.NetValue {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	return n.modificationCache, n.modificationTransientArena.ReadAll()
+	return n.additionModidificationCache
+}
+
+func (n *NetValuesModel) GetModified() []gameentities.PersistentNetValue {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
+
+	return n.modificationCache
+}
+
+func (n *NetValuesModel) ReadLocalTransientArena() []byte {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
+
+	return n.modificationTransientArena.ReadAll()
 }
 
 func (n *NetValuesModel) ResetTempBuffers() {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
+	n.additionModidificationCache = n.additionModidificationCache[:0]
 	n.modificationCache = n.modificationCache[:0]
 	n.modificationTransientArena.Flush()
 }
@@ -66,46 +87,14 @@ func (n *NetValuesModel) PutTransientDataIncoming(data []byte) {
 	n.incomingTransientArena.CloneFrom(data)
 }
 
-func (n *NetValuesModel) AddOrModify(incoming gameentities.NetValue) {
+func (n *NetValuesModel) AddValue(incoming gameentities.NetValue) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	local, isExist := n.worldManagedContainer[n.getKeyOfValue(incoming)]
-
-	if isExist && local.GetIsDeleting() {
+	if incoming.GetIsDeleting() {
 		return
 	}
 
-	if isExist {
-		n.modifyValue(incoming, local)
-	} else {
-		n.addValue(incoming)
-	}
-}
-
-func (n *NetValuesModel) RemoveAllValuesFromObject(objectUuid uint32) {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-
-	for key, val := range n.worldManagedContainer {
-		if val.GetParentObjectId() == objectUuid {
-			delete(n.worldManagedContainer, key)
-
-			if err := n.worldPersistentArena.Free(val.GetPersistentMemoryDescriptor(), false); err != nil {
-				log.Printf("Unable to remove value %v %v due to memory err %v", val.GetParentObjectId(), val.GetValueId(), err)
-				continue
-			}
-
-			val.MarkAsDeleting()
-			val.SetPersistentMemoryDescriptor(0)
-			val.SetTransientMemoryDescriptors(0, 0)
-
-			n.modificationCache = append(n.modificationCache, val)
-		}
-	}
-}
-
-func (n *NetValuesModel) addValue(incoming gameentities.NetValue) {
 	incomingPayload, err := n.incomingTransientArena.Read(incoming.GetTransientMemoryDescriptor())
 
 	if err != nil {
@@ -113,17 +102,64 @@ func (n *NetValuesModel) addValue(incoming gameentities.NetValue) {
 	}
 
 	descriptor := n.worldPersistentArena.Alloc(incomingPayload)
-	local := gameentities.NewNetValueAsPersistent(descriptor, incoming.GetParentObjectId(), incoming.GetValueId(), incoming.GetIsDeleting())
+	localFlatContainerId := n.getFreeDescriptor()
+	n.allocateChunkIfNeed(localFlatContainerId)
+
+	local := gameentities.NewNetValueAsPersistent(descriptor, incoming.GetParentObjectId(), incoming.GetValueId(), incoming.GetIsDeleting(), localFlatContainerId)
 
 	deltaPtr := n.modificationTransientArena.Alloc(incomingPayload)
 	deltaLen := uint32(len(incomingPayload))
-	incoming.SetTransientMemoryDescriptors(deltaPtr, deltaLen)
 
-	n.worldManagedContainer[n.getKeyOfValue(local)] = local
-	n.modificationCache = append(n.modificationCache, incoming)
+	incoming.SetTransientMemoryDescriptors(deltaPtr, deltaLen)
+	incoming.SetArrayDescriptor(localFlatContainerId)
+
+	n.worldFlatContainer[localFlatContainerId] = local
+	n.additionModidificationCache = append(n.additionModidificationCache, incoming)
 }
 
-func (n *NetValuesModel) modifyValue(incoming gameentities.NetValue, local gameentities.NetValue) {
+func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue) {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
+
+	if incoming.GetArrayDescriptor() >= uint32(len(n.worldFlatContainer)) {
+		return
+	}
+
+	n.modifyValue(incoming, n.worldFlatContainer[incoming.GetArrayDescriptor()])
+}
+
+func (n *NetValuesModel) RemoveAllValuesFromObject(objectId uint32) {
+	n.mutex.Lock()
+	defer n.mutex.Unlock()
+
+	for i := range n.worldFlatContainer {
+		val := n.worldFlatContainer[i]
+		valDesc := val.GetArrayDescriptor()
+
+		if val.GetParentObjectId() == 0 || val.GetParentObjectId() != objectId {
+			continue
+		}
+
+		val.ResetParentObjectId()
+		n.worldFlatContainer[valDesc] = val
+		n.worldFlatFreeIdsStack = append(n.worldFlatFreeIdsStack, valDesc)
+
+		if err := n.worldPersistentArena.Free(val.GetPersistentMemoryDescriptor(), false); err != nil {
+			log.Printf("Unable to remove value %v %v due to memory err %v", val.GetParentObjectId(), val.GetValueId(), err)
+			continue
+		}
+
+		val.MarkAsDeleting()
+		val.SetPersistentMemoryDescriptor(0)
+		val.SetTransientMemoryDescriptors(0, 0)
+
+		n.worldFlatContainer[valDesc] = val
+
+		n.modificationCache = append(n.modificationCache, gameentities.NewPersistentNetValue(valDesc, 0, 0, true))
+	}
+}
+
+func (n *NetValuesModel) modifyValue(incoming gameentities.PersistentNetValue, local gameentities.NetValue) {
 	incomingPayload, err := n.incomingTransientArena.Read(incoming.GetTransientMemoryDescriptor())
 
 	if err != nil {
@@ -142,23 +178,35 @@ func (n *NetValuesModel) modifyValue(incoming gameentities.NetValue, local gamee
 	incoming.SetTransientMemoryDescriptors(deltaPtr, deltaLen)
 
 	n.modificationCache = append(n.modificationCache, incoming)
-	n.worldManagedContainer[n.getKeyOfValue(local)] = local
+	n.worldFlatContainer[local.GetArrayDescriptor()] = local
 }
 
-func (n *NetValuesModel) getKeyOfValue(value gameentities.NetValue) uint64 {
-	result := uint64(0)
-	result = uint64(value.GetParentObjectId()) << 16
-	result = result | uint64(value.GetValueId())
+func (n *NetValuesModel) getFreeDescriptor() uint32 {
+	if len(n.worldFlatFreeIdsStack) > 0 {
+		id := n.worldFlatFreeIdsStack[len(n.worldFlatFreeIdsStack)-1]
+		n.worldFlatFreeIdsStack = n.worldFlatFreeIdsStack[:len(n.worldFlatFreeIdsStack)-1]
 
-	return result
+		return id
+	}
+
+	n.lastId++
+	return n.lastId
+}
+
+func (g *NetValuesModel) allocateChunkIfNeed(id uint32) {
+	if id >= uint32(len(g.worldFlatContainer)) {
+		g.worldFlatContainer = append(g.worldFlatContainer, make([]gameentities.NetValue, ALLOCATION_CHUNK)...)
+	}
 }
 
 func (n *NetValuesModel) rebuildWorldCache() {
 	n.worldCache = n.worldCache[:0]
 	n.worldCacheTransientArena.Flush()
 
-	for _, val := range n.worldManagedContainer {
-		if val.GetIsDeleting() {
+	for i := range n.worldFlatContainer {
+		val := n.worldFlatContainer[i]
+
+		if val.GetParentObjectId() == 0 {
 			continue
 		}
 

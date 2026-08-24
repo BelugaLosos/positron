@@ -116,7 +116,8 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 	worldModAdd, worldModRemove, worldModTransfer := r.gameObjectsModel.GetModification()
 	ticksSinceStartup := r.clock.GetTicksAmountSinceStartup()
 
-	netValuesModMeta, netValuesModArena := r.netValuesModel.GetTempMod()
+	netValuesAddenMeta := r.netValuesModel.GetAdden()
+	netValuesModifiedMeta := r.netValuesModel.GetModified()
 	rpcsModMeta, rpcsModArena := r.rpcsModel.GetCurrentCallBuffer()
 
 	r.gameTickPointer.ReassignTickPacketData(
@@ -126,7 +127,8 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 		worldModAdd,
 		worldModRemove,
 		worldModTransfer,
-		netValuesModMeta,
+		netValuesAddenMeta,
+		netValuesModifiedMeta,
 		rpcsModMeta,
 	)
 
@@ -139,7 +141,7 @@ func (r *Room) CreateTickPackets() (*datatransferobjects.GameTickPacket, *datatr
 		0,
 	)
 
-	return r.gameTickPointer, r.gameUnrTickPointer, netValuesModArena, rpcsModArena
+	return r.gameTickPointer, r.gameUnrTickPointer, r.netValuesModel.ReadLocalTransientArena(), rpcsModArena
 }
 
 func (r *Room) ResetTempBuffers() {
@@ -176,8 +178,12 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket, netValues
 
 	r.netValuesModel.PutTransientDataIncoming(netValuesArena)
 
-	for i := range packet.GetValueMod() {
-		r.netValuesModel.AddOrModify(packet.GetValueMod()[i])
+	for i := range packet.GetNewValues() {
+		r.netValuesModel.AddValue(packet.GetNewValues()[i])
+	}
+
+	for i := range packet.GetModValues() {
+		r.netValuesModel.ModifyValue(packet.GetModValues()[i])
 	}
 
 	r.gameObjectsModel.TransferObjectsOwnershipToTargetClient(packet.GetTranferedObjects(), packet.GetSourceClient())

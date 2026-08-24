@@ -18,11 +18,12 @@ func TestUnmarshalling(t *testing.T) {
 	for range 1_000_000 {
 		obj := gameentities.NewGameObject(1, 2, 3, 4, gameentities.NewVector(5, 6, 7), gameentities.NewVector(8, 9, 10))
 		val := gameentities.NewNetValueAsTransient(22, 33, 111, 123, true)
+		valPersistant := gameentities.NewPersistentNetValue(1241, 666, 22, true)
 		val.SetPersistentMemoryDescriptor(1)
 
 		rpc := gameentities.NewRpcCall(1, 2, 11, 12, 13, 14, 1)
 
-		testData := datatransferobjects.NewTickPacket(1, 15, 16, []gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []gameentities.NetValue{val}, []gameentities.RpcCall{rpc})
+		testData := datatransferobjects.NewTickPacket(1, 15, 16, []gameentities.GameObject{obj}, []uint32{17}, []uint32{18}, []gameentities.NetValue{val}, []gameentities.PersistentNetValue{valPersistant}, []gameentities.RpcCall{rpc})
 
 		buf := &bytes.Buffer{}
 		err := mrsh.MarshalNonAlloc(buf, testData)
@@ -39,8 +40,8 @@ func TestUnmarshalling(t *testing.T) {
 			t.Error(err)
 		}
 
-		tptr, tlen := testData.GetValueMod()[0].GetTransientMemoryDescriptor()
-		uptr, ulen := unmarshalled.GetValueMod()[0].GetTransientMemoryDescriptor()
+		tptr, tlen := testData.GetNewValues()[0].GetTransientMemoryDescriptor()
+		uptr, ulen := unmarshalled.GetNewValues()[0].GetTransientMemoryDescriptor()
 
 		rtptr, rtlen := testData.GetRpcs()[0].GetDescriptors()
 		ruptr, rulen := unmarshalled.GetRpcs()[0].GetDescriptors()
@@ -121,11 +122,11 @@ func TestUnmarshalling(t *testing.T) {
 			}
 		}
 
-		if len(testData.GetValueMod()) != len(unmarshalled.GetValueMod()) {
-			t.Errorf("Data corrupt: ValueMod length mismatch (expected %d, got %d)", len(testData.GetValueMod()), len(unmarshalled.GetValueMod()))
-		} else if len(testData.GetValueMod()) > 0 {
-			vm1 := testData.GetValueMod()[0]
-			vm2 := unmarshalled.GetValueMod()[0]
+		if len(testData.GetNewValues()) != len(unmarshalled.GetNewValues()) {
+			t.Errorf("Data corrupt: ValueMod (new) length mismatch (expected %d, got %d)", len(testData.GetNewValues()), len(unmarshalled.GetNewValues()))
+		} else if len(testData.GetNewValues()) > 0 {
+			vm1 := testData.GetNewValues()[0]
+			vm2 := unmarshalled.GetNewValues()[0]
 			if vm1.GetIsDeleting() != vm2.GetIsDeleting() {
 				t.Errorf("Data corrupt: ValueMod[0].IsDeleting mismatch (expected %v, got %v)",
 					vm1.GetIsDeleting(), vm2.GetIsDeleting())
@@ -141,6 +142,23 @@ func TestUnmarshalling(t *testing.T) {
 			if vm1.GetValueId() != vm2.GetValueId() {
 				t.Errorf("Data corrupt: ValueMod[0].GetValueId mismatch (expected %v, got %v)",
 					vm1.GetValueId(), vm2.GetValueId())
+			}
+		}
+
+		if len(testData.GetModValues()) != len(unmarshalled.GetModValues()) {
+			t.Errorf("Data corrupt: ValueMod (mod) length mismatch (expected %d, got %d)", len(testData.GetModValues()), len(unmarshalled.GetModValues()))
+		} else if len(testData.GetModValues()) > 0 {
+			vm1 := testData.GetModValues()[0]
+			vm2 := unmarshalled.GetModValues()[0]
+
+			if vm1.GetIsDeleting() != vm2.GetIsDeleting() {
+				t.Errorf("Data corrupt: ValueMod[0].IsDeleting mismatch (expected %v, got %v)",
+					vm1.GetIsDeleting(), vm2.GetIsDeleting())
+			}
+
+			if vm1.GetArrayDescriptor() != vm2.GetArrayDescriptor() {
+				t.Errorf("Data corrupt: ValueMod[0].GetArrayDescriptor mismatch (expected %v, got %v)",
+					vm1.GetArrayDescriptor(), vm2.GetArrayDescriptor())
 			}
 		}
 

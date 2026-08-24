@@ -120,6 +120,7 @@ func TestTick(t *testing.T) {
 		[]uint32{},
 		[]uint32{},
 		[]gameentities.NetValue{},
+		[]gameentities.PersistentNetValue{},
 		[]gameentities.RpcCall{},
 	), make([]byte, 0), make([]byte, 0))
 
@@ -182,6 +183,7 @@ func TestRaceInTick(t *testing.T) {
 						[]gameentities.GameObject{gameentities.NewGameObject(0, cid, 1, 1, gameentities.Vector3{}, gameentities.Vector3{})},
 						nil, nil,
 						[]gameentities.NetValue{},
+						[]gameentities.PersistentNetValue{},
 						[]gameentities.RpcCall{},
 					)
 					r.ProcessTick(pkt, make([]byte, 0), make([]byte, 0))
@@ -265,7 +267,7 @@ func BenchmarkRoomTickColdPath(b *testing.B) {
 	room.AddPeer("")
 
 	//this data is fully authentic tick snaphsot that requests creation of a single entity (cube gameObject) and passes 16 bytes of arena to arenas
-	dataMock := []byte{0, 0, 0, 46, 152, 0, 1, 1, 145, 150, 0, 1, 0, 1, 147, 202, 192, 65, 125, 172, 202, 64, 75, 174, 8, 202, 64, 163, 221, 144, 147, 202, 128, 0, 0, 0, 202, 0, 0, 0, 0, 202, 0, 0, 0, 0, 144, 144, 144, 144, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+	dataMock := []byte{} // TODO: replace with new one
 
 	log.Println(b.N)
 

@@ -9,11 +9,12 @@ import (
 type NetValue struct {
 	persistentMemoryDescriptor int // this is only local server value and MUST NOT BE serialized and transfered via network
 
-	arenaPtr       uint32
-	arenaLen       uint32
-	parentObjectId uint32
-	valueId        uint16
-	deleting       bool
+	arenaPtr              uint32
+	arenaLen              uint32
+	parentObjectId        uint32
+	flatArrayIdDescriptor uint32
+	valueId               uint16
+	deleting              bool
 }
 
 func NewNetValueAsTransient(ptr, len, parentObj uint32, valueId uint16, isDeleting bool) NetValue {
@@ -26,12 +27,13 @@ func NewNetValueAsTransient(ptr, len, parentObj uint32, valueId uint16, isDeleti
 	}
 }
 
-func NewNetValueAsPersistent(persistentDescriptor int, parentObj uint32, valueId uint16, isDeleting bool) NetValue {
+func NewNetValueAsPersistent(persistentDescriptor int, parentObj uint32, valueId uint16, isDeleting bool, flatArrayDescriptor uint32) NetValue {
 	return NetValue{
 		persistentMemoryDescriptor: persistentDescriptor,
 		parentObjectId:             parentObj,
 		valueId:                    valueId,
 		deleting:                   isDeleting,
+		flatArrayIdDescriptor:      flatArrayDescriptor,
 	}
 }
 
@@ -39,7 +41,7 @@ func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
 
-	if err := enc.EncodeArrayLen(5); err != nil {
+	if err := enc.EncodeArrayLen(6); err != nil {
 		return err
 	}
 
@@ -55,6 +57,10 @@ func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 		return err
 	}
 
+	if err := enc.EncodeUint(uint64(n.flatArrayIdDescriptor)); err != nil {
+		return err
+	}
+
 	if err := enc.EncodeUint(uint64(n.valueId)); err != nil {
 		return err
 	}
@@ -67,8 +73,8 @@ func (n *NetValue) EncodeMsgpack(enc *msgpack.Encoder) error {
 }
 
 func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
-	if arrLen, err := dec.DecodeArrayLen(); err != nil || arrLen != 5 {
-		if arrLen != 5 {
+	if arrLen, err := dec.DecodeArrayLen(); err != nil || arrLen != 6 {
+		if arrLen != 6 {
 			return errors.New("Net value arr len invalid!")
 		}
 
@@ -93,6 +99,12 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 		n.parentObjectId = parentObjectId
 	}
 
+	if flatArrayId, err := dec.DecodeUint32(); err != nil {
+		return err
+	} else {
+		n.flatArrayIdDescriptor = flatArrayId
+	}
+
 	if valueId, err := dec.DecodeUint16(); err != nil {
 		return err
 	} else {
@@ -110,6 +122,10 @@ func (n *NetValue) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 func (n *NetValue) GetValueId() uint16 {
 	return n.valueId
+}
+
+func (n *NetValue) ResetParentObjectId() {
+	n.parentObjectId = 0
 }
 
 func (n *NetValue) GetParentObjectId() uint32 {
@@ -132,6 +148,14 @@ func (n *NetValue) GetTransientMemoryDescriptor() (uint32, uint32) {
 func (n *NetValue) SetTransientMemoryDescriptors(ptr, len uint32) {
 	n.arenaPtr = ptr
 	n.arenaLen = len
+}
+
+func (n *NetValue) GetArrayDescriptor() uint32 {
+	return n.flatArrayIdDescriptor
+}
+
+func (n *NetValue) SetArrayDescriptor(flatArrayIdDescriptor uint32) {
+	n.flatArrayIdDescriptor = flatArrayIdDescriptor
 }
 
 func (n *NetValue) GetIsDeleting() bool {

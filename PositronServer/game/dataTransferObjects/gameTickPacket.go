@@ -9,7 +9,8 @@ import (
 
 type GameTickPacket struct {
 	newObjects        []gameentities.GameObject
-	valueMod          []gameentities.NetValue
+	newValues         []gameentities.NetValue
+	modValues         []gameentities.PersistentNetValue
 	rpc               []gameentities.RpcCall
 	removedObjects    []uint32
 	transferedObjects []uint32
@@ -18,7 +19,7 @@ type GameTickPacket struct {
 	client            uint32
 }
 
-func NewTickPacket(tick uint32, host uint32, sourceClient uint32, newObjects []gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []gameentities.NetValue, rpc []gameentities.RpcCall) *GameTickPacket {
+func NewTickPacket(tick uint32, host uint32, sourceClient uint32, newObjects []gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, newValues []gameentities.NetValue, modValues []gameentities.PersistentNetValue, rpc []gameentities.RpcCall) *GameTickPacket {
 	return &GameTickPacket{
 		tick:              tick,
 		host:              host,
@@ -26,26 +27,28 @@ func NewTickPacket(tick uint32, host uint32, sourceClient uint32, newObjects []g
 		newObjects:        newObjects,
 		removedObjects:    removedObjects,
 		transferedObjects: transferedObjects,
-		valueMod:          valueMod,
+		newValues:         newValues,
+		modValues:         modValues,
 		rpc:               rpc,
 	}
 }
 
-func (g *GameTickPacket) ReassignTickPacketData(tick uint32, host uint32, sourceClient uint32, newObjects []gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, valueMod []gameentities.NetValue, rpc []gameentities.RpcCall) {
+func (g *GameTickPacket) ReassignTickPacketData(tick uint32, host uint32, sourceClient uint32, newObjects []gameentities.GameObject, removedObjects []uint32, transferedObjects []uint32, newValues []gameentities.NetValue, modValues []gameentities.PersistentNetValue, rpc []gameentities.RpcCall) {
 	g.tick = tick
 	g.host = host
 	g.client = sourceClient
 	g.newObjects = newObjects
 	g.removedObjects = removedObjects
 	g.transferedObjects = transferedObjects
-	g.valueMod = valueMod
+	g.newValues = newValues
+	g.modValues = modValues
 	g.rpc = rpc
 }
 
 func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 	enc.UseCompactInts(true)
 	enc.UseCompactFloats(true)
-	arrErr := enc.EncodeArrayLen(8)
+	arrErr := enc.EncodeArrayLen(9)
 	err := enc.EncodeUint(uint64(g.tick))
 	err = enc.EncodeUint(uint64(g.host))
 	err = enc.EncodeUint(uint64(g.client))
@@ -79,10 +82,20 @@ func (g *GameTickPacket) EncodeMsgpack(enc *msgpack.Encoder) error {
 		}
 	}
 
-	err = enc.EncodeArrayLen(len(g.valueMod))
+	err = enc.EncodeArrayLen(len(g.newValues))
 
-	for i := range g.valueMod {
-		err := g.valueMod[i].EncodeMsgpack(enc)
+	for i := range g.newValues {
+		err := g.newValues[i].EncodeMsgpack(enc)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	err = enc.EncodeArrayLen(len(g.modValues))
+
+	for i := range g.modValues {
+		err := g.modValues[i].EncodeMsgpack(enc)
 
 		if err != nil {
 			return err
@@ -120,7 +133,7 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		return arrErr
 	}
 
-	if arrLen != 8 {
+	if arrLen != 9 {
 		return errors.New("Tick packet arr invalid!")
 	}
 
@@ -218,16 +231,16 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-	valueModLen, err := dec.DecodeArrayLen()
+	valuesAddLen, err := dec.DecodeArrayLen()
 
 	if err != nil {
 		return err
 	}
 
-	i.valueMod = i.valueMod[:cap(i.valueMod)]
+	i.newValues = i.newValues[:cap(i.newValues)]
 
-	for index := range valueModLen {
-		if index >= cap(i.valueMod) || index >= len(i.valueMod) {
+	for index := range valuesAddLen {
+		if index >= cap(i.newValues) || index >= len(i.newValues) {
 			var value gameentities.NetValue
 			err = value.DecodeMsgpack(dec)
 
@@ -235,9 +248,9 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 				return err
 			}
 
-			i.valueMod = append(i.valueMod, value)
+			i.newValues = append(i.newValues, value)
 		} else {
-			err = i.valueMod[index].DecodeMsgpack(dec)
+			err = i.newValues[index].DecodeMsgpack(dec)
 
 			if err != nil {
 				return err
@@ -245,7 +258,38 @@ func (i *GameTickPacket) DecodeMsgpack(dec *msgpack.Decoder) error {
 		}
 	}
 
-	i.valueMod = i.valueMod[:valueModLen]
+	i.newValues = i.newValues[:valuesAddLen]
+
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+	valueModLen, err := dec.DecodeArrayLen()
+
+	if err != nil {
+		return err
+	}
+
+	i.modValues = i.modValues[:cap(i.modValues)]
+
+	for index := range valueModLen {
+		if index >= cap(i.modValues) || index >= len(i.modValues) {
+			var value gameentities.PersistentNetValue
+			err = value.DecodeMsgpack(dec)
+
+			if err != nil {
+				return err
+			}
+
+			i.modValues = append(i.modValues, value)
+		} else {
+			err = i.modValues[index].DecodeMsgpack(dec)
+
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	i.modValues = i.modValues[:valueModLen]
 
 	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -305,8 +349,12 @@ func (g *GameTickPacket) GetTranferedObjects() []uint32 {
 	return g.transferedObjects
 }
 
-func (g *GameTickPacket) GetValueMod() []gameentities.NetValue {
-	return g.valueMod
+func (g *GameTickPacket) GetNewValues() []gameentities.NetValue {
+	return g.newValues
+}
+
+func (g *GameTickPacket) GetModValues() []gameentities.PersistentNetValue {
+	return g.modValues
 }
 
 func (g *GameTickPacket) GetRpcs() []gameentities.RpcCall {
