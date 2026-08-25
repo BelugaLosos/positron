@@ -283,14 +283,14 @@ func (g *GameObjectsModel) generateId() uint32 {
 }
 
 func (g *GameObjectsModel) allocateChunkIfNeed(id uint32) {
-	if id >= uint32(len(g.flatObjectsContainer)) {
+	if int64(id) >= int64(len(g.flatObjectsContainer)) {
 		g.flatObjectsContainer = append(g.flatObjectsContainer, make([]gameentities.GameObject, ALLOCATION_CHUNK)...)
 		g.flatTransformsContainer = append(g.flatTransformsContainer, make([]gameentities.Tranform, ALLOCATION_CHUNK)...)
 	}
 }
 
 func (g *GameObjectsModel) getObjectById(id uint32) (gameentities.GameObject, bool) {
-	if id >= uint32(len(g.flatObjectsContainer)) {
+	if int64(id) >= int64(len(g.flatObjectsContainer)) {
 		return g.defaultEmptyObject, false
 	}
 

@@ -7,4 +7,5 @@ const (
 	RPC_ALL_CACHED    = 0x3
 	RPC_OTHERS_CACHED = 0x4
 	RPC_TARGET_CACHED = 0x5
+	RPC_INVALID       = 0xFF
 )

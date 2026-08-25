@@ -121,7 +121,7 @@ func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
-	if incoming.GetArrayDescriptor() >= uint32(len(n.worldFlatContainer)) {
+	if int64(incoming.GetArrayDescriptor()) >= int64(len(n.worldFlatContainer)) {
 		return
 	}
 
@@ -194,7 +194,7 @@ func (n *NetValuesModel) getFreeDescriptor() uint32 {
 }
 
 func (g *NetValuesModel) allocateChunkIfNeed(id uint32) {
-	if id >= uint32(len(g.worldFlatContainer)) {
+	if int64(id) >= int64(len(g.worldFlatContainer)) {
 		g.worldFlatContainer = append(g.worldFlatContainer, make([]gameentities.NetValue, ALLOCATION_CHUNK)...)
 	}
 }

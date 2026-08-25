@@ -284,7 +284,7 @@ func (r *Room) AddPeer(uuid string) (uint32, error) {
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	if len(r.connectedPeers) >= int(r.maxClientsSlots) {
+	if int64(len(r.connectedPeers)) >= int64(r.maxClientsSlots) {
 		return 0, errors.New("Max cleints exeeted")
 	}
 
