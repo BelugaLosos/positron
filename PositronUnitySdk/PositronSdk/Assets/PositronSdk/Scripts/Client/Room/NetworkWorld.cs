@@ -216,7 +216,8 @@ namespace Positron.Client.Room
             _gameObjectsModel.RemoveObjects(tickPacket.Meta.RemovedObjects);
             _gameObjectsModel.TransferObjects(tickPacket.Meta.TransferedObjects);
 
-            _valuesModel.AddOrModifyValues(tickPacket.Meta.ValueModification, tickPacket.ValuesArena);
+            _valuesModel.PerformAddition(tickPacket.Meta.NewValues, tickPacket.ValuesArena);
+            _valuesModel.PerformModification(tickPacket.Meta.ModValues, tickPacket.ValuesArena);
 
             _rpcsModel.ProcessServerRpcEvents(tickPacket.Meta.Rpcs, tickPacket.RpcsArena);
         }
@@ -246,7 +247,8 @@ namespace Positron.Client.Room
                 tickPacket.RemovedObjects = reliableGameObjectsDelta.RemovedGameObjectIds;
                 tickPacket.TransferedObjects = reliableGameObjectsDelta.RequestOwnershipDelta;
 
-                tickPacket.ValueModification = _valuesModel.GetValuesDelta();
+                tickPacket.NewValues = _valuesModel.GetValuesAddDelta();
+                tickPacket.ModValues = _valuesModel.GetValuesModDelta();
                 tickPacket.Rpcs = _rpcsModel.GetCurrentDelta();
 
                 _writer.Clear();
@@ -287,7 +289,7 @@ namespace Positron.Client.Room
             _rpcsModel.Init(LocalClientId, _gameObjectsModel);
 
             _gameObjectsModel.CreateObjects(_joinDataPacket.GameObjects, true);
-            _valuesModel.AddOrModifyValues(_joinDataPacket.Values, _joinDataPacket.NetValuesDataArena);
+            _valuesModel.PerformAddition(_joinDataPacket.Values, _joinDataPacket.NetValuesDataArena);
 
             _gameObjectsModel.WakeAllObjectsAfterSilentCreation();
 

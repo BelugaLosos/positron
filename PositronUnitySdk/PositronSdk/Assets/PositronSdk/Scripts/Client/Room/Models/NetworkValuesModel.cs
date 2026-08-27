@@ -6,14 +6,16 @@ namespace Positron.Client.Room.Models
 {
     public sealed class NetworkValuesModel : IDisposable
     {
-        private readonly PooledDynamicArraySegment<NetValue> _currentDelta = new(128);
+        private readonly PooledDynamicArraySegment<NetValue> _currentAddDelta = new(128);
+        private readonly PooledDynamicArraySegment<PersistentNetValue> _currentModDelta = new(128);
         private byte[] _arena = new byte[16];
 
         public void Dispose()
         {
             ClearWorld();
 
-            _currentDelta.Dispose();
+            _currentAddDelta.Dispose();
+            _currentModDelta.Dispose();
         }
 
         public void ClearWorld()
@@ -21,21 +23,24 @@ namespace Positron.Client.Room.Models
 
         }
 
-        public void AddOrModifyValues(ArraySegment<NetValue> values, ReadOnlyMemory<byte> arena)
-        {
-            foreach (NetValue value in values)
-            {
-                AddOrModifyValue(value);
-            }
-        }
-
-        public void AddOrModifyValue(NetValue value)
+        public void PerformAddition(ArraySegment<NetValue> values, ReadOnlyMemory<byte> arena)
         {
 
         }
 
-        public ArraySegment<NetValue> GetValuesDelta() => _currentDelta.ToArray();
+        public void PerformModification(ArraySegment<PersistentNetValue> values, ReadOnlyMemory<byte> arena)
+        {
+
+        }
+
+        public ArraySegment<NetValue> GetValuesAddDelta() => _currentAddDelta.ToArray();
+        public ArraySegment<PersistentNetValue> GetValuesModDelta() => _currentModDelta.ToArray();
         public ReadOnlySpan<byte> GetArena() => _arena;
-        public void ClearDelta() => _currentDelta.Clear();
+       
+        public void ClearDelta()
+        {
+            _currentAddDelta.Clear();
+            _currentModDelta.Clear();
+        }
     }
 }

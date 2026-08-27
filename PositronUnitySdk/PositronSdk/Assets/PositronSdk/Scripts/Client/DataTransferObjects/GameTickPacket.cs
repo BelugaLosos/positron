@@ -13,8 +13,9 @@ namespace Positron.Client.DataTransferObjects
         [Key(3)] public ArraySegment<NetGameObject> NewGameObjects { get; set; }
         [Key(4)] public ArraySegment<uint> RemovedObjects { get; set; }
         [Key(5)] public ArraySegment<uint> TransferedObjects { get; set; }
-        [Key(6)] public ArraySegment<NetValue> ValueModification { get; set; }
-        [Key(7)] public ArraySegment<RpcCall> Rpcs { get; set; }
+        [Key(6)] public ArraySegment<NetValue> NewValues { get; set; }
+        [Key(7)] public ArraySegment<PersistentNetValue> ModValues { get; set; }
+        [Key(8)] public ArraySegment<RpcCall> Rpcs { get; set; }
     }
 
     public readonly struct GameTickDataAndMeta

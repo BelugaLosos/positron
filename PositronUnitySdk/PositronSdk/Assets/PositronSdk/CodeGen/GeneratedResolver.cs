@@ -47,7 +47,7 @@ namespace MessagePack.Resolvers
 
         static GeneratedResolverGetFormatterHelper()
         {
-            lookup = new global::System.Collections.Generic.Dictionary<global::System.Type, int>(22)
+            lookup = new global::System.Collections.Generic.Dictionary<global::System.Type, int>(24)
             {
                 { typeof(global::Positron.Client.DataTransferObjects.RoomsListElement[]), 0 },
                 { typeof(global::Positron.Client.GameEntities.NetGameObject[]), 1 },
@@ -56,21 +56,23 @@ namespace MessagePack.Resolvers
                 { typeof(global::System.ArraySegment<global::Positron.Client.GameEntities.NetGameObject>), 4 },
                 { typeof(global::System.ArraySegment<global::Positron.Client.GameEntities.NetTransform>), 5 },
                 { typeof(global::System.ArraySegment<global::Positron.Client.GameEntities.NetValue>), 6 },
-                { typeof(global::System.ArraySegment<global::Positron.Client.GameEntities.RpcCall>), 7 },
-                { typeof(global::System.ArraySegment<uint>), 8 },
-                { typeof(global::Positron.Client.DataTransferObjects.CreateRoomPacket), 9 },
-                { typeof(global::Positron.Client.DataTransferObjects.GameTickPacket), 10 },
-                { typeof(global::Positron.Client.DataTransferObjects.GameUnreliableTick), 11 },
-                { typeof(global::Positron.Client.DataTransferObjects.JoinRoomRequest), 12 },
-                { typeof(global::Positron.Client.DataTransferObjects.JoinRoomResponse), 13 },
-                { typeof(global::Positron.Client.DataTransferObjects.RoomCreationResponse), 14 },
-                { typeof(global::Positron.Client.DataTransferObjects.RoomListResponse), 15 },
-                { typeof(global::Positron.Client.DataTransferObjects.RoomsListElement), 16 },
-                { typeof(global::Positron.Client.GameEntities.NetGameObject), 17 },
-                { typeof(global::Positron.Client.GameEntities.NetTransform), 18 },
-                { typeof(global::Positron.Client.GameEntities.NetValue), 19 },
-                { typeof(global::Positron.Client.GameEntities.Premitive.NetVector3), 20 },
-                { typeof(global::Positron.Client.GameEntities.RpcCall), 21 },
+                { typeof(global::System.ArraySegment<global::Positron.Client.GameEntities.PersistentNetValue>), 7 },
+                { typeof(global::System.ArraySegment<global::Positron.Client.GameEntities.RpcCall>), 8 },
+                { typeof(global::System.ArraySegment<uint>), 9 },
+                { typeof(global::Positron.Client.DataTransferObjects.CreateRoomPacket), 10 },
+                { typeof(global::Positron.Client.DataTransferObjects.GameTickPacket), 11 },
+                { typeof(global::Positron.Client.DataTransferObjects.GameUnreliableTick), 12 },
+                { typeof(global::Positron.Client.DataTransferObjects.JoinRoomRequest), 13 },
+                { typeof(global::Positron.Client.DataTransferObjects.JoinRoomResponse), 14 },
+                { typeof(global::Positron.Client.DataTransferObjects.RoomCreationResponse), 15 },
+                { typeof(global::Positron.Client.DataTransferObjects.RoomListResponse), 16 },
+                { typeof(global::Positron.Client.DataTransferObjects.RoomsListElement), 17 },
+                { typeof(global::Positron.Client.GameEntities.NetGameObject), 18 },
+                { typeof(global::Positron.Client.GameEntities.NetTransform), 19 },
+                { typeof(global::Positron.Client.GameEntities.NetValue), 20 },
+                { typeof(global::Positron.Client.GameEntities.PersistentNetValue), 21 },
+                { typeof(global::Positron.Client.GameEntities.Premitive.NetVector3), 22 },
+                { typeof(global::Positron.Client.GameEntities.RpcCall), 23 },
             };
         }
 
@@ -91,21 +93,23 @@ namespace MessagePack.Resolvers
                 case 4: return new global::MessagePack.Formatters.ArraySegmentFormatter<global::Positron.Client.GameEntities.NetGameObject>();
                 case 5: return new global::MessagePack.Formatters.ArraySegmentFormatter<global::Positron.Client.GameEntities.NetTransform>();
                 case 6: return new global::MessagePack.Formatters.ArraySegmentFormatter<global::Positron.Client.GameEntities.NetValue>();
-                case 7: return new global::MessagePack.Formatters.ArraySegmentFormatter<global::Positron.Client.GameEntities.RpcCall>();
-                case 8: return new global::MessagePack.Formatters.ArraySegmentFormatter<uint>();
-                case 9: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.CreateRoomPacketFormatter();
-                case 10: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.GameTickPacketFormatter();
-                case 11: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.GameUnreliableTickFormatter();
-                case 12: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.JoinRoomRequestFormatter();
-                case 13: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.JoinRoomResponseFormatter();
-                case 14: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.RoomCreationResponseFormatter();
-                case 15: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.RoomListResponseFormatter();
-                case 16: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.RoomsListElementFormatter();
-                case 17: return new MessagePack.Formatters.Positron.Client.GameEntities.NetGameObjectFormatter();
-                case 18: return new MessagePack.Formatters.Positron.Client.GameEntities.NetTransformFormatter();
-                case 19: return new MessagePack.Formatters.Positron.Client.GameEntities.NetValueFormatter();
-                case 20: return new MessagePack.Formatters.Positron.Client.GameEntities.Premitive.NetVector3Formatter();
-                case 21: return new MessagePack.Formatters.Positron.Client.GameEntities.RpcCallFormatter();
+                case 7: return new global::MessagePack.Formatters.ArraySegmentFormatter<global::Positron.Client.GameEntities.PersistentNetValue>();
+                case 8: return new global::MessagePack.Formatters.ArraySegmentFormatter<global::Positron.Client.GameEntities.RpcCall>();
+                case 9: return new global::MessagePack.Formatters.ArraySegmentFormatter<uint>();
+                case 10: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.CreateRoomPacketFormatter();
+                case 11: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.GameTickPacketFormatter();
+                case 12: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.GameUnreliableTickFormatter();
+                case 13: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.JoinRoomRequestFormatter();
+                case 14: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.JoinRoomResponseFormatter();
+                case 15: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.RoomCreationResponseFormatter();
+                case 16: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.RoomListResponseFormatter();
+                case 17: return new MessagePack.Formatters.Positron.Client.DataTransferObjects.RoomsListElementFormatter();
+                case 18: return new MessagePack.Formatters.Positron.Client.GameEntities.NetGameObjectFormatter();
+                case 19: return new MessagePack.Formatters.Positron.Client.GameEntities.NetTransformFormatter();
+                case 20: return new MessagePack.Formatters.Positron.Client.GameEntities.NetValueFormatter();
+                case 21: return new MessagePack.Formatters.Positron.Client.GameEntities.PersistentNetValueFormatter();
+                case 22: return new MessagePack.Formatters.Positron.Client.GameEntities.Premitive.NetVector3Formatter();
+                case 23: return new MessagePack.Formatters.Positron.Client.GameEntities.RpcCallFormatter();
                 default: return null;
             }
         }
@@ -203,14 +207,15 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.DataTransferObjects.GameTickPacket value, global::MessagePack.MessagePackSerializerOptions options)
         {
             global::MessagePack.IFormatterResolver formatterResolver = options.Resolver;
-            writer.WriteArrayHeader(8);
+            writer.WriteArrayHeader(9);
             writer.Write(value.Tick);
             writer.Write(value.Host);
             writer.Write(value.Client);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<global::Positron.Client.GameEntities.NetGameObject>>(formatterResolver).Serialize(ref writer, value.NewGameObjects, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<uint>>(formatterResolver).Serialize(ref writer, value.RemovedObjects, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<uint>>(formatterResolver).Serialize(ref writer, value.TransferedObjects, options);
-            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<global::Positron.Client.GameEntities.NetValue>>(formatterResolver).Serialize(ref writer, value.ValueModification, options);
+            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<global::Positron.Client.GameEntities.NetValue>>(formatterResolver).Serialize(ref writer, value.NewValues, options);
+            global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<global::Positron.Client.GameEntities.PersistentNetValue>>(formatterResolver).Serialize(ref writer, value.ModValues, options);
             global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<global::Positron.Client.GameEntities.RpcCall>>(formatterResolver).Serialize(ref writer, value.Rpcs, options);
         }
 
@@ -249,9 +254,12 @@ namespace MessagePack.Formatters.Positron.Client.DataTransferObjects
                         ____result.TransferedObjects = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<uint>>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     case 6:
-                        ____result.ValueModification = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<global::Positron.Client.GameEntities.NetValue>>(formatterResolver).Deserialize(ref reader, options);
+                        ____result.NewValues = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<global::Positron.Client.GameEntities.NetValue>>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     case 7:
+                        ____result.ModValues = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<global::Positron.Client.GameEntities.PersistentNetValue>>(formatterResolver).Deserialize(ref reader, options);
+                        break;
+                    case 8:
                         ____result.Rpcs = global::MessagePack.FormatterResolverExtensions.GetFormatterWithVerify<global::System.ArraySegment<global::Positron.Client.GameEntities.RpcCall>>(formatterResolver).Deserialize(ref reader, options);
                         break;
                     default:
@@ -709,10 +717,11 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
 
         public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.GameEntities.NetValue value, global::MessagePack.MessagePackSerializerOptions options)
         {
-            writer.WriteArrayHeader(5);
+            writer.WriteArrayHeader(6);
             writer.Write(value.ArenaPtr);
             writer.Write(value.ArenaLen);
             writer.Write(value.ParentObjectId);
+            writer.Write(value.FlatArrayIdDescriptor);
             writer.Write(value.ValueId);
             writer.Write(value.Deleting);
         }
@@ -742,10 +751,63 @@ namespace MessagePack.Formatters.Positron.Client.GameEntities
                         ____result.ParentObjectId = reader.ReadUInt32();
                         break;
                     case 3:
-                        ____result.ValueId = reader.ReadUInt16();
+                        ____result.FlatArrayIdDescriptor = reader.ReadUInt32();
                         break;
                     case 4:
+                        ____result.ValueId = reader.ReadUInt16();
+                        break;
+                    case 5:
                         ____result.Deleting = reader.ReadBoolean();
+                        break;
+                    default:
+                        reader.Skip();
+                        break;
+                }
+            }
+
+            reader.Depth--;
+            return ____result;
+        }
+    }
+
+    public sealed class PersistentNetValueFormatter : global::MessagePack.Formatters.IMessagePackFormatter<global::Positron.Client.GameEntities.PersistentNetValue>
+    {
+
+        public void Serialize(ref global::MessagePack.MessagePackWriter writer, global::Positron.Client.GameEntities.PersistentNetValue value, global::MessagePack.MessagePackSerializerOptions options)
+        {
+            writer.WriteArrayHeader(4);
+            writer.Write(value.FlatArrayIdDescriptor);
+            writer.Write(value.ArenaPtr);
+            writer.Write(value.ArenaLen);
+            writer.Write(value.IsDeleting);
+        }
+
+        public global::Positron.Client.GameEntities.PersistentNetValue Deserialize(ref global::MessagePack.MessagePackReader reader, global::MessagePack.MessagePackSerializerOptions options)
+        {
+            if (reader.TryReadNil())
+            {
+                throw new global::System.InvalidOperationException("typecode is null, struct not supported");
+            }
+
+            options.Security.DepthStep(ref reader);
+            var length = reader.ReadArrayHeader();
+            var ____result = new global::Positron.Client.GameEntities.PersistentNetValue();
+
+            for (int i = 0; i < length; i++)
+            {
+                switch (i)
+                {
+                    case 0:
+                        ____result.FlatArrayIdDescriptor = reader.ReadUInt32();
+                        break;
+                    case 1:
+                        ____result.ArenaPtr = reader.ReadUInt32();
+                        break;
+                    case 2:
+                        ____result.ArenaLen = reader.ReadUInt32();
+                        break;
+                    case 3:
+                        ____result.IsDeleting = reader.ReadBoolean();
                         break;
                     default:
                         reader.Skip();
