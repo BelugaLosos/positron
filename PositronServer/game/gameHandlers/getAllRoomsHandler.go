@@ -35,10 +35,10 @@ func (g *GetAllRoomsHandler) PassHandle(packet []byte) {
 	}
 
 	rooms := g.gameServer.GetAllRooms()
-	roomList := make([]*datatransferobjects.RoomsListElement, len(rooms))
+	roomList := make([]datatransferobjects.RoomsListElement, len(rooms))
 
 	for i := range rooms {
-		roomList[i] = &datatransferobjects.RoomsListElement{
+		roomList[i] = datatransferobjects.RoomsListElement{
 			Name:           rooms[i].GetName(),
 			Uuid:           rooms[i].GetUuid(),
 			CurrentPlayers: uint32(rooms[i].GetCurrentConnectedPeersCount()),

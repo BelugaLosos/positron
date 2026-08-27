@@ -3,7 +3,7 @@ package datatransferobjects
 type RoomsListResponse struct {
 	_msgpack struct{} `msgpack:",as_array"`
 
-	ListElements []*RoomsListElement
+	ListElements []RoomsListElement
 }
 
 type RoomsListElement struct {
