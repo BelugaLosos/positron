@@ -106,8 +106,8 @@ func (t *WsTransport) SendToPeer(data []byte, eventType byte, peerUuid string, r
 		return errors.New("peer not found or closed")
 	}
 
-	peer.mutex.Lock()
-	defer peer.mutex.Unlock()
+	peer.lockPeer()
+	defer peer.unlockPeer()
 
 	var targetData []byte
 	compressionFlag := false
@@ -170,7 +170,7 @@ func (t *WsTransport) KickClient(uuid string) {
 	peer, ok := t.connections[uuid]
 
 	if ok {
-		peer.ClosePeer()
+		peer.closePeer()
 	}
 }
 
@@ -216,7 +216,7 @@ func (t *WsTransport) handleUpgrade(w http.ResponseWriter, r *http.Request) {
 
 func (t *WsTransport) handleIncoming(id string, peer *wsPeer, handlers []internal.Handler, closeHandler internal.Handler) {
 	defer func() {
-		peer.ClosePeer()
+		peer.closePeer()
 
 		t.mutex.Lock()
 		delete(t.connections, id)
@@ -343,7 +343,7 @@ func (p *wsPeer) sendPump() {
 		writer, err := p.wsConn.NextWriter(websocket.BinaryMessage)
 		if err != nil {
 			log.Printf("Peer %s: Can't get writer, closing peer. Error: %v", p.wsConn.RemoteAddr().String(), err)
-			p.ClosePeer()
+			p.closePeer()
 			return
 		}
 
@@ -358,14 +358,14 @@ func (p *wsPeer) sendPump() {
 			corruptions++
 			if corruptions > 100 {
 				log.Printf("Peer %s disconnected due to massive errors shooting (corruption count: %d)", p.wsConn.RemoteAddr().String(), corruptions)
-				p.ClosePeer()
+				p.closePeer()
 				return
 			}
 		}
 	}
 }
 
-func (p *wsPeer) ClosePeer() {
+func (p *wsPeer) closePeer() {
 	p.mutex.Lock()
 	defer p.mutex.Unlock()
 
@@ -380,4 +380,12 @@ func (p *wsPeer) ClosePeer() {
 	close(p.send)
 	p.isClosed = true
 	log.Printf("Peer %s connection closed.", p.wsConn.RemoteAddr().String())
+}
+
+func (p *wsPeer) lockPeer() {
+	p.mutex.Lock()
+}
+
+func (p *wsPeer) unlockPeer() {
+	p.mutex.Unlock()
 }
