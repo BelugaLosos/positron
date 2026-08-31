@@ -54,12 +54,13 @@ namespace Positron.Client.Room.Models
             _selfClientId = 0;
             _currentCallBuffer.Dispose();
 
-            _gameObjectsModel.localObjectGoingRemove -= OnObjectRemove;
-            _gameObjectsModel.localObjectRemotelyInitedSuccessfully -= OnLocalTargetInitedSuccesfully;
+            TryUnsubGameObjectCallbacks();
         }
 
         public void Init(uint selfClientId, IReadOnlyGameObjectsModel objectsMode)
         {
+            TryUnsubGameObjectCallbacks();
+
             _selfClientId = selfClientId;
             _gameObjectsModel = objectsMode;
 
@@ -156,6 +157,17 @@ namespace Positron.Client.Room.Models
             rpcCallMeta.Type = (byte)targets;
 
             _currentCallBuffer.Add(rpcCallMeta);
+        }
+
+        private void TryUnsubGameObjectCallbacks()
+        {
+            if (_gameObjectsModel == null)
+            {
+                return;
+            }
+
+            _gameObjectsModel.localObjectGoingRemove -= OnObjectRemove;
+            _gameObjectsModel.localObjectRemotelyInitedSuccessfully -= OnLocalTargetInitedSuccesfully;
         }
 
         private void OnObjectRemove(PositronNetworkIdentity identity)

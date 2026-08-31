@@ -216,8 +216,9 @@ namespace Positron.Client.Room
             _gameObjectsModel.RemoveObjects(tickPacket.Meta.RemovedObjects);
             _gameObjectsModel.TransferObjects(tickPacket.Meta.TransferedObjects);
 
-            _valuesModel.PerformAddition(tickPacket.Meta.NewValues, tickPacket.ValuesArena);
-            _valuesModel.PerformModification(tickPacket.Meta.ModValues, tickPacket.ValuesArena);
+            _valuesModel.PutArenaFromServer(tickPacket.ValuesArena);
+            _valuesModel.PerformAddition(tickPacket.Meta.NewValues);
+            _valuesModel.PerformModification(tickPacket.Meta.ModValues);
 
             _rpcsModel.ProcessServerRpcEvents(tickPacket.Meta.Rpcs, tickPacket.RpcsArena);
         }
@@ -287,9 +288,12 @@ namespace Positron.Client.Room
             LocalClientId = _joinDataPacket.SelfId;
             HostId = _joinDataPacket.Host;
             _rpcsModel.Init(LocalClientId, _gameObjectsModel);
+            _valuesModel.Init(_gameObjectsModel);
 
             _gameObjectsModel.CreateObjects(_joinDataPacket.GameObjects, true);
-            _valuesModel.PerformAddition(_joinDataPacket.Values, _joinDataPacket.NetValuesDataArena);
+            
+            _valuesModel.PutArenaFromServer(_joinDataPacket.NetValuesDataArena);
+            _valuesModel.PerformAddition(_joinDataPacket.Values);
 
             _gameObjectsModel.WakeAllObjectsAfterSilentCreation();
 
