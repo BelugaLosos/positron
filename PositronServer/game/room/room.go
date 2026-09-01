@@ -160,8 +160,25 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket, netValues
 		return
 	}
 
+	r.netValuesModel.PutTransientDataIncoming(netValuesArena)
+	r.rpcsModel.PutTransientDataIncoming(rpcsArena)
+
 	for i := range packet.GetNewObjects() {
 		r.gameObjectsModel.AddGameObject(packet.GetNewObjects()[i], packet.GetSourceClient())
+	}
+
+	for i := range packet.GetNewValues() {
+		r.netValuesModel.AddValue(packet.GetNewValues()[i])
+	}
+
+	for i := range packet.GetModValues() {
+		r.netValuesModel.ModifyValue(packet.GetModValues()[i])
+	}
+
+	addMod := r.gameObjectsModel.GetSpecificAddModification()
+
+	for i := range packet.GetRpcs() {
+		r.rpcsModel.Call(packet.GetRpcs()[i], addMod)
 	}
 
 	for i := range packet.GetRemovedObjects() {
@@ -176,24 +193,7 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket, netValues
 		}
 	}
 
-	r.netValuesModel.PutTransientDataIncoming(netValuesArena)
-
-	for i := range packet.GetNewValues() {
-		r.netValuesModel.AddValue(packet.GetNewValues()[i])
-	}
-
-	for i := range packet.GetModValues() {
-		r.netValuesModel.ModifyValue(packet.GetModValues()[i])
-	}
-
 	r.gameObjectsModel.TransferObjectsOwnershipToTargetClient(packet.GetTranferedObjects(), packet.GetSourceClient())
-
-	addMod := r.gameObjectsModel.GetSpecificAddModification()
-	r.rpcsModel.PutTransientDataIncoming(rpcsArena)
-
-	for i := range packet.GetRpcs() {
-		r.rpcsModel.Call(packet.GetRpcs()[i], addMod)
-	}
 }
 
 func (r *Room) ProcessUnreliableTick(packet *datatransferobjects.GameUnreliableTickPacket) {

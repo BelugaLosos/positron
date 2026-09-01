@@ -211,16 +211,16 @@ namespace Positron.Client.Room
 
             _clock.TryInitTime(tickPacket.Meta.Tick);
             _clock.UpdateServerTime(tickPacket.Meta.Tick);
+            _valuesModel.PutArenaFromServer(tickPacket.ValuesArena);
 
             _gameObjectsModel.CreateObjects(tickPacket.Meta.NewGameObjects, false);
-            _gameObjectsModel.RemoveObjects(tickPacket.Meta.RemovedObjects);
-            _gameObjectsModel.TransferObjects(tickPacket.Meta.TransferedObjects);
-
-            _valuesModel.PutArenaFromServer(tickPacket.ValuesArena);
             _valuesModel.PerformAddition(tickPacket.Meta.NewValues);
             _valuesModel.PerformModification(tickPacket.Meta.ModValues);
-
             _rpcsModel.ProcessServerRpcEvents(tickPacket.Meta.Rpcs, tickPacket.RpcsArena);
+
+            _gameObjectsModel.RemoveObjects(tickPacket.Meta.RemovedObjects);
+
+            _gameObjectsModel.TransferObjects(tickPacket.Meta.TransferedObjects);
         }
 
         private void ProcessUnreliableTickPacket(GameUnreliableTick unreliableTickPaclet)
