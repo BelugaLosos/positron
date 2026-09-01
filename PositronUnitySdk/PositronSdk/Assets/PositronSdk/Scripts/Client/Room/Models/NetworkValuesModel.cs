@@ -14,7 +14,7 @@ namespace Positron.Client.Room.Models
         private readonly PooledDynamicArraySegment<PersistentNetValue> _currentModDelta = new(128);
         private readonly TransientArena _allDeltasRawDataArena = new();
 
-        private readonly Dictionary<uint, PositronNetworkIdentity> _worldMapping = new();
+        private readonly Dictionary<uint, PositronNetworkIdentity> _valueIdToValuesInterfaceMapping = new();
 
         private IReadOnlyGameObjectsModel _gameObjectsModel;
 
@@ -39,21 +39,27 @@ namespace Positron.Client.Room.Models
         public void ClearWorld()
         {
             ClearDelta();
-            _worldMapping.Clear();
+            _valueIdToValuesInterfaceMapping.Clear();
 
             // now all values binded to GO`s and mono, it will destroyed automatically
         }
 
         public void PutArenaFromServer(ReadOnlyMemory<byte> data) => _allDeltasRawDataArena.CloneFrom(data);
 
-        public void PerformAddition(ArraySegment<NetValue> values)
+        public void PerformAddition(ArraySegment<NetValue> values) //this method only SERVER -> CLIENT
         {
-
+            //find network object and value slot
+            //init value
+            //put data into it
+            //put to dict mapping by flat id direcly by interface
+            //if it is deleting - clear value slot and mark values is invalid. delete from mapping
         }
 
-        public void PerformModification(ArraySegment<PersistentNetValue> values)
+        public void PerformModification(ArraySegment<PersistentNetValue> values) //this method only SERVER -> CLIENT
         {
-
+            //find in mapping
+            //validate for existance
+            //put data
         }
 
         private void TryUnsubGameObjectCallbacks()
@@ -67,9 +73,15 @@ namespace Positron.Client.Room.Models
         }
 
 
-        private void OnLocalTargetInitedSuccesfully(PositronNetworkIdentity identity)
+        private void OnLocalTargetInitedSuccesfully(PositronNetworkIdentity identity) //this method only CLIENT -> SERVER
         {
-            // send event to server, collect all values from object
+            //get all values from object (carriers must be alligned in editor time deterministically and cached for 100% determinism)
+                //get all INetValueCarrier
+                //get all values from carriers
+            //serialize data
+            //put serialized data into arena
+            //construct NetValue structures
+            //put structures into addition delta
         }
 
         public ArraySegment<NetValue> GetValuesAddDelta() => _currentAddDelta.ToArray();
