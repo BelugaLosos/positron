@@ -125,7 +125,13 @@ func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue) {
 		return
 	}
 
-	n.modifyValue(incoming, n.worldFlatContainer[incoming.GetArrayDescriptor()])
+	local := n.worldFlatContainer[incoming.GetArrayDescriptor()]
+
+	if local.GetParentObjectId() == 0 {
+		return
+	}
+
+	n.modifyValue(incoming, local)
 }
 
 func (n *NetValuesModel) RemoveAllValuesFromObject(objectId uint32) {
