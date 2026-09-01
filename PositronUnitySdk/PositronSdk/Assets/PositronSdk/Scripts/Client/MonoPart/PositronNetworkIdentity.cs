@@ -127,6 +127,11 @@ namespace Positron.Client.Mono
 
             OwnerClientId = actualOwner;
 
+            foreach (PositronNetworkIdentity obj in _trackedSubObjects)
+            {
+                obj.OwnerClientId = actualOwner;
+            }
+
             transfered?.Invoke(this);
             transferedWithEmptyCallback?.Invoke();
         }
