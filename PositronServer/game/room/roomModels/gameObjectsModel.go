@@ -30,6 +30,11 @@ type GameObjectsModel struct {
 	isRetransmissionForceDisabled     bool
 }
 
+type ReadOnlyGameObjectsModel interface {
+	ThreadUnsafeGetObjectOwner(objectId uint32) (uint32, bool)
+	ThreadUnsafeIsObjectExists(objectId uint32) bool
+}
+
 const (
 	POSITION_DELTA_TO_SYNC = 0.05
 	ROTATION_DELTA_TO_SYNC = 1.0
@@ -259,6 +264,28 @@ func (g *GameObjectsModel) TransferObjectsOwnershipToTargetClient(requestedTrans
 		requestedObject.SetIdAndOnwer(requestedObject.GetId(), newOwner)
 		g.addToTempTransfer(requestedObject, newOwner)
 	}
+}
+
+func (g *GameObjectsModel) ThreadUnsafeGetObjectOwner(objectId uint32) (uint32, bool) {
+	if int64(objectId) >= int64(len(g.flatObjectsContainer)) {
+		return 0, false
+	}
+
+	obj := g.flatObjectsContainer[objectId]
+
+	if obj.GetId() == 0 {
+		return 0, false
+	}
+
+	return obj.GetOwnerId(), true
+}
+
+func (g *GameObjectsModel) ThreadUnsafeIsObjectExists(objectId uint32) bool {
+	if int64(objectId) >= int64(len(g.flatObjectsContainer)) {
+		return false
+	}
+
+	return g.flatObjectsContainer[objectId].GetId() != 0
 }
 
 func (g *GameObjectsModel) addToTempTransfer(obj gameentities.GameObject, newOwner uint32) {

@@ -8,7 +8,8 @@ import (
 )
 
 type NetValuesModel struct {
-	mutex *sync.Mutex
+	mutex            *sync.Mutex
+	gameObjectsModel ReadOnlyGameObjectsModel
 
 	worldFlatContainer    []gameentities.NetValue
 	worldFlatFreeIdsStack []uint32
@@ -25,9 +26,10 @@ type NetValuesModel struct {
 	incomingTransientArena *arena.TransientArena
 }
 
-func NewNetValuesModel() *NetValuesModel {
+func NewNetValuesModel(gameObjectsModel ReadOnlyGameObjectsModel) *NetValuesModel {
 	return &NetValuesModel{
 		mutex:                       &sync.Mutex{},
+		gameObjectsModel:            gameObjectsModel,
 		worldFlatContainer:          make([]gameentities.NetValue, 0, 256),
 		worldFlatFreeIdsStack:       make([]uint32, 0, 256),
 		lastId:                      0,
@@ -95,6 +97,10 @@ func (n *NetValuesModel) AddValue(incoming gameentities.NetValue) {
 		return
 	}
 
+	if !n.gameObjectsModel.ThreadUnsafeIsObjectExists(incoming.GetParentObjectId()) {
+		return
+	}
+
 	incomingPayload, err := n.incomingTransientArena.Read(incoming.GetTransientMemoryDescriptor())
 
 	if err != nil {
@@ -117,7 +123,7 @@ func (n *NetValuesModel) AddValue(incoming gameentities.NetValue) {
 	n.additionModidificationCache = append(n.additionModidificationCache, incoming)
 }
 
-func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue) {
+func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue, attemptorClientId uint32) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
@@ -128,6 +134,16 @@ func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue) {
 	local := n.worldFlatContainer[incoming.GetArrayDescriptor()]
 
 	if local.GetParentObjectId() == 0 {
+		return
+	}
+
+	owner, isExists := n.gameObjectsModel.ThreadUnsafeGetObjectOwner(local.GetParentObjectId())
+
+	if !isExists {
+		return
+	}
+
+	if owner != attemptorClientId {
 		return
 	}
 

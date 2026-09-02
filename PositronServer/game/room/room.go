@@ -63,6 +63,8 @@ func clamp(current int, min int, max int) int {
 func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickrate uint32, externalData []byte, rtLimit, rtThrashold int, rtForceDisable bool) *Room {
 	log.Printf("Created room with params N: %v P_CAP: %v TTL: %v SC: %v T_RATE: %v DATA_SEGMENT: %v RT_L: %v RT_Th: %v RT_FORCE_DISABLE: %v", name, maxSlots, ttl, scene, tickrate, externalData, rtLimit, rtThrashold, rtForceDisable)
 
+	gameObjectsModel := roommodels.NewGameObjectsModel(rtLimit, rtThrashold, rtForceDisable)
+
 	return &Room{
 		mutex:              &sync.RWMutex{},
 		Termination:        make(chan struct{}),
@@ -78,8 +80,8 @@ func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickr
 		tickrate:           clamp(int(tickrate), 1, 256),
 		scene:              scene,
 		ExternalData:       externalData,
-		gameObjectsModel:   roommodels.NewGameObjectsModel(rtLimit, rtThrashold, rtForceDisable),
-		netValuesModel:     roommodels.NewNetValuesModel(),
+		gameObjectsModel:   gameObjectsModel,
+		netValuesModel:     roommodels.NewNetValuesModel(gameObjectsModel),
 		rpcsModel:          roommodels.NewRpcsModel(),
 		clock:              NewRoomClock(tickrate),
 		gameTickPointer:    &datatransferobjects.GameTickPacket{},
@@ -172,7 +174,7 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket, netValues
 	}
 
 	for i := range packet.GetModValues() {
-		r.netValuesModel.ModifyValue(packet.GetModValues()[i])
+		r.netValuesModel.ModifyValue(packet.GetModValues()[i], packet.GetSourceClient())
 	}
 
 	addMod := r.gameObjectsModel.GetSpecificAddModification()
