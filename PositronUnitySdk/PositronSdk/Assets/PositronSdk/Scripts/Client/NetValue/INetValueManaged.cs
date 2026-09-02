@@ -1,3 +1,4 @@
+using Positron.Client.Interfaces;
 using System;
 
 namespace Positron.Client.NetValues
@@ -6,7 +7,7 @@ namespace Positron.Client.NetValues
     {
         bool IsModified { get; }
         event Action dataChanged;
-        void SerializeSelfTo(Span<byte> container);
-        void DeserializeSelfFrom(ReadOnlyMemory<byte> container);
+        void SerializeSelfTo(Span<byte> container, IPositronSerializer serializer);
+        void DeserializeSelfFrom(ReadOnlyMemory<byte> container, IPositronSerializer serializer);
     }
 }

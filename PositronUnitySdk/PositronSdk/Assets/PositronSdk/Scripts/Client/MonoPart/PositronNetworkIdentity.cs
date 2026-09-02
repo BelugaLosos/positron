@@ -1,6 +1,7 @@
 using Positron.Client.GameEntities;
 using Positron.Client.Mono.Interfaces;
 using Positron.Client.Mono.Syncers.Interface;
+using Positron.Client.NetValues;
 using Positron.Client.Rpc;
 using System;
 using System.Collections.Generic;
@@ -12,9 +13,11 @@ namespace Positron.Client.Mono
     public class PositronNetworkIdentity : MonoBehaviour
     {
         [SerializeField] private PositronNetworkIdentity[] _trackedSubObjects;
+        [SerializeField] private MonoBehaviour[] _trackedNetValueCarriersObjects;
 
         private IPositronSyncer[] _syncers;
         private IRpcTarget[] _observedRpcTargets;
+        private INetValueCarrier[] _valueCarriers;
         private Dictionary<Type, IPositronSyncer> _syncersMap = new();
 
         private bool _isLocallyInited;
@@ -45,8 +48,24 @@ namespace Positron.Client.Mono
             }
 
             _trackedSubObjects = GetComponentsInChildren<PositronNetworkIdentity>().Where(o => o != this).ToArray();
+            _trackedNetValueCarriersObjects = GetComponentsInChildren<MonoBehaviour>(true).Where(o => o.GetComponent<INetValueCarrier>() != null).ToArray();
         }
 #endif
+
+        public INetValueCarrier[] GetAllNetValueCarriers()
+        {
+            if (_valueCarriers == null)
+            {
+                _valueCarriers = new INetValueCarrier[_trackedNetValueCarriersObjects.Length];
+
+                for (int i = 0; i < _valueCarriers.Length; i++)
+                {
+                    _valueCarriers[i] = _trackedNetValueCarriersObjects[i].GetComponent<INetValueCarrier>();
+                }
+            }
+
+            return _valueCarriers;
+        }
 
         public void InitActivityState(bool activity)
         {
