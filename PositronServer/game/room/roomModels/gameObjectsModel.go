@@ -32,7 +32,6 @@ type GameObjectsModel struct {
 
 type ReadOnlyGameObjectsModel interface {
 	ThreadUnsafeGetObjectOwner(objectId uint32) (uint32, bool)
-	ThreadUnsafeIsObjectExists(objectId uint32) bool
 }
 
 const (
@@ -278,14 +277,6 @@ func (g *GameObjectsModel) ThreadUnsafeGetObjectOwner(objectId uint32) (uint32, 
 	}
 
 	return obj.GetOwnerId(), true
-}
-
-func (g *GameObjectsModel) ThreadUnsafeIsObjectExists(objectId uint32) bool {
-	if int64(objectId) >= int64(len(g.flatObjectsContainer)) {
-		return false
-	}
-
-	return g.flatObjectsContainer[objectId].GetId() != 0
 }
 
 func (g *GameObjectsModel) addToTempTransfer(obj gameentities.GameObject, newOwner uint32) {

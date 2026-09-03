@@ -170,7 +170,7 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket, netValues
 	}
 
 	for i := range packet.GetNewValues() {
-		r.netValuesModel.AddValue(packet.GetNewValues()[i])
+		r.netValuesModel.AddValue(packet.GetNewValues()[i], packet.GetSourceClient())
 	}
 
 	for i := range packet.GetModValues() {

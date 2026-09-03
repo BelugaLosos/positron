@@ -17,7 +17,7 @@ namespace Positron.Client.Mono
 
         private IPositronSyncer[] _syncers;
         private IRpcTarget[] _observedRpcTargets;
-        private INetValueCarrier[] _valueCarriers;
+        private INetValueManaged[] _cachedNetValues;
         private Dictionary<Type, IPositronSyncer> _syncersMap = new();
 
         private bool _isLocallyInited;
@@ -48,23 +48,25 @@ namespace Positron.Client.Mono
             }
 
             _trackedSubObjects = GetComponentsInChildren<PositronNetworkIdentity>().Where(o => o != this).ToArray();
-            _trackedNetValueCarriersObjects = GetComponentsInChildren<MonoBehaviour>(true).Where(o => o.GetComponent<INetValueCarrier>() != null).ToArray();
+            _trackedNetValueCarriersObjects = GetComponentsInChildren<MonoBehaviour>(true).Where(o => o is INetValueCarrier).ToArray();
         }
 #endif
 
-        public INetValueCarrier[] GetAllNetValueCarriers()
+        public INetValueManaged[] GetAllNetValues()
         {
-            if (_valueCarriers == null)
+            if (_cachedNetValues == null)
             {
-                _valueCarriers = new INetValueCarrier[_trackedNetValueCarriersObjects.Length];
+                List<INetValueManaged> netValues = new();
 
-                for (int i = 0; i < _valueCarriers.Length; i++)
+                for (int i = 0; i < _trackedNetValueCarriersObjects.Length; i++)
                 {
-                    _valueCarriers[i] = _trackedNetValueCarriersObjects[i].GetComponent<INetValueCarrier>();
+                    netValues.AddRange((_trackedNetValueCarriersObjects[i] as INetValueCarrier).GetNetValues());
                 }
+
+                _cachedNetValues = netValues.ToArray();
             }
 
-            return _valueCarriers;
+            return _cachedNetValues;
         }
 
         public void InitActivityState(bool activity)

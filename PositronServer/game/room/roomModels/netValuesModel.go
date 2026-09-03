@@ -89,7 +89,7 @@ func (n *NetValuesModel) PutTransientDataIncoming(data []byte) {
 	n.incomingTransientArena.CloneFrom(data)
 }
 
-func (n *NetValuesModel) AddValue(incoming gameentities.NetValue) {
+func (n *NetValuesModel) AddValue(incoming gameentities.NetValue, attemptorId uint32) {
 	n.mutex.Lock()
 	defer n.mutex.Unlock()
 
@@ -97,7 +97,11 @@ func (n *NetValuesModel) AddValue(incoming gameentities.NetValue) {
 		return
 	}
 
-	if !n.gameObjectsModel.ThreadUnsafeIsObjectExists(incoming.GetParentObjectId()) {
+	if owner, isExisted := n.gameObjectsModel.ThreadUnsafeGetObjectOwner(incoming.GetParentObjectId()); owner != attemptorId || !isExisted {
+		return
+	}
+
+	if _, len := incoming.GetTransientMemoryDescriptor(); len == 0 {
 		return
 	}
 
@@ -105,6 +109,7 @@ func (n *NetValuesModel) AddValue(incoming gameentities.NetValue) {
 
 	if err != nil {
 		log.Printf("add value failed due to memory (Reading incoming) err %v", err)
+		return
 	}
 
 	descriptor := n.worldPersistentArena.Alloc(incomingPayload)
@@ -140,6 +145,10 @@ func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue, a
 	owner, isExists := n.gameObjectsModel.ThreadUnsafeGetObjectOwner(local.GetParentObjectId())
 
 	if !isExists {
+		return
+	}
+
+	if _, len := incoming.GetTransientMemoryDescriptor(); len == 0 {
 		return
 	}
 
@@ -186,6 +195,7 @@ func (n *NetValuesModel) modifyValue(incoming gameentities.PersistentNetValue, l
 
 	if err != nil {
 		log.Printf("modify value failed due to memory (Reading incoming) err %v", err)
+		return
 	}
 
 	descriptor, err := n.worldPersistentArena.Patch(local.GetPersistentMemoryDescriptor(), incomingPayload)
@@ -194,6 +204,7 @@ func (n *NetValuesModel) modifyValue(incoming gameentities.PersistentNetValue, l
 
 	if err != nil {
 		log.Printf("modify value failed due to memory (Patch) err %v", err)
+		return
 	}
 
 	local.SetPersistentMemoryDescriptor(descriptor)

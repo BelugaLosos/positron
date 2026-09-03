@@ -15,7 +15,7 @@ func TestAddValue(t *testing.T) {
 	arenaImitation = binary.BigEndian.AppendUint32(arenaImitation, 1245)
 
 	model.PutTransientDataIncoming(arenaImitation)
-	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false))
+	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false), 3)
 
 	modMeta := model.GetAdden()
 	modArena := model.ReadLocalTransientArena()
@@ -39,7 +39,7 @@ func TestReset(t *testing.T) {
 	arenaImitation = binary.BigEndian.AppendUint32(arenaImitation, 1245)
 
 	model.PutTransientDataIncoming(arenaImitation)
-	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false))
+	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false), 3)
 	model.ModifyValue(gameentities.NewPersistentNetValue(1, 0, 4, false), 3)
 
 	model.ResetTempBuffers()
@@ -61,7 +61,7 @@ func TestValueMod(t *testing.T) {
 	model := roommodels.NewNetValuesModel(gameObjectsModel)
 	arenaImitation := make([]byte, 4)
 	model.PutTransientDataIncoming(arenaImitation)
-	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false))
+	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false), 3)
 
 	model.ResetTempBuffers()
 
@@ -105,11 +105,11 @@ func TestValueDeletion(t *testing.T) {
 	model.PutTransientDataIncoming(arenaImitation)
 
 	for i := range uint16(10) {
-		model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, i, false))
+		model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, i, false), 3)
 	}
 
 	for i := range uint16(10) {
-		model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 2, i, false))
+		model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 2, i, false), 3)
 	}
 
 	model.ResetTempBuffers()
@@ -136,7 +136,7 @@ func TestGetValues(t *testing.T) {
 	arenaImitation = binary.BigEndian.AppendUint32(arenaImitation, 1245)
 
 	model.PutTransientDataIncoming(arenaImitation)
-	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false))
+	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false), 3)
 
 	model.ResetTempBuffers()
 
@@ -156,7 +156,7 @@ func TestAuthorityViolationOnModify(t *testing.T) {
 	arenaImitation = binary.BigEndian.AppendUint32(arenaImitation, 1245)
 
 	model.PutTransientDataIncoming(arenaImitation)
-	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false))
+	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false), 3)
 
 	model.ModifyValue(gameentities.NewPersistentNetValue(1, 0, 4, false), 1)
 
@@ -172,9 +172,58 @@ func TestCreatingZombieValues(t *testing.T) {
 	arenaImitation = binary.BigEndian.AppendUint32(arenaImitation, 1245)
 
 	model.PutTransientDataIncoming(arenaImitation)
-	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false))
+	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false), 3)
 
 	if len(model.GetAdden()) != 0 {
 		t.Error("Creation value on non-existing or pooled entity id (game object) detected")
+	}
+}
+
+func TestCreatingOnForeignObject(t *testing.T) {
+	gameObjectsModel := roommodels.NewGameObjectsModel(1, 2, true)
+	gameObjectsModel.AddGameObject(gameentities.NewGameObject(0, 3, 1, 1, gameentities.Vector3{}, gameentities.Vector3{}), 3)
+	model := roommodels.NewNetValuesModel(gameObjectsModel)
+	arenaImitation := make([]byte, 0, 4)
+	arenaImitation = binary.BigEndian.AppendUint32(arenaImitation, 1245)
+
+	model.PutTransientDataIncoming(arenaImitation)
+	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false), 1)
+
+	if len(model.GetAdden()) != 0 {
+		t.Error("Adding without acces of control object detected")
+	}
+}
+
+func TestAddingEmptyValue(t *testing.T) {
+	gameObjectsModel := roommodels.NewGameObjectsModel(1, 2, true)
+	gameObjectsModel.AddGameObject(gameentities.NewGameObject(0, 3, 1, 1, gameentities.Vector3{}, gameentities.Vector3{}), 3)
+	model := roommodels.NewNetValuesModel(gameObjectsModel)
+	arenaImitation := make([]byte, 0, 4)
+	arenaImitation = binary.BigEndian.AppendUint32(arenaImitation, 1245)
+
+	model.PutTransientDataIncoming(arenaImitation)
+	model.AddValue(gameentities.NewNetValueAsTransient(0, 0, 1, 2, false), 3)
+
+	if len(model.GetAdden()) != 0 {
+		t.Error("Adding empty value")
+	}
+}
+
+func TestModEmptyValue(t *testing.T) {
+	gameObjectsModel := roommodels.NewGameObjectsModel(1, 2, true)
+	gameObjectsModel.AddGameObject(gameentities.NewGameObject(0, 3, 1, 1, gameentities.Vector3{}, gameentities.Vector3{}), 3)
+	model := roommodels.NewNetValuesModel(gameObjectsModel)
+	arenaImitation := make([]byte, 0, 4)
+	arenaImitation = binary.BigEndian.AppendUint32(arenaImitation, 1245)
+
+	model.PutTransientDataIncoming(arenaImitation)
+	model.AddValue(gameentities.NewNetValueAsTransient(0, 4, 1, 2, false), 3)
+
+	model.ResetTempBuffers()
+
+	model.ModifyValue(gameentities.NewPersistentNetValue(1, 0, 0, false), 3)
+
+	if len(model.GetModified()) != 0 {
+		t.Error("modifying as empty value empty value")
 	}
 }

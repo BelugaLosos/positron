@@ -67,6 +67,23 @@ namespace Positron.BytesArena
         }
 
         /// <summary>
+        /// Reads data from internal buffer (as memory)
+        /// </summary>
+        /// <param name="ptr">offset (pointer) at buffer</param>
+        /// <param name="len">lengths to read</param>
+        /// <returns>Link to internals data (NOT A COPY!) as memory</returns>
+        /// <exception cref="IndexOutOfRangeException">Throwed when you try to read outside of physically allocated buffer</exception>
+        public Memory<byte> ReadAsMem(uint ptr, uint len)
+        {
+            if ((ptr + len) > _buffer.Length)
+            {
+                throw new IndexOutOfRangeException($"Unable to read memory at {ptr} {len} {_buffer.Length}");
+            }
+
+            return _buffer.AsMemory((int)ptr, (int)len);
+        }
+
+        /// <summary>
         /// All data GONE after that operation
         /// </summary>
         public void Flush() 

@@ -51,7 +51,7 @@ namespace Positron.Client.Room
         public NetworkWorld(PositronSettings settings, IPositronSerializer serializer)
         {
             _gameObjectsModel = new(this, settings);
-            _valuesModel = new();
+            _valuesModel = new(serializer);
             _rpcsModel = new(settings);
             _clock = new(settings.TickOffset, settings.Tickrate);
             _writer = new(serializer);
@@ -214,7 +214,7 @@ namespace Positron.Client.Room
             _valuesModel.PutArenaFromServer(tickPacket.ValuesArena);
 
             _gameObjectsModel.CreateObjects(tickPacket.Meta.NewGameObjects, false);
-            _valuesModel.PerformAddition(tickPacket.Meta.NewValues);
+            _valuesModel.PerformAddition(tickPacket.Meta.NewValues, false);
             _valuesModel.PerformModification(tickPacket.Meta.ModValues);
             _rpcsModel.ProcessServerRpcEvents(tickPacket.Meta.Rpcs, tickPacket.RpcsArena);
 
@@ -293,7 +293,7 @@ namespace Positron.Client.Room
             _gameObjectsModel.CreateObjects(_joinDataPacket.GameObjects, true);
             
             _valuesModel.PutArenaFromServer(_joinDataPacket.NetValuesDataArena);
-            _valuesModel.PerformAddition(_joinDataPacket.Values);
+            _valuesModel.PerformAddition(_joinDataPacket.Values, true);
 
             _gameObjectsModel.WakeAllObjectsAfterSilentCreation();
 

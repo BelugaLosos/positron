@@ -243,9 +243,15 @@ func (p *PersistentArena) checkAndResize(dataLen uint32) {
 	}
 
 	need := p.writePtr + dataLen
+	step := 1
 
 	for uint32(len(p.buffer)) < need {
-		p.buffer = append(p.buffer, make([]byte, ALLOC_CHUNK)...)
+		p.buffer = append(p.buffer, make([]byte, ALLOC_CHUNK*step)...)
+		step++
+
+		if step > 3 {
+			step = 3
+		}
 	}
 }
 

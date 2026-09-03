@@ -1,10 +1,13 @@
 using Positron.BytesArena;
 using Positron.Client.GameEntities;
+using Positron.Client.Interfaces;
 using Positron.Client.Mono;
+using Positron.Client.NetValues;
 using Positron.Client.Room.Models.Interfaces;
 using Positron.Utility;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace Positron.Client.Room.Models
 {
@@ -12,11 +15,20 @@ namespace Positron.Client.Room.Models
     {
         private readonly PooledDynamicArraySegment<NetValue> _currentAddDelta = new(128);
         private readonly PooledDynamicArraySegment<PersistentNetValue> _currentModDelta = new(128);
-        private readonly TransientArena _allDeltasRawDataArena = new();
+        private readonly IPositronSerializer _positronSerializer;
 
-        private readonly Dictionary<uint, PositronNetworkIdentity> _valueIdToValuesInterfaceMapping = new();
+        private readonly byte[] _temporarySerializeBuffer = new byte[128 * 1024];
+        private readonly TransientArena _allDeltasRawDataArena = new();
+        private readonly TransientArena _incomingArena = new();
+
+        private readonly Dictionary<uint, INetValueManaged> _valueIdToValuesInterfaceMapping = new();
 
         private IReadOnlyGameObjectsModel _gameObjectsModel;
+
+        public NetworkValuesModel(IPositronSerializer serializer)
+        {
+            _positronSerializer = serializer;
+        }
 
         public void Init(IReadOnlyGameObjectsModel gameObjectsModel)
         {
@@ -44,22 +56,22 @@ namespace Positron.Client.Room.Models
             // now all values binded to GO`s and mono, it will destroyed automatically
         }
 
-        public void PutArenaFromServer(ReadOnlyMemory<byte> data) => _allDeltasRawDataArena.CloneFrom(data);
+        public void PutArenaFromServer(ReadOnlyMemory<byte> data) => _incomingArena.CloneFrom(data);
 
-        public void PerformAddition(ArraySegment<NetValue> values) //this method only SERVER -> CLIENT
+        public void PerformAddition(ArraySegment<NetValue> values, bool isLateJoin)
         {
-            //find network object and value slot
-            //init value
-            //put data into it
-            //put to dict mapping by flat id direcly by interface
-            //if it is deleting - clear value slot and mark values is invalid. delete from mapping
+            foreach (NetValue value in values)
+            {
+                AddValue(value, isLateJoin);
+            }
         }
 
-        public void PerformModification(ArraySegment<PersistentNetValue> values) //this method only SERVER -> CLIENT
+        public void PerformModification(ArraySegment<PersistentNetValue> values)
         {
-            //find in mapping
-            //validate for existance
-            //put data
+            foreach (PersistentNetValue value in values)
+            {
+                ModValue(value);
+            }
         }
 
         private void TryUnsubGameObjectCallbacks()
@@ -72,16 +84,89 @@ namespace Positron.Client.Room.Models
             _gameObjectsModel.localObjectRemotelyInitedSuccessfully -= OnLocalTargetInitedSuccesfully;
         }
 
-
-        private void OnLocalTargetInitedSuccesfully(PositronNetworkIdentity identity) //this method only CLIENT -> SERVER
+        private void AddValue(NetValue value, bool isLateJoin)
         {
-            //get all values from object (carriers must be alligned in editor time deterministically and cached for 100% determinism)
-                //get all INetValueCarrier
-                //get all values from carriers
-            //serialize data
-            //put serialized data into arena
-            //construct NetValue structures
-            //put structures into addition delta
+            PositronNetworkIdentity identity = _gameObjectsModel.GetObjectByIds(value.ParentObjectId, 0);
+
+            if (identity == null)
+            {
+                Debug.LogError($"Critical internal error -> identity by id {value.ParentObjectId} is null locally on this machine !");
+                return;
+            }
+
+            INetValueManaged[] netValues = identity.GetAllNetValues();
+
+            if (value.ValueId >= netValues.Length)
+            {
+                Debug.LogError($"Critical internal error -> unexpexted value id {value.ValueId} on object {identity}", identity);
+                return;
+            }
+
+            INetValueManaged managedValue = netValues[value.ValueId];
+
+            if (!managedValue.IsFullyInited)
+            {
+                if (_valueIdToValuesInterfaceMapping.ContainsKey(value.FlatArrayIdDescriptor))
+                {
+                    Debug.LogError("Critical internal error -> doubling of attemps to init value");
+                    return;
+                }
+
+                _valueIdToValuesInterfaceMapping.Add(value.FlatArrayIdDescriptor, managedValue);
+                managedValue.MarkInited();
+            }
+
+            if (identity.IsMine && !isLateJoin)
+            {
+                return;
+            }
+
+            Memory<byte> payload = _incomingArena.ReadAsMem(value.ArenaPtr, value.ArenaLen);
+            managedValue.DeserializeSelfFrom(payload, _positronSerializer);
+        }
+
+        private void ModValue(PersistentNetValue value)
+        {
+            //find in mapping
+            //validate for existance
+            //put data
+            //if it is deleting - clear value slot and mark values is invalid. delete from mapping
+        }
+
+        private void OnLocalTargetInitedSuccesfully(PositronNetworkIdentity identity)
+        {
+            if (!identity.IsMine)
+            {
+                Debug.LogError($"Internal critical error -> object {identity} is not local but attempted to send network values inition", identity);
+                return;
+            }
+
+            INetValueManaged[] netValues = identity.GetAllNetValues();
+            ushort valueId = 0;
+
+            foreach (INetValueManaged netValue in netValues)
+            {
+                if (valueId == ushort.MaxValue)
+                {
+                    Debug.LogError($"Internal ciritcal error -> too much values on object {identity}, max amount is {ushort.MaxValue + 1}", identity);
+                    break;
+                }
+
+                int bytesWritten = netValue.SerializeSelfTo(_temporarySerializeBuffer, _positronSerializer);
+
+                int ptr = _allDeltasRawDataArena.Alloc(_temporarySerializeBuffer.AsSpan(0, bytesWritten), out int arenaLen);
+
+                NetValue netValueStruct = new();
+                netValueStruct.ArenaPtr = (uint)ptr;
+                netValueStruct.ArenaLen = (uint)arenaLen;
+                netValueStruct.ParentObjectId = identity.ObjectId;
+                netValueStruct.ValueId = valueId;
+                netValueStruct.Deleting = false;
+
+                valueId++;
+
+                _currentAddDelta.Add(netValueStruct);
+            }
         }
 
         public ArraySegment<NetValue> GetValuesAddDelta() => _currentAddDelta.ToArray();
