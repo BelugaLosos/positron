@@ -9,7 +9,6 @@ import (
 	"positron/game/room"
 	"positron/internal"
 	"positron/internal/marshaller"
-	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -283,6 +282,58 @@ func BenchmarkRoomTickColdPath(b *testing.B) {
 
 		//this test does NOT mocks network
 	}
+}
 
-	runtime.GC()
+func BenchmarkRoomTickColdPathWithoutUnmarshall(b *testing.B) {
+	srv := &mockGameServerForZeroAllocTest{
+		mrsh: marshaller.NewMessagePackMarshaller(),
+	}
+
+	room := room.NewRoom("room", 1, time.Hour, 1, 30, nil, 50, 30, true) // RT is bottleneck of entire server!
+	handler := gamehandlers.NewGameTickHandler()
+	handler.Init(nil, srv, "")
+	handler.SetRoom(room, 1)
+	room.AddPeer("")
+
+	log.Println(b.N)
+
+	tickPacket := datatransferobjects.NewTickPacket(
+		1,
+		1,
+		1,
+		[]gameentities.GameObject{gameentities.NewGameObject(0, 1, 1, 1, gameentities.Vector3{}, gameentities.Vector3{})},
+		[]uint32{},
+		[]uint32{},
+		[]gameentities.NetValue{},
+		[]gameentities.PersistentNetValue{},
+		[]gameentities.RpcCall{},
+	)
+
+	tickPacketDestroy := datatransferobjects.NewTickPacket(
+		1,
+		1,
+		1,
+		[]gameentities.GameObject{},
+		[]uint32{1},
+		[]uint32{},
+		[]gameentities.NetValue{},
+		[]gameentities.PersistentNetValue{},
+		[]gameentities.RpcCall{},
+	)
+
+	emptyArena := make([]byte, 0)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		room.ProcessTick(tickPacket, emptyArena, emptyArena)
+
+		room.CreateTickPackets()
+		room.ResetTempBuffers()
+
+		room.ProcessTick(tickPacketDestroy, emptyArena, emptyArena)
+
+		room.ResetTempBuffers()
+	}
 }
