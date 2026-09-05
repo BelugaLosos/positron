@@ -4,11 +4,9 @@ import (
 	datatransferobjects "positron/game/dataTransferObjects"
 	gameentities "positron/game/gameEntities"
 	"positron/util"
-	"sync"
 )
 
 type GameObjectsModel struct {
-	mutex                 *sync.Mutex
 	defaultEmptyObject    gameentities.GameObject
 	defaultEmptyTransform gameentities.Tranform
 
@@ -42,7 +40,6 @@ const (
 
 func NewGameObjectsModel(rtLinmit, rtThrashold int, rtForceDisable bool) *GameObjectsModel {
 	return &GameObjectsModel{
-		mutex:                             &sync.Mutex{},
 		defaultEmptyObject:                gameentities.GameObject{},
 		defaultEmptyTransform:             gameentities.Tranform{},
 		worldCache:                        make([]gameentities.GameObject, 32),
@@ -62,38 +59,23 @@ func NewGameObjectsModel(rtLinmit, rtThrashold int, rtForceDisable bool) *GameOb
 }
 
 func (g *GameObjectsModel) GetGameObjects() []gameentities.GameObject {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-
 	g.buildWorldCache()
 	return g.worldCache
 }
 
 func (g *GameObjectsModel) GetModification() ([]gameentities.GameObject, []uint32, []uint32) {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-
 	return g.addCache, g.removeCache, g.transferCache
 }
 
 func (g *GameObjectsModel) GetSpecificAddModification() []gameentities.GameObject {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-
 	return g.addCache
 }
 
 func (g *GameObjectsModel) GetPositionMod() []gameentities.Tranform {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-
 	return g.moveCache
 }
 
 func (g *GameObjectsModel) ResetTempBuffers() {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-
 	g.addCache = g.addCache[:0]
 	g.moveCache = g.moveCache[:0]
 	g.removeCache = g.removeCache[:0]
@@ -101,9 +83,6 @@ func (g *GameObjectsModel) ResetTempBuffers() {
 }
 
 func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.GameUnreliableTickPacket) {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-
 	delta := movingPacket.GetMovedObjects()
 	source := movingPacket.GetSourceClient()
 
@@ -143,9 +122,6 @@ func (g *GameObjectsModel) EvaluateStaticScore() {
 		return
 	}
 
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-
 	for i := range g.flatTransformsContainer {
 
 		if g.flatTransformsContainer[i].GetObjectId() == 0 {
@@ -162,9 +138,6 @@ func (g *GameObjectsModel) StickStaticsToMoveDelta() {
 	if g.isRetransmissionForceDisabled {
 		return
 	}
-
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
 
 	stickedAmount := 0
 
@@ -191,9 +164,6 @@ func (g *GameObjectsModel) StickStaticsToMoveDelta() {
 }
 
 func (g *GameObjectsModel) AddGameObject(gameObject gameentities.GameObject, owner uint32) {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-
 	id := g.generateId()
 	gameObject.SetIdAndOnwer(id, owner)
 	g.allocateChunkIfNeed(id)
@@ -210,9 +180,6 @@ func (g *GameObjectsModel) AddGameObject(gameObject gameentities.GameObject, own
 }
 
 func (g *GameObjectsModel) TryRemoveGameObject(id uint32, attemptor uint32) bool {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-
 	success := false
 
 	object, exist := g.getObjectById(id)
@@ -232,9 +199,6 @@ func (g *GameObjectsModel) TryRemoveGameObject(id uint32, attemptor uint32) bool
 }
 
 func (g *GameObjectsModel) TransferObjectsFromClientToHost(clientId uint32, actualHost uint32) {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-
 	for i := range g.flatObjectsContainer {
 		if g.flatObjectsContainer[i].GetId() == 0 {
 			continue
@@ -250,9 +214,6 @@ func (g *GameObjectsModel) TransferObjectsFromClientToHost(clientId uint32, actu
 }
 
 func (g *GameObjectsModel) TransferObjectsOwnershipToTargetClient(requestedTransfer []uint32, newOwner uint32) {
-	g.mutex.Lock()
-	defer g.mutex.Unlock()
-
 	for i := range requestedTransfer {
 		requestedObject := g.flatObjectsContainer[requestedTransfer[i]]
 

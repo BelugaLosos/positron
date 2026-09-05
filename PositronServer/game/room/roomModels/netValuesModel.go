@@ -4,11 +4,9 @@ import (
 	"log"
 	gameentities "positron/game/gameEntities"
 	"positron/internal/arena"
-	"sync"
 )
 
 type NetValuesModel struct {
-	mutex            *sync.Mutex
 	gameObjectsModel ReadOnlyGameObjectsModel
 
 	worldFlatContainer    []gameentities.NetValue
@@ -28,7 +26,6 @@ type NetValuesModel struct {
 
 func NewNetValuesModel(gameObjectsModel ReadOnlyGameObjectsModel) *NetValuesModel {
 	return &NetValuesModel{
-		mutex:                       &sync.Mutex{},
 		gameObjectsModel:            gameObjectsModel,
 		worldFlatContainer:          make([]gameentities.NetValue, 0, 256),
 		worldFlatFreeIdsStack:       make([]uint32, 0, 256),
@@ -44,55 +41,34 @@ func NewNetValuesModel(gameObjectsModel ReadOnlyGameObjectsModel) *NetValuesMode
 }
 
 func (n *NetValuesModel) GetValues() ([]gameentities.NetValue, []byte) {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-
 	n.rebuildWorldCache()
 	return n.worldCache, n.worldCacheTransientArena.ReadAll()
 }
 
 func (n *NetValuesModel) GetAdden() []gameentities.NetValue {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-
 	return n.additionModidificationCache
 }
 
 func (n *NetValuesModel) GetModified() []gameentities.PersistentNetValue {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-
 	return n.modificationCache
 }
 
 func (n *NetValuesModel) ReadLocalTransientArena() []byte {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-
 	return n.modificationTransientArena.ReadAll()
 }
 
 func (n *NetValuesModel) ResetTempBuffers() {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-
 	n.additionModidificationCache = n.additionModidificationCache[:0]
 	n.modificationCache = n.modificationCache[:0]
 	n.modificationTransientArena.Flush()
 }
 
 func (n *NetValuesModel) PutTransientDataIncoming(data []byte) {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-
 	n.incomingTransientArena.Flush()
 	n.incomingTransientArena.CloneFrom(data)
 }
 
 func (n *NetValuesModel) AddValue(incoming gameentities.NetValue, attemptorId uint32) {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-
 	if incoming.GetIsDeleting() {
 		return
 	}
@@ -129,9 +105,6 @@ func (n *NetValuesModel) AddValue(incoming gameentities.NetValue, attemptorId ui
 }
 
 func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue, attemptorClientId uint32) {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-
 	if int64(incoming.GetArrayDescriptor()) >= int64(len(n.worldFlatContainer)) {
 		return
 	}
@@ -160,9 +133,6 @@ func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue, a
 }
 
 func (n *NetValuesModel) RemoveAllValuesFromObject(objectId uint32) {
-	n.mutex.Lock()
-	defer n.mutex.Unlock()
-
 	for i := range n.worldFlatContainer {
 		val := n.worldFlatContainer[i]
 		valDesc := val.GetArrayDescriptor()

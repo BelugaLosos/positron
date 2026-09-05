@@ -5,12 +5,9 @@ import (
 	gameentities "positron/game/gameEntities"
 	eventtypes "positron/game/gameHandlers/eventTypes"
 	"positron/internal/arena"
-	"sync"
 )
 
 type RpcsModel struct {
-	mutex *sync.Mutex
-
 	cachedRpcs               []gameentities.RpcCall
 	cachedRpcsTransientArena *arena.TransientArena
 
@@ -22,7 +19,6 @@ type RpcsModel struct {
 
 func NewRpcsModel() *RpcsModel {
 	return &RpcsModel{
-		mutex:                            &sync.Mutex{},
 		cachedRpcs:                       make([]gameentities.RpcCall, 0, 16),
 		cachedRpcsTransientArena:         arena.NewTransfientArena(),
 		callBuffer:                       make([]gameentities.RpcCall, 0, 16),
@@ -32,39 +28,24 @@ func NewRpcsModel() *RpcsModel {
 }
 
 func (r *RpcsModel) GetCachedRpcs() ([]gameentities.RpcCall, []byte) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	return r.cachedRpcs, r.cachedRpcsTransientArena.ReadAll()
 }
 
 func (r *RpcsModel) GetCurrentCallBuffer() ([]gameentities.RpcCall, []byte) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	return r.callBuffer, r.callBufferTransientArena.ReadAll()
 }
 
 func (r *RpcsModel) ResetTempBuffers() {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	r.callBufferTransientArena.Flush()
 	r.callBuffer = r.callBuffer[:0]
 }
 
 func (r *RpcsModel) PutTransientDataIncoming(data []byte) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	r.incomingCallBufferTransientArena.Flush()
 	r.incomingCallBufferTransientArena.CloneFrom(data)
 }
 
 func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameentities.GameObject) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	incomingRawPayload, err := r.incomingCallBufferTransientArena.Read(call.GetDescriptors())
 
 	if err != nil {
@@ -101,9 +82,6 @@ func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameenti
 }
 
 func (r *RpcsModel) SanetizeBufferedCalls(objId uint32) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
 	for i := range r.cachedRpcs {
 		rpc := r.cachedRpcs[i]
 
