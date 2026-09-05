@@ -259,7 +259,7 @@ func BenchmarkRoomTickColdPath(b *testing.B) {
 		mrsh: marshaller.NewMessagePackMarshaller(),
 	}
 
-	room := room.NewRoom("room", 1, time.Hour, 1, 30, nil, 50, 30, false)
+	room := room.NewRoom("room", 1, time.Hour, 1, 30, nil, 50, 30, true) // RT is bottleneck of entire server!
 	handler := gamehandlers.NewGameTickHandler()
 	handler.Init(nil, srv, "")
 	handler.SetRoom(room, 1)
