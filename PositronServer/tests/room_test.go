@@ -337,3 +337,121 @@ func BenchmarkRoomTickColdPathWithoutUnmarshall(b *testing.B) {
 		room.ResetTempBuffers()
 	}
 }
+
+func BenchmarkRoomTickValuesColdPath(b *testing.B) {
+	srv := &mockGameServerForZeroAllocTest{
+		mrsh: marshaller.NewMessagePackMarshaller(),
+	}
+
+	room := room.NewRoom("room", 1, time.Hour, 1, 30, nil, 50, 30, false)
+	handler := gamehandlers.NewGameTickHandler()
+	handler.Init(nil, srv, "")
+	handler.SetRoom(room, 1)
+	room.AddPeer("")
+
+	log.Println(b.N)
+
+	tickPacketAddObj := datatransferobjects.NewTickPacket(
+		1,
+		1,
+		1,
+		[]gameentities.GameObject{gameentities.NewGameObject(1, 1, 1, 1, gameentities.Vector3{}, gameentities.Vector3{})},
+		[]uint32{},
+		[]uint32{},
+		[]gameentities.NetValue{},
+		[]gameentities.PersistentNetValue{},
+		[]gameentities.RpcCall{},
+	)
+
+	valArena := []byte{0, 0, 0, 1}
+
+	tickPacket := datatransferobjects.NewTickPacket(
+		1,
+		1,
+		1,
+		[]gameentities.GameObject{},
+		[]uint32{},
+		[]uint32{},
+		[]gameentities.NetValue{gameentities.NewNetValueAsTransient(0, 4, 1, 0, false)},
+		[]gameentities.PersistentNetValue{},
+		[]gameentities.RpcCall{},
+	)
+
+	room.ProcessTick(tickPacketAddObj, valArena, valArena)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		room.ProcessTick(tickPacket, valArena, valArena)
+
+		room.CreateTickPackets()
+		room.ResetTempBuffers()
+	}
+}
+
+func BenchmarkRoomTickValuesHotPath(b *testing.B) {
+	srv := &mockGameServerForZeroAllocTest{
+		mrsh: marshaller.NewMessagePackMarshaller(),
+	}
+
+	room := room.NewRoom("room", 1, time.Hour, 1, 30, nil, 50, 30, false)
+	handler := gamehandlers.NewGameTickHandler()
+	handler.Init(nil, srv, "")
+	handler.SetRoom(room, 1)
+	room.AddPeer("")
+
+	log.Println(b.N)
+
+	tickPacketAddObj := datatransferobjects.NewTickPacket(
+		1,
+		1,
+		1,
+		[]gameentities.GameObject{gameentities.NewGameObject(1, 1, 1, 1, gameentities.Vector3{}, gameentities.Vector3{})},
+		[]uint32{},
+		[]uint32{},
+		[]gameentities.NetValue{},
+		[]gameentities.PersistentNetValue{},
+		[]gameentities.RpcCall{},
+	)
+
+	valArena := []byte{0, 0, 0, 1}
+	valArenaNew := []byte{0, 0, 2}
+
+	tickPacketAddValue := datatransferobjects.NewTickPacket(
+		1,
+		1,
+		1,
+		[]gameentities.GameObject{},
+		[]uint32{},
+		[]uint32{},
+		[]gameentities.NetValue{gameentities.NewNetValueAsTransient(0, 4, 1, 0, false)},
+		[]gameentities.PersistentNetValue{},
+		[]gameentities.RpcCall{},
+	)
+
+	room.ProcessTick(tickPacketAddObj, valArena, valArena)
+	room.ProcessTick(tickPacketAddValue, valArena, valArena)
+
+	tickPacket := datatransferobjects.NewTickPacket(
+		1,
+		1,
+		1,
+		[]gameentities.GameObject{},
+		[]uint32{},
+		[]uint32{},
+		[]gameentities.NetValue{},
+		[]gameentities.PersistentNetValue{gameentities.NewPersistentNetValue(1, 0, 3, false)},
+		[]gameentities.RpcCall{},
+	)
+
+	b.ResetTimer()
+	b.ReportAllocs()
+
+	for i := 0; i < b.N; i++ {
+		room.ProcessTick(tickPacket, valArenaNew, valArenaNew)
+
+		room.CreateTickPackets()
+		room.ResetTempBuffers()
+	}
+}
