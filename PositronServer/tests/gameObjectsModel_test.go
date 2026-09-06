@@ -42,7 +42,7 @@ func TestModifications(t *testing.T) {
 		}
 	}
 
-	model.TryRemoveGameObject(1, 1)
+	model.TryRemoveGameObject(1, 1, 0)
 	model.TransferObjectsFromClientToHost(1, 0)
 
 	add, remove, transfer := model.GetModification()
@@ -79,6 +79,20 @@ func TestModifications(t *testing.T) {
 	}
 }
 
+func TestRemoveWithHostAuthority(t *testing.T) {
+	model := roommodels.NewGameObjectsModel(50, 30, false)
+	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 0, 0), gameentities.NewVector(0, 0, 0)), 1) //1
+	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 1, 0), gameentities.NewVector(0, 1, 0)), 1) //2
+	model.ResetTempBuffers()
+
+	wasRemoved := model.TryRemoveGameObject(2, 4, 4)
+	_, r, _ := model.GetModification()
+
+	if !wasRemoved || len(r) != 1 || r[0] != 2 {
+		t.Error("Not enought authority!")
+	}
+}
+
 func TestCyclicMod(t *testing.T) {
 	model := roommodels.NewGameObjectsModel(50, 30, false)
 
@@ -100,14 +114,22 @@ func TestCyclicMod(t *testing.T) {
 }
 
 func TestMove(t *testing.T) {
+	doTestMove(t, 1, 0)
+}
+
+func TestMoveWithHostAuthority(t *testing.T) {
+	doTestMove(t, 2, 2)
+}
+
+func doTestMove(t *testing.T, source, host uint32) {
 	model := roommodels.NewGameObjectsModel(50, 30, false)
 	model.AddGameObject(gameentities.NewGameObject(0, 1, 0, 0, gameentities.NewVector(0, 0, 0), gameentities.NewVector(0, 0, 0)), 1)
 
 	move := make([]gameentities.Tranform, 0)
 	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, gameentities.NewVector(1, 1, 1), gameentities.NewVector(1, 1, 1))))
 
-	movePacket := datatransferobjects.NewGameUnreliableTickPacket(0, move, 1)
-	model.MoveGameObjects(movePacket)
+	movePacket := datatransferobjects.NewGameUnreliableTickPacket(0, move, source)
+	model.MoveGameObjects(movePacket, host)
 
 	mod := model.GetPositionMod()
 	pos := mod[0].GetPosition()
@@ -124,7 +146,7 @@ func TestMove(t *testing.T) {
 	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, gameentities.NewVector(1, 1, 1), gameentities.NewVector(1, 1, 1))))
 
 	movePacket = datatransferobjects.NewGameUnreliableTickPacket(0, move, 1)
-	model.MoveGameObjects(movePacket)
+	model.MoveGameObjects(movePacket, 0)
 
 	mod = model.GetPositionMod()
 
@@ -138,7 +160,7 @@ func TestMove(t *testing.T) {
 	move = append(move, gameentities.NewTransform(gameentities.NewGameObject(1, 1, 3, 3, gameentities.NewVector(1, 2, 1), gameentities.NewVector(1, 2, 1))))
 
 	movePacket = datatransferobjects.NewGameUnreliableTickPacket(0, move, 1)
-	model.MoveGameObjects(movePacket)
+	model.MoveGameObjects(movePacket, 0)
 
 	mod = model.GetPositionMod()
 

@@ -68,12 +68,12 @@ func (n *NetValuesModel) PutTransientDataIncoming(data []byte) {
 	n.incomingTransientArena.CloneFrom(data)
 }
 
-func (n *NetValuesModel) AddValue(incoming gameentities.NetValue, attemptorId uint32) {
+func (n *NetValuesModel) AddValue(incoming gameentities.NetValue, attemptorId uint32, actualHost uint32) {
 	if incoming.GetIsDeleting() {
 		return
 	}
 
-	if owner, isExisted := n.gameObjectsModel.ThreadUnsafeGetObjectOwner(incoming.GetParentObjectId()); owner != attemptorId || !isExisted {
+	if owner, isExisted := n.gameObjectsModel.ThreadUnsafeGetObjectOwner(incoming.GetParentObjectId()); (owner != attemptorId && attemptorId != actualHost) || !isExisted {
 		return
 	}
 
@@ -104,7 +104,7 @@ func (n *NetValuesModel) AddValue(incoming gameentities.NetValue, attemptorId ui
 	n.additionModidificationCache = append(n.additionModidificationCache, incoming)
 }
 
-func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue, attemptorClientId uint32) {
+func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue, attemptorClientId uint32, actualHost uint32) {
 	if int64(incoming.GetArrayDescriptor()) >= int64(len(n.worldFlatContainer)) {
 		return
 	}
@@ -125,7 +125,7 @@ func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue, a
 		return
 	}
 
-	if owner != attemptorClientId {
+	if owner != attemptorClientId && attemptorClientId != actualHost {
 		return
 	}
 

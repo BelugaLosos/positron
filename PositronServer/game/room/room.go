@@ -170,11 +170,11 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket, netValues
 	}
 
 	for i := range packet.GetNewValues() {
-		r.netValuesModel.AddValue(packet.GetNewValues()[i], packet.GetSourceClient())
+		r.netValuesModel.AddValue(packet.GetNewValues()[i], packet.GetSourceClient(), r.hostIndex)
 	}
 
 	for i := range packet.GetModValues() {
-		r.netValuesModel.ModifyValue(packet.GetModValues()[i], packet.GetSourceClient())
+		r.netValuesModel.ModifyValue(packet.GetModValues()[i], packet.GetSourceClient(), r.hostIndex)
 	}
 
 	addMod := r.gameObjectsModel.GetSpecificAddModification()
@@ -187,7 +187,7 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket, netValues
 		removingObj := packet.GetRemovedObjects()[i]
 		attemptor := packet.GetSourceClient()
 
-		wasRemoved := r.gameObjectsModel.TryRemoveGameObject(removingObj, attemptor)
+		wasRemoved := r.gameObjectsModel.TryRemoveGameObject(removingObj, attemptor, r.hostIndex)
 
 		if wasRemoved {
 			r.netValuesModel.RemoveAllValuesFromObject(removingObj)
@@ -202,7 +202,7 @@ func (r *Room) ProcessUnreliableTick(packet *datatransferobjects.GameUnreliableT
 	r.mutex.Lock()
 	defer r.mutex.Unlock()
 
-	r.gameObjectsModel.MoveGameObjects(packet)
+	r.gameObjectsModel.MoveGameObjects(packet, r.hostIndex)
 }
 
 func (r *Room) GetHost() uint32 {

@@ -150,17 +150,17 @@ func (g *GameServer) roomTick(room *room.Room) {
 			log.Printf("Room %s disposed", room.GetUuid())
 			return
 		case <-room.Ticker.C:
-			room.Lock()
-
-			packet, unreliablePacket, netValuesArena, rpcsArena := room.CreateTickPackets()
-			peers := room.GetAllConnectedPeers()
-
 			packetMarshallBuffer := bufferPool.Get().(*bytes.Buffer)
 			packetArensBuf := rawBuffersPool.Get().([]byte)
 			packetUnrMarshalled := bufferPool.Get().(*bytes.Buffer)
 
 			packetMarshallBuffer.Reset()
 			packetUnrMarshalled.Reset()
+
+			room.Lock()
+
+			packet, unreliablePacket, netValuesArena, rpcsArena := room.CreateTickPackets()
+			peers := room.GetAllConnectedPeers()
 
 			err := g.marhaller.MarshalNonAlloc(packetMarshallBuffer, packet)
 

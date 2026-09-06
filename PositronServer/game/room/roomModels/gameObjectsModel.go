@@ -82,7 +82,7 @@ func (g *GameObjectsModel) ResetTempBuffers() {
 	g.transferCache = g.transferCache[:0]
 }
 
-func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.GameUnreliableTickPacket) {
+func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.GameUnreliableTickPacket, actualHost uint32) {
 	delta := movingPacket.GetMovedObjects()
 	source := movingPacket.GetSourceClient()
 
@@ -101,7 +101,7 @@ func (g *GameObjectsModel) MoveGameObjects(movingPacket *datatransferobjects.Gam
 
 		localTransformCopy := g.flatTransformsContainer[gameObjectCopy.GetId()]
 
-		if gameObjectCopy.GetOwnerId() == source &&
+		if (gameObjectCopy.GetOwnerId() == source || source == actualHost) &&
 			(util.PointsDistance(position.GetPosition(), gameObjectCopy.GetPosition()) > POSITION_DELTA_TO_SYNC ||
 				util.RotationBetweenEulerAngles(position.GetRotation(), gameObjectCopy.GetRotation()) > ROTATION_DELTA_TO_SYNC) {
 
@@ -179,12 +179,12 @@ func (g *GameObjectsModel) AddGameObject(gameObject gameentities.GameObject, own
 	g.currntObjectsCount++
 }
 
-func (g *GameObjectsModel) TryRemoveGameObject(id uint32, attemptor uint32) bool {
+func (g *GameObjectsModel) TryRemoveGameObject(id uint32, attemptor uint32, actualHost uint32) bool {
 	success := false
 
 	object, exist := g.getObjectById(id)
 
-	if exist && object.GetOwnerId() == attemptor {
+	if exist && (object.GetOwnerId() == attemptor || attemptor == actualHost) {
 		g.removeCache = append(g.removeCache, id)
 		g.freedIds = append(g.freedIds, id)
 
