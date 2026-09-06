@@ -141,7 +141,7 @@ func (n *NetValuesModel) RemoveAllValuesFromObject(objectId uint32) {
 			continue
 		}
 
-		if err := n.worldPersistentArena.Free(val.GetPersistentMemoryDescriptor(), false); err != nil {
+		if err := n.worldPersistentArena.Free(val.GetPersistentMemoryDescriptor(), true); err != nil {
 			log.Printf("Unable to remove value %v %v due to memory err %v", val.GetParentObjectId(), val.GetValueId(), err)
 			continue
 		}
