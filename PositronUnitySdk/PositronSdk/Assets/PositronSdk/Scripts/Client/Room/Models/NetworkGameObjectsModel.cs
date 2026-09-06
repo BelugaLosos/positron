@@ -142,7 +142,7 @@ namespace Positron.Client.Room.Models
                 throw new ArgumentNullException("Positron error -> can`t destroy null object");
             }
 
-            if (instance.OwnerClientId != _world.LocalClientId)
+            if (instance.OwnerClientId != _world.LocalClientId && _world.HostId != _world.LocalClientId)
             {
                 throw new ArgumentException($"Positron critical error -> can`t destroy not local owned object OBJ: '{instance}' OWNED_BY: '{instance.OwnerClientId}' LOCAL_ID: '{_world.LocalClientId}'");
             }

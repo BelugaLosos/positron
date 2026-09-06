@@ -77,6 +77,16 @@ namespace Positron.Extras.HandTests.Object
                     obj.GetComponentInChildren<ObjectRpcColorTest>().CallColorTransfer();
                 }
             }
+
+            if (Input.GetKeyUp(KeyCode.N))
+            {
+                PositronNetworkIdentity obj = Hitscan();
+
+                if (obj != null)
+                {
+                    obj.GetComponentInChildren<ObjectValueTest>().PutRandom();
+                }
+            }
         }
 
         private void ProcessRotationByAxis(Vector3 rotAxis)

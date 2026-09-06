@@ -108,12 +108,14 @@ namespace Positron.Client.Room.Models
             {
                 if (_valueIdToValuesInterfaceMapping.ContainsKey(value.FlatArrayIdDescriptor))
                 {
-                    Debug.LogError("Critical internal error -> doubling of attemps to init value");
+                    Debug.LogError($"Critical internal error -> doubling of attemps to init value {value.FlatArrayIdDescriptor}");
                     return;
                 }
 
                 _valueIdToValuesInterfaceMapping.Add(value.FlatArrayIdDescriptor, managedValue);
-                managedValue.MarkInited();
+                managedValue.MarkInited(value.FlatArrayIdDescriptor);
+
+                managedValue.dataChangedWithFullCallback += OnValueDataChanged;
             }
 
             if (identity.IsMine && !isLateJoin)
@@ -127,13 +129,30 @@ namespace Positron.Client.Room.Models
 
         private void ModValue(PersistentNetValue value)
         {
-            //find in mapping
-            //validate for existance
-            //put data
-            //if it is deleting - clear value slot and mark values is invalid. delete from mapping
+            if(!_valueIdToValuesInterfaceMapping.TryGetValue(value.FlatArrayIdDescriptor, out INetValueManaged managedValue))
+            {
+                return;
+            }
+
+            if (!managedValue.IsFullyInited || managedValue == null)
+            {
+                _valueIdToValuesInterfaceMapping.Remove(value.FlatArrayIdDescriptor);
+                Debug.LogError($"internal critical error -> can`t mod value (FAIDD: {value.FlatArrayIdDescriptor}) that is not fully inited or null!");
+                return;
+            }
+
+            if (value.IsDeleting)
+            {
+                managedValue.dataChangedWithFullCallback -= OnValueDataChanged;
+                _valueIdToValuesInterfaceMapping.Remove(value.FlatArrayIdDescriptor);
+                return;
+            }
+
+            Memory<byte> payload = _incomingArena.ReadAsMem(value.ArenaPtr, value.ArenaLen);
+            managedValue.DeserializeSelfFrom(payload, _positronSerializer);
         }
 
-        private void OnLocalTargetInitedSuccesfully(PositronNetworkIdentity identity)
+        private void OnLocalTargetInitedSuccesfully(PositronNetworkIdentity identity) // local addition start point
         {
             if (!identity.IsMine)
             {
@@ -167,6 +186,25 @@ namespace Positron.Client.Room.Models
 
                 _currentAddDelta.Add(netValueStruct);
             }
+        }
+
+        private void OnValueDataChanged(INetValueManaged managedValue, uint flatArrayIdDescriptor) // local modification start point
+        {
+            if (!managedValue.IsFullyInited)
+            {
+                return;
+            }
+
+            int bytesWritten = managedValue.SerializeSelfTo(_temporarySerializeBuffer, _positronSerializer);
+            int ptr = _allDeltasRawDataArena.Alloc(_temporarySerializeBuffer.AsSpan(0, bytesWritten), out int arenaLen);
+
+            PersistentNetValue persistentNetValue = new();
+            persistentNetValue.ArenaPtr = (uint)ptr;
+            persistentNetValue.ArenaLen = (uint)arenaLen;
+            persistentNetValue.FlatArrayIdDescriptor = flatArrayIdDescriptor;
+            persistentNetValue.IsDeleting = false;  
+
+            _currentModDelta.Add(persistentNetValue);   
         }
 
         public ArraySegment<NetValue> GetValuesAddDelta() => _currentAddDelta.ToArray();

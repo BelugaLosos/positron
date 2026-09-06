@@ -129,6 +129,8 @@ func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue, a
 		return
 	}
 
+	log.Println(owner, attemptorClientId, actualHost)
+
 	n.modifyValue(incoming, local)
 }
 
@@ -141,14 +143,15 @@ func (n *NetValuesModel) RemoveAllValuesFromObject(objectId uint32) {
 			continue
 		}
 
-		val.ResetParentObjectId()
-		n.worldFlatContainer[valDesc] = val
-		n.worldFlatFreeIdsStack = append(n.worldFlatFreeIdsStack, valDesc)
-
 		if err := n.worldPersistentArena.Free(val.GetPersistentMemoryDescriptor(), false); err != nil {
 			log.Printf("Unable to remove value %v %v due to memory err %v", val.GetParentObjectId(), val.GetValueId(), err)
 			continue
 		}
+
+		val.ResetParentObjectId()
+
+		n.worldFlatContainer[valDesc] = val
+		n.worldFlatFreeIdsStack = append(n.worldFlatFreeIdsStack, valDesc)
 
 		val.MarkAsDeleting()
 		val.SetPersistentMemoryDescriptor(0)
@@ -173,7 +176,13 @@ func (n *NetValuesModel) modifyValue(incoming gameentities.PersistentNetValue, l
 	deltaLen := uint32(len(incomingPayload))
 
 	if err != nil {
-		log.Printf("modify value failed due to memory (Patch) err %v", err)
+		_, l := incoming.GetTransientMemoryDescriptor()
+		log.Printf("modify value failed due to memory (Patch) err %v. obj id %v, desc %v, len %v", err, local.GetParentObjectId(), local.GetPersistentMemoryDescriptor(), l)
+
+		for i := range n.worldFlatContainer {
+			log.Printf("\t value: %v", n.worldFlatContainer[i])
+		}
+
 		return
 	}
 
