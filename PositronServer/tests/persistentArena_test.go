@@ -165,19 +165,19 @@ func TestReplicativeDescriptorsInvalidation(t *testing.T) {
 	d4 := aren.Alloc([]byte(str)) //3
 
 	if err := aren.Free(d1, true); err != nil {
-		t.Error(err) //3
+		t.Error(err) //0
 	}
 
 	if err := aren.Free(d2, true); err != nil {
-		t.Error(err) //2
-	}
-
-	if err := aren.Free(d3, true); err != nil {
 		t.Error(err) //1
 	}
 
+	if err := aren.Free(d3, true); err != nil {
+		t.Error(err) //2
+	}
+
 	if err := aren.Free(d4, true); err != nil {
-		t.Error(err) //0
+		t.Error(err) //3
 	}
 
 	r1 := aren.Alloc([]byte(str))
