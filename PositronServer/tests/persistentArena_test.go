@@ -153,3 +153,39 @@ func TestPatch(t *testing.T) {
 
 	log.Println(metrics.FragmentationRatio)
 }
+
+func TestReplicativeDescriptorsInvalidation(t *testing.T) {
+	aren := arena.NewPersistentArena()
+
+	str := generateRandomString(16)
+
+	d1 := aren.Alloc([]byte(str)) //0
+	d2 := aren.Alloc([]byte(str)) //1
+	d3 := aren.Alloc([]byte(str)) //2
+	d4 := aren.Alloc([]byte(str)) //3
+
+	if err := aren.Free(d1, true); err != nil {
+		t.Error(err) //3
+	}
+
+	if err := aren.Free(d2, true); err != nil {
+		t.Error(err) //2
+	}
+
+	if err := aren.Free(d3, true); err != nil {
+		t.Error(err) //1
+	}
+
+	if err := aren.Free(d4, true); err != nil {
+		t.Error(err) //0
+	}
+
+	r1 := aren.Alloc([]byte(str))
+	r2 := aren.Alloc([]byte(str))
+	r3 := aren.Alloc([]byte(str))
+	r4 := aren.Alloc([]byte(str))
+
+	if r1 != 0 || r2 != 3 || r3 != 2 || r4 != 1 {
+		t.Errorf("invalid %v %v %v %v", r1, r2, r3, r4)
+	}
+}

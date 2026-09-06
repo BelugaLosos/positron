@@ -305,6 +305,7 @@ func (p *PersistentArena) findSlotInCont(i int, dataLen uint32) (bool, int) {
 			cont.slots[j] = cont.slots[len(cont.slots)-1]
 			cont.slots = cont.slots[:(len(cont.slots) - 1)]
 
+			p.freeSlotContainers[i] = cont
 			return true, slotIndex
 		}
 	}

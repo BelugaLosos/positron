@@ -178,11 +178,6 @@ func (n *NetValuesModel) modifyValue(incoming gameentities.PersistentNetValue, l
 	if err != nil {
 		_, l := incoming.GetTransientMemoryDescriptor()
 		log.Printf("modify value failed due to memory (Patch) err %v. obj id %v, desc %v, len %v", err, local.GetParentObjectId(), local.GetPersistentMemoryDescriptor(), l)
-
-		for i := range n.worldFlatContainer {
-			log.Printf("\t value: %v", n.worldFlatContainer[i])
-		}
-
 		return
 	}
 
