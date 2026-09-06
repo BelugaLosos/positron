@@ -129,8 +129,6 @@ func (n *NetValuesModel) ModifyValue(incoming gameentities.PersistentNetValue, a
 		return
 	}
 
-	log.Println(owner, attemptorClientId, actualHost)
-
 	n.modifyValue(incoming, local)
 }
 
