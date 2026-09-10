@@ -1,4 +1,5 @@
 using Positron.Client.Interfaces;
+using Positron.Client.Mono;
 using System;
 
 namespace Positron.Client.NetValues
@@ -9,6 +10,7 @@ namespace Positron.Client.NetValues
         event Action<INetValueManaged, uint> dataChangedWithFullCallback;
         event Action changed;
         void MarkInited(uint flatArrayIdDescriptor);
+        void BindNetworkObject(PositronNetworkIdentity identity, bool predictable);
         int SerializeSelfTo(Span<byte> container, IPositronSerializer serializer);
         void DeserializeSelfFrom(ReadOnlyMemory<byte> container, IPositronSerializer serializer);
     }

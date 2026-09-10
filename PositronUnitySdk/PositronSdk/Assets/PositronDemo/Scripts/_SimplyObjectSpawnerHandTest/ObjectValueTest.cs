@@ -1,6 +1,8 @@
 using MessagePack;
+using Positron.Client.Mono;
 using Positron.Client.Mono.Interfaces;
 using Positron.Client.NetValues;
+using Positron.Client.NetValues.Attributes;
 using Positron.Client.NetValues.Implements;
 using TMPro;
 using UnityEngine;
@@ -11,10 +13,11 @@ namespace Positron.Extras.HandTests
     {
         [SerializeField] private TextMeshProUGUI _displayText;
 
-        private NetValueComplex<ObjectValueTestData> _someValue = new();
-
-        public INetValueManaged[] GetNetValues()
+        [Networked(NetValueAuthority.Owner)] private NetValueComplex<ObjectValueTestData> _someValue = new();
+        
+        public INetValueManaged[] GetNetValues() // this shit must be from generator
         {
+            _someValue.BindNetworkObject(GetComponent<PositronNetworkIdentity>(), false);
             return new INetValueManaged[] { _someValue };
         }
 
