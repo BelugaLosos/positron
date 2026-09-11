@@ -7,7 +7,7 @@ using System.Text;
 using System.Security.Cryptography;
 using System;
 
-namespace PositronCodeGen.Generators
+namespace PositronCodeGen.Generators.Rpc
 {
     internal class MethodGenerator
     {
@@ -17,7 +17,7 @@ namespace PositronCodeGen.Generators
         public MethodGenerator()
         {
             _typesNamesConverter = new TypeDefinitionToIoMethodNameConverter();
-            _namesHasher = new NamesHasher();   
+            _namesHasher = new NamesHasher();
         }
 
         public void GenerateMethodWithClosure(StringBuilder str, ParsedMethodData data)

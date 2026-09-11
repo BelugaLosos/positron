@@ -9,17 +9,12 @@ using UnityEngine;
 
 namespace Positron.Extras.HandTests
 {
-    public class ObjectValueTest : MonoBehaviour, INetValueCarrier, INetworkAwakeble, INetworkDestructable
+    public partial class ObjectValueTest : MonoBehaviour, INetworkAwakeble, INetworkDestructable
     {
         [SerializeField] private TextMeshProUGUI _displayText;
 
         [Networked(NetValueAuthority.Owner)] private NetValueComplex<ObjectValueTestData> _someValue = new();
-        
-        public INetValueManaged[] GetNetValues() // this shit must be from generator
-        {
-            _someValue.BindNetworkObject(GetComponent<PositronNetworkIdentity>(), false);
-            return new INetValueManaged[] { _someValue };
-        }
+        [Networked(NetValueAuthority.Server, true)] private NetValueComplex<ObjectValueTestData> _anotherV;
 
         public void OnNetworkAwake()
         {

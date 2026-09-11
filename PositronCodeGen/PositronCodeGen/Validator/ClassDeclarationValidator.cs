@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using PositronCodeGen.Extractors.Data;
 using System.Linq;
 
 namespace PositronCodeGen.Validator
@@ -32,12 +33,23 @@ namespace PositronCodeGen.Validator
             return false;
         }
 
-        public DiagnosticDescriptor GenerateDiagnosticsDescriptor()
+        public void ReportDiagnostic(GeneratorExecutionContext context, INamedTypeSymbol type)
+        {
+            context.ReportDiagnostic(GeneratReport(type));
+        }
+
+        private Diagnostic GeneratReport(INamedTypeSymbol type) => Diagnostic.Create(
+                                                                    GenerateDiagnosticsDescriptor(),
+                                                                    type.Locations.FirstOrDefault() ?? Location.None,
+                                                                    type.Name
+                                                               );
+
+        private DiagnosticDescriptor GenerateDiagnosticsDescriptor()
         {
             return new DiagnosticDescriptor(
-                    "RPC Codegen",
-                    "Class (only Classes supported) with RPCs must be declared as PARTIAL, not STATIC and not ABSTRACT !!!",
-                    "Rpc-constaining code {0} must be declared as PARTIAL, not STATIC and not ABSTRACT class!!!",
+                    "Positron code gen",
+                    "Class (only Classes supported) with RPCs or NetValues (Networked attr) must be declared as PARTIAL, not STATIC and not ABSTRACT !!!",
+                    "Mapped code {0} must be declared as PARTIAL, not STATIC and not ABSTRACT class!!!",
                     "Positron codegen report",
                     DiagnosticSeverity.Error,
                     true

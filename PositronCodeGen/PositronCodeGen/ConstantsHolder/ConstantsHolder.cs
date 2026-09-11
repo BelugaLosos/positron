@@ -20,5 +20,11 @@
         public static readonly string RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED = "RPC_ALL_CACHED";
         public static readonly string RPC_SPECIFIED_TARGET_STRUCT_NAME = "global::Positron.Client.Rpc.RpcPlayerRef";
         public static readonly string POSITRON_NETWORK_IDENTITY_DEFINITION = "global::Positron.Client.Mono.PositronNetworkIdentity";
+        public static readonly string NET_VALUE_MANGED_DEFINITION = "global::Positron.Client.NetValues.INetValueManaged";
+        public static readonly string NET_VALUE_CARRIER_DEFINITION = "global::Positron.Client.NetValues.INetValueCarrier";
+        public static readonly string NET_VALUE_CARRIER_GET_VALUES_METHOD_DEFINITION = "GetNetValues";
+        public static readonly string NET_VALUE_BIND_NETWORK_OBJECT_METHOD_DEFINITION = "BindNetworkObject";
+        public static readonly string NET_VALUE_PREDICTABLE_FLAG_NAME = "isPredicatble";
+        public static readonly string NET_VALUE_ATTR_NAME = "NetworkedAttribute";
     }
 }

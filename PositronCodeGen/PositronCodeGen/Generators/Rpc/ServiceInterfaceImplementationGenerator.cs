@@ -3,7 +3,7 @@ using PositronCodeGen.Extractors.Data;
 using PositronCodeGen.Util;
 using System.Text;
 
-namespace PositronCodeGen.Generators
+namespace PositronCodeGen.Generators.Rpc
 {
     internal class ServiceInterfaceImplementationGenerator
     {
