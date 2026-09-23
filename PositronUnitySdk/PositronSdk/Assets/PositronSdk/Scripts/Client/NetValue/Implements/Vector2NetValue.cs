@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Positron.Client.NetValues.Implements
 {
-    public class Vector2NetValue : NetValueManagedBase<Vector2>
+    public sealed class Vector2NetValue : NetValueManagedBase<Vector2>
     {
         public override int OnSerialize(Span<byte> container, IPositronSerializer serializer)
         {

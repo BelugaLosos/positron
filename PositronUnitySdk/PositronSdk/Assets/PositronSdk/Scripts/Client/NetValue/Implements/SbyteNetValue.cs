@@ -3,7 +3,7 @@ using System;
 
 namespace Positron.Client.NetValues
 {
-    public class SbyteNetValue : NetValueManagedBase<sbyte>
+    public sealed class SbyteNetValue : NetValueManagedBase<sbyte>
     {
         public override int OnSerialize(Span<byte> container, IPositronSerializer serializer)
         {

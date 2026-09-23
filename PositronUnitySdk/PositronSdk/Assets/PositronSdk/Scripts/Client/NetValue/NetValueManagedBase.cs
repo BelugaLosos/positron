@@ -11,7 +11,7 @@ namespace Positron.Client.NetValues
 
         private uint _flatArrayDescriptor;
         private bool _predictable;
-
+        
         protected T _value;
 
         public bool IsFullyInited { get; private set; }

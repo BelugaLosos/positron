@@ -37,7 +37,7 @@ namespace PositronCodeGen.Processors
 
             if (!_partialsValidator.ClassIsDeclaredCorrectly(type.Type) && methods.Count > 0)
             {
-                _partialsValidator.ReportDiagnostic(context, type.Type);
+                _partialsValidator.ReportDiagnosticClassDeclaration(context, type.Type);
                 return;
             }
 

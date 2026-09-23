@@ -4,7 +4,7 @@ using System;
 
 namespace Positron.Client.NetValues.Implements
 {
-    public class UshortNetValue : NetValueManagedBase<ushort>
+    public sealed class UshortNetValue : NetValueManagedBase<ushort>
     {
         public override int OnSerialize(Span<byte> container, IPositronSerializer serializer)
         {

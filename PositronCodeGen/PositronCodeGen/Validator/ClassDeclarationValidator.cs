@@ -1,6 +1,8 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using PositronCodeGen.Extractors.Data;
+using PositronCodeGen.ConstantsHolder;
+using PositronCodeGen.Util;
+using System;
 using System.Linq;
 
 namespace PositronCodeGen.Validator
@@ -33,27 +35,23 @@ namespace PositronCodeGen.Validator
             return false;
         }
 
-        public void ReportDiagnostic(GeneratorExecutionContext context, INamedTypeSymbol type)
-        {
-            context.ReportDiagnostic(GeneratReport(type));
-        }
+        public bool IsClassImplementsInterface(INamedTypeSymbol type, string interfaceName) =>
+            type.
+            AllInterfaces.
+            Where(i => i.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat) == interfaceName).
+            Any();
 
-        private Diagnostic GeneratReport(INamedTypeSymbol type) => Diagnostic.Create(
-                                                                    GenerateDiagnosticsDescriptor(),
-                                                                    type.Locations.FirstOrDefault() ?? Location.None,
-                                                                    type.Name
-                                                               );
-
-        private DiagnosticDescriptor GenerateDiagnosticsDescriptor()
-        {
-            return new DiagnosticDescriptor(
-                    "Positron code gen",
+        public void ReportDiagnosticClassDeclaration(GeneratorExecutionContext context, INamedTypeSymbol type) => 
+            context.ReportDiagnostic(DiagnosticsReportGenerator.GeneratReport(
+                    type,
                     "Class (only Classes supported) with RPCs or NetValues (Networked attr) must be declared as PARTIAL, not STATIC and not ABSTRACT !!!",
-                    "Mapped code {0} must be declared as PARTIAL, not STATIC and not ABSTRACT class!!!",
-                    "Positron codegen report",
-                    DiagnosticSeverity.Error,
-                    true
-                );
-        }
+                    "Mapped code {0} must be declared as PARTIAL, not STATIC and not ABSTRACT class!!!"
+        ));
+
+        public void ReportDiagnosticsClassInterfaceImplementation(GeneratorExecutionContext context, INamedTypeSymbol type, string interfaceName) => 
+            context.ReportDiagnostic(DiagnosticsReportGenerator.GeneratReport(type, 
+                $"This class can not implement {interfaceName}",
+                $"This class can not implement {interfaceName}")
+        );
     }
 }

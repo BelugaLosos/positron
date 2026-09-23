@@ -26,8 +26,8 @@ namespace PositronCodeGen.Extractors
                         VariableDeclaratorSyntax declarationSyntax = synRef.GetSyntax() as VariableDeclaratorSyntax;
                         hasDefault = declarationSyntax.Initializer != null;
                     }
-
-                    fields.Add(new FieldData(field.Name, attrData, hasDefault));
+                    
+                    fields.Add(new FieldData(field.Name, attrData, hasDefault, field.Type, field.Locations));
                 }
             }
 

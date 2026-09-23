@@ -1,6 +1,7 @@
 using Positron.Client.ConstantHolders;
 using Positron.Client.Mono;
 using Positron.Client.Mono.Interfaces;
+using Positron.Client.NetValues;
 using Positron.Client.Rpc;
 using TMPro;
 using UnityEngine;
@@ -12,6 +13,11 @@ namespace Positron.Extras.HandTests
         [SerializeField] private TextMeshProUGUI _txt;
         
         private int _num;
+
+        public INetValueManaged[] GetNetValues()
+        {
+            throw new System.NotImplementedException();
+        }
 
         public void OnNetworkAwake()
         {

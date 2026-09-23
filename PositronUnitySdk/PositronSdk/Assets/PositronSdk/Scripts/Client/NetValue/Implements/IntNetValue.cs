@@ -4,7 +4,7 @@ using System.Buffers.Binary;
 
 namespace Positron.Client.NetValues.Implements
 {
-    public class IntNetValue : NetValueManagedBase<int>
+    public sealed class IntNetValue : NetValueManagedBase<int>
     {
         public override int OnSerialize(Span<byte> container, IPositronSerializer serializer)
         {

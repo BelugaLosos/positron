@@ -1,20 +1,20 @@
 using Positron.Client.Interfaces;
 using System;
-using System.Buffers.Binary;
 
 namespace Positron.Client.NetValues.Implements
 {
-    public sealed class FloatNetValue : NetValueManagedBase<float>
+    public sealed class BoolNetValue : NetValueManagedBase<bool>
     {
         public override int OnSerialize(Span<byte> container, IPositronSerializer serializer)
         {
-            BinaryPrimitives.WriteInt32BigEndian(container, BitConverter.SingleToInt32Bits(_value));
-            return 4;
+            container[0] = (byte)(_value ? 1 : 0);
+
+            return 1;
         }
 
         public override void OnDeserialize(ReadOnlyMemory<byte> container, IPositronSerializer serializer)
         {
-            _value = BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32BigEndian(container.Span));
+            _value = container.Span[0] == 1;
         }
     }
 }

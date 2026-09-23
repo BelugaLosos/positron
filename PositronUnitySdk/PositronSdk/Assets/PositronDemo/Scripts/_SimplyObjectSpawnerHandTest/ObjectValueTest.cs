@@ -13,8 +13,9 @@ namespace Positron.Extras.HandTests
         [SerializeField] private TextMeshProUGUI _displayText;
 
         [Networked(NetValueAuthority.Owner)] private NetValueComplex<ObjectValueTestData> _someValue = new();
-        [Networked(NetValueAuthority.Server, true)] private NetValueComplex<ObjectValueTestData> _anotherV;
-
+        [Networked(NetValueAuthority.Server, true)] private IntNetValue _anotherV;
+        //[Networked(NetValueAuthority.Owner)] private NetValueComplex<Vector2Int> _v;
+        
         public void OnNetworkAwake()
         {
             _someValue.changed += DisplayCurrentValue;
@@ -28,7 +29,7 @@ namespace Positron.Extras.HandTests
 
         private void DisplayCurrentValue()
         {
-            _displayText.text = _someValue.Value.IntValue.ToString();
+            _displayText.text = _someValue.Value.IntValue.ToString() + "_" + _anotherV.Value.ToString();
         }
 
         public void PutRandom()
@@ -36,6 +37,7 @@ namespace Positron.Extras.HandTests
             ObjectValueTestData data = _someValue.Value;
             data.IntValue = Random.Range(0, 1000);
             _someValue.Value = data;
+            _anotherV.Value = data.IntValue;
         }
     }
 
