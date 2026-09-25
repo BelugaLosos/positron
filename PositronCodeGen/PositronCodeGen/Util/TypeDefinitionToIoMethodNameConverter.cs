@@ -38,7 +38,7 @@
                 case "bool": return "ReadBool";
                 case "float": return "ReadFloat";
                 case "double": return "ReadDouble";
-                case "byte[]": return "ReadBytes.ToArray";
+                case "byte[]": return "ReadBytes().ToArray";
                 case "string": return "ReadString";
                 default: return $"ReadComplex<{definitionString}>";
             }

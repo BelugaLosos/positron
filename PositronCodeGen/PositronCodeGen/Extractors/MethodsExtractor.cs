@@ -7,8 +7,10 @@ namespace PositronCodeGen.Extractors
 {
     internal class MethodsExtractor
     {
-        public IEnumerable<ParsedMethodData> ExtractMethodsFromType(INamedTypeSymbol type, string attributeClassName)
+        public List<ParsedMethodData> ExtractMethodsFromType(INamedTypeSymbol type, string attributeClassName)
         {
+            List<ParsedMethodData> res = new List<ParsedMethodData>();
+
             foreach (IMethodSymbol method in type.GetMembers().OfType<IMethodSymbol>())
             {
                 if (method.MethodKind == MethodKind.Ordinary)
@@ -23,12 +25,14 @@ namespace PositronCodeGen.Extractors
                         continue;
                     }
 
-                    yield return new ParsedMethodData(method, attrData, GetMethodArgs(method));
+                    res.Add(new ParsedMethodData(method, attrData, GetMethodArgs(method)));
                 }
             }
+
+            return res;
         }
 
-        private ParsedMethodArgData[] GetMethodArgs(IMethodSymbol method)
+        public ParsedMethodArgData[] GetMethodArgs(IMethodSymbol method)
         {
             List<ParsedMethodArgData> args = new List<ParsedMethodArgData>();
 
