@@ -15,7 +15,7 @@ namespace Positron.Extras.HandTests
         [Networked(NetValueAuthority.Owner)] private NetValueComplex<ObjectValueTestData> _someValue = new();
         [Networked(NetValueAuthority.Server, true)] private IntNetValue _anotherV;
         //[Networked(NetValueAuthority.Owner)] private NetValueComplex<Vector2Int> _v;
-        
+         
         public void OnNetworkAwake()
         {
             _someValue.changed += DisplayCurrentValue;

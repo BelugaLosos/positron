@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Positron.Client.NetValues
 {
-    public abstract class NetValueManagedBase<T> : INetValueManaged
+    public abstract class NetValueManagedBase<T> : INetValueManaged where T : struct
     {
         private PositronNetworkIdentity _carrier;
 
