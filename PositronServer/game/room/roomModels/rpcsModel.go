@@ -8,6 +8,8 @@ import (
 )
 
 type RpcsModel struct {
+	gameObjectsModel ReadOnlyGameObjectsModel
+
 	cachedRpcs               []gameentities.RpcCall
 	cachedRpcsTransientArena *arena.TransientArena
 
@@ -17,8 +19,9 @@ type RpcsModel struct {
 	incomingCallBufferTransientArena *arena.TransientArena
 }
 
-func NewRpcsModel() *RpcsModel {
+func NewRpcsModel(gameObjectsModel ReadOnlyGameObjectsModel) *RpcsModel {
 	return &RpcsModel{
+		gameObjectsModel:                 gameObjectsModel,
 		cachedRpcs:                       make([]gameentities.RpcCall, 0, 16),
 		cachedRpcsTransientArena:         arena.NewTransfientArena(),
 		callBuffer:                       make([]gameentities.RpcCall, 0, 16),
@@ -45,7 +48,11 @@ func (r *RpcsModel) PutTransientDataIncoming(data []byte) {
 	r.incomingCallBufferTransientArena.CloneFrom(data)
 }
 
-func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameentities.GameObject) {
+func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameentities.GameObject, attemptorId, actualHost uint32) {
+	if owner, isExists := r.gameObjectsModel.ThreadUnsafeGetObjectOwner(call.GetObjectId()); (owner != attemptorId && actualHost != attemptorId) || !isExists {
+		return
+	}
+
 	incomingRawPayload, err := r.incomingCallBufferTransientArena.Read(call.GetDescriptors())
 
 	if err != nil {
@@ -73,7 +80,7 @@ func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameenti
 
 	target := call.GetRpcType()
 
-	if target == eventtypes.RPC_ALL_CACHED || target == eventtypes.RPC_OTHERS_CACHED || target == eventtypes.RPC_TARGET_CACHED {
+	if target == eventtypes.RPC_ALL_CACHED || target == eventtypes.RPC_OTHERS_CACHED {
 		cachePtr := r.cachedRpcsTransientArena.Alloc(payload)
 		call.SetDescriptors(cachePtr, incomingDataLen)
 

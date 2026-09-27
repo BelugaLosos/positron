@@ -9,7 +9,11 @@ import (
 )
 
 func TestCallNonBuffered(t *testing.T) {
-	model := roommodels.NewRpcsModel()
+	gom := roommodels.NewGameObjectsModel(1, 1, true)
+	gom.AddGameObject(gameentities.NewGameObject(1, 1, 0, 1, gameentities.Vector3{}, gameentities.Vector3{}), 1)
+	gom.AddGameObject(gameentities.NewGameObject(1, 1, 0, 1, gameentities.Vector3{}, gameentities.Vector3{}), 1)
+	gom.AddGameObject(gameentities.NewGameObject(1, 1, 0, 1, gameentities.Vector3{}, gameentities.Vector3{}), 1)
+	model := roommodels.NewRpcsModel(gom)
 	arenaImitation := []byte("XhelloXallghXolleh")   // hello allgh olleh WITH HEADERS
 	expectedArenaOutput := []byte("helloallgholleh") // hello allgh olleh
 	model.PutTransientDataIncoming(arenaImitation)
@@ -18,9 +22,9 @@ func TestCallNonBuffered(t *testing.T) {
 
 	addMod := []gameentities.GameObject{}
 
-	model.Call(gameentities.NewRpcCall(0, 6, 1, 4, 9, eventtypes.RPC_ALL, 5), addMod)
-	model.Call(gameentities.NewRpcCall(6, 6, 2, 5, 10, eventtypes.RPC_OTHERS, 6), addMod)
-	model.Call(gameentities.NewRpcCall(12, 6, 3, 6, 11, eventtypes.RPC_TARGET, 7), addMod)
+	model.Call(gameentities.NewRpcCall(0, 6, 1, 4, 9, eventtypes.RPC_ALL, 5), addMod, 1, 0)
+	model.Call(gameentities.NewRpcCall(6, 6, 2, 5, 10, eventtypes.RPC_OTHERS, 6), addMod, 1, 0)
+	model.Call(gameentities.NewRpcCall(12, 6, 3, 6, 11, eventtypes.RPC_TARGET, 7), addMod, 1, 0)
 
 	modMeta, modArena := model.GetCurrentCallBuffer()
 	buffered, bufferedArena := model.GetCachedRpcs()
@@ -29,7 +33,7 @@ func TestCallNonBuffered(t *testing.T) {
 		modMeta[0] != gameentities.NewRpcCall(0, 5, 1, 4, 9, eventtypes.RPC_ALL, 5) ||
 		modMeta[1] != gameentities.NewRpcCall(5, 5, 2, 5, 10, eventtypes.RPC_OTHERS, 6) ||
 		modMeta[2] != gameentities.NewRpcCall(10, 5, 3, 6, 11, eventtypes.RPC_TARGET, 7) {
-		t.Errorf("Meta corruption %v", modMeta)
+		t.Errorf("Meta corruption %v %v", modMeta, len(modMeta))
 	}
 
 	if len(buffered) != 0 || len(bufferedArena) != 0 {
@@ -42,13 +46,15 @@ func TestCallNonBuffered(t *testing.T) {
 }
 
 func TestResetCalls(t *testing.T) {
-	model := roommodels.NewRpcsModel()
+	gom := roommodels.NewGameObjectsModel(1, 1, true)
+	gom.AddGameObject(gameentities.NewGameObject(1, 1, 0, 1, gameentities.Vector3{}, gameentities.Vector3{}), 1)
+	model := roommodels.NewRpcsModel(gom)
 	arenaImitation := []byte("helloallgholleh") // hello allgh olleh
 	model.PutTransientDataIncoming(arenaImitation)
 
 	addMod := []gameentities.GameObject{}
 
-	model.Call(gameentities.NewRpcCall(0, 5, 1, 4, 9, eventtypes.RPC_ALL, 5), addMod)
+	model.Call(gameentities.NewRpcCall(0, 5, 1, 4, 9, eventtypes.RPC_ALL, 5), addMod, 1, 0)
 	model.ResetTempBuffers()
 
 	modMeta, modArena := model.GetCurrentCallBuffer()
@@ -59,26 +65,27 @@ func TestResetCalls(t *testing.T) {
 }
 
 func TestBufferedCall(t *testing.T) {
-	model := roommodels.NewRpcsModel()
-	arenaImitation := []byte("XhelloXallghXolleh")   // hello allgh olleh WITH HEADERS
-	expectedArenaOutput := []byte("helloallgholleh") // hello allgh olleh
+	gom := roommodels.NewGameObjectsModel(1, 1, true)
+	gom.AddGameObject(gameentities.NewGameObject(1, 1, 0, 1, gameentities.Vector3{}, gameentities.Vector3{}), 1)
+	gom.AddGameObject(gameentities.NewGameObject(1, 1, 0, 1, gameentities.Vector3{}, gameentities.Vector3{}), 1)
+	model := roommodels.NewRpcsModel(gom)
+	arenaImitation := []byte("XhelloXallgh")    // hello allgh WITH HEADERS
+	expectedArenaOutput := []byte("helloallgh") // hello allgh
 	model.PutTransientDataIncoming(arenaImitation)
 
 	log.Println(arenaImitation[0], arenaImitation[1])
 
 	addMod := []gameentities.GameObject{}
 
-	model.Call(gameentities.NewRpcCall(0, 6, 1, 4, 9, eventtypes.RPC_ALL_CACHED, 5), addMod)
-	model.Call(gameentities.NewRpcCall(6, 6, 2, 5, 10, eventtypes.RPC_OTHERS_CACHED, 6), addMod)
-	model.Call(gameentities.NewRpcCall(12, 6, 3, 6, 11, eventtypes.RPC_TARGET_CACHED, 7), addMod)
+	model.Call(gameentities.NewRpcCall(0, 6, 1, 4, 9, eventtypes.RPC_ALL_CACHED, 5), addMod, 1, 0)
+	model.Call(gameentities.NewRpcCall(6, 6, 2, 5, 10, eventtypes.RPC_OTHERS_CACHED, 6), addMod, 1, 0)
 	model.ResetTempBuffers()
 
 	meta, arena := model.GetCachedRpcs()
 
-	if len(meta) != 3 ||
+	if len(meta) != 2 ||
 		meta[0] != gameentities.NewRpcCall(0, 5, 1, 4, 9, eventtypes.RPC_ALL_CACHED, 5) ||
-		meta[1] != gameentities.NewRpcCall(5, 5, 2, 5, 10, eventtypes.RPC_OTHERS_CACHED, 6) ||
-		meta[2] != gameentities.NewRpcCall(10, 5, 3, 6, 11, eventtypes.RPC_TARGET_CACHED, 7) {
+		meta[1] != gameentities.NewRpcCall(5, 5, 2, 5, 10, eventtypes.RPC_OTHERS_CACHED, 6) {
 		t.Error("Meta corruption")
 	}
 
@@ -110,15 +117,44 @@ func TestRpcDto(t *testing.T) {
 }
 
 func TestRpcInRemovedObjects(t *testing.T) {
-	model := roommodels.NewRpcsModel()
+	gom := roommodels.NewGameObjectsModel(1, 1, true)
+	gom.AddGameObject(gameentities.NewGameObject(1, 1, 0, 1, gameentities.Vector3{}, gameentities.Vector3{}), 1)
+	model := roommodels.NewRpcsModel(gom)
 	arenaImitation := []byte("Xhello")
 	model.PutTransientDataIncoming(arenaImitation)
-	model.Call(gameentities.NewRpcCall(0, 6, 1, 1, 0, eventtypes.RPC_ALL_CACHED, 0), nil)
+	model.Call(gameentities.NewRpcCall(0, 6, 1, 1, 0, eventtypes.RPC_ALL_CACHED, 0), nil, 1, 0)
 	model.ResetTempBuffers()
 	model.SanetizeBufferedCalls(1)
 	meta, _ := model.GetCachedRpcs()
 
 	if len(meta) != 1 || meta[0].GetRpcType() != eventtypes.RPC_INVALID {
 		t.Errorf("not work: %v (len %v)", meta[0], len(meta))
+	}
+}
+
+func TestRpcFromHost(t *testing.T) {
+	gom := roommodels.NewGameObjectsModel(1, 1, true)
+	gom.AddGameObject(gameentities.NewGameObject(1, 1, 0, 1, gameentities.Vector3{}, gameentities.Vector3{}), 1)
+	model := roommodels.NewRpcsModel(gom)
+	arenaImitation := []byte("Xhello")
+	expectedOutputArena := "hello"
+	model.PutTransientDataIncoming(arenaImitation)
+
+	model.Call(gameentities.NewRpcCall(0, 6, 1, 1, 0, eventtypes.RPC_ALL, 0), nil, 4, 0)
+
+	meta, _ := model.GetCurrentCallBuffer()
+
+	if len(meta) != 0 {
+		t.Error("Call was successfull but not authorized")
+	}
+
+	model.ResetTempBuffers()
+
+	model.Call(gameentities.NewRpcCall(0, 6, 1, 1, 0, eventtypes.RPC_ALL, 0), nil, 4, 4)
+
+	meta, arena := model.GetCurrentCallBuffer()
+
+	if len(meta) == 0 || string(arena) != expectedOutputArena {
+		t.Errorf("Error with host call %v", len(meta))
 	}
 }

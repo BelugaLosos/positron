@@ -10,6 +10,7 @@ using Positron.Utility;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Security.Authentication;
 using UnityEngine;
 
 namespace Positron.Client.Room.Models
@@ -102,6 +103,11 @@ namespace Positron.Client.Room.Models
             {
                 identity = bindedGameObject.GetComponent<PositronNetworkIdentity>();
                 _rpcToObj.Add(obj, identity);
+            }
+
+            if (!identity.IsMine && _selfClientId != PositronFacade.World.HostId)
+            {
+                throw new AuthenticationException("Can`t call rpc`s on foreign objects not being a host!");
             }
 
             if (!identity.IsObjectFullyAvailable)
@@ -203,9 +209,9 @@ namespace Positron.Client.Room.Models
             {
                 RouteRpcWide(call);
             }
-            else if (target == RpcTargets.RPC_TARGET || target == RpcTargets.RPC_TARGET_CACHED)
+            else if (target == RpcTargets.RPC_TARGET || target == RpcTargets.RPC_HOST_COMMAND)
             {
-                RouteRpcTarget(call);
+                RouteRpcTarget(call, target == RpcTargets.RPC_HOST_COMMAND);
             }
             else
             {
@@ -225,9 +231,14 @@ namespace Positron.Client.Room.Models
             CallRpcLocal(call);
         }
 
-        private void RouteRpcTarget(RpcCall call)
+        private void RouteRpcTarget(RpcCall call, bool isHostCommand)
         {
-            if (call.TargetClientId != _selfClientId)
+            if (!isHostCommand && call.TargetClientId != _selfClientId)
+            {
+                return;
+            }
+
+            if(isHostCommand && _selfClientId != PositronFacade.World.HostId)
             {
                 return;
             }

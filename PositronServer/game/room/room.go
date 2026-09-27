@@ -82,7 +82,7 @@ func NewRoom(name string, maxSlots int32, ttl time.Duration, scene uint32, tickr
 		ExternalData:       externalData,
 		gameObjectsModel:   gameObjectsModel,
 		netValuesModel:     roommodels.NewNetValuesModel(gameObjectsModel),
-		rpcsModel:          roommodels.NewRpcsModel(),
+		rpcsModel:          roommodels.NewRpcsModel(gameObjectsModel),
 		clock:              NewRoomClock(tickrate),
 		gameTickPointer:    &datatransferobjects.GameTickPacket{},
 		gameUnrTickPointer: &datatransferobjects.GameUnreliableTickPacket{},
@@ -180,7 +180,7 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket, netValues
 	addMod := r.gameObjectsModel.GetSpecificAddModification()
 
 	for i := range packet.GetRpcs() {
-		r.rpcsModel.Call(packet.GetRpcs()[i], addMod)
+		r.rpcsModel.Call(packet.GetRpcs()[i], addMod, packet.GetSourceClient(), r.hostIndex)
 	}
 
 	for i := range packet.GetRemovedObjects() {

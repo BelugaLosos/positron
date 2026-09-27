@@ -163,9 +163,9 @@ func (g *GameObjectsModel) StickStaticsToMoveDelta() {
 	}
 }
 
-func (g *GameObjectsModel) AddGameObject(gameObject gameentities.GameObject, owner uint32) {
+func (g *GameObjectsModel) AddGameObject(gameObject gameentities.GameObject, attemptor uint32) {
 	id := g.generateId()
-	gameObject.SetIdAndOnwer(id, owner)
+	gameObject.SetIdAndOnwer(id, attemptor)
 	g.allocateChunkIfNeed(id)
 
 	g.flatObjectsContainer[id] = gameObject

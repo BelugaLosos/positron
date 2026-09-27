@@ -6,6 +6,6 @@ const (
 	RPC_TARGET        = 0x2
 	RPC_ALL_CACHED    = 0x3
 	RPC_OTHERS_CACHED = 0x4
-	RPC_TARGET_CACHED = 0x5
+	RPC_HOST_COMMAND  = 0x6
 	RPC_INVALID       = 0xFF
 )
