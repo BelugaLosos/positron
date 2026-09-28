@@ -5,10 +5,10 @@ namespace Positron.Client.NetValues
         /// <summary>
         /// owner client and server can change value
         /// </summary>
-        Owner,
+        Owner = 0x0,
         /// <summary>
         /// only server can change value
         /// </summary>
-        Server
+        Server = 0x1
     }
 }
