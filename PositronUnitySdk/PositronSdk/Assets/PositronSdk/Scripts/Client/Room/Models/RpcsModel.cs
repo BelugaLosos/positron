@@ -107,7 +107,7 @@ namespace Positron.Client.Room.Models
 
             if (!identity.IsMine && _selfClientId != PositronFacade.World.HostId)
             {
-                throw new AuthenticationException("Can`t call rpc`s on foreign objects not being a host!");
+                throw new UnauthorizedAccessException("Can`t call rpc`s on foreign objects not being a host!");
             }
 
             if (!identity.IsObjectFullyAvailable)
