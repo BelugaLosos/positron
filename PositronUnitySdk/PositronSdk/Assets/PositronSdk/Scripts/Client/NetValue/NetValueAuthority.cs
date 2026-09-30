@@ -9,6 +9,6 @@ namespace Positron.Client.NetValues
         /// <summary>
         /// only server can change value
         /// </summary>
-        Server = 0x1
+        Host = 0x1
     }
 }
