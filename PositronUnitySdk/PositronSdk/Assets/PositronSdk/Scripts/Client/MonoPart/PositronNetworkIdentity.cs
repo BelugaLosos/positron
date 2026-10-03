@@ -2,7 +2,9 @@ using Positron.Client.GameEntities;
 using Positron.Client.Mono.Interfaces;
 using Positron.Client.Mono.Syncers.Interface;
 using Positron.Client.NetValues;
+using Positron.Client.NetworkPrefabsAuthorities;
 using Positron.Client.Rpc;
+using Positron.Editor.AuthoritySchemaExporter.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +14,12 @@ namespace Positron.Client.Mono
 {
     public class PositronNetworkIdentity : MonoBehaviour
     {
+        [SerializeField] private PrefabSpawnAuthority _spawbAuthority;
+        [SerializeField] private PrefabOwnershipAuthority _ownershipTransferAuthority = PrefabOwnershipAuthority.Any;
+        [SerializeField] private PrefabDestroyAuthority _destroyAuthority;
+
+        [Space]
+
         [SerializeField] private PositronNetworkIdentity[] _trackedSubObjects;
         [SerializeField] private MonoBehaviour[] _trackedNetValueCarriersObjects;
 
@@ -33,6 +41,9 @@ namespace Positron.Client.Mono
 
         public bool IsMine => PositronFacade.World.LocalClientId == OwnerClientId || !PositronFacade.World.InRoom;
         public bool IsHost => PositronFacade.World.HostId == OwnerClientId || !PositronFacade.World.InRoom;
+        public PrefabSpawnAuthority SpawnAuthority => _spawbAuthority;
+        public PrefabOwnershipAuthority OwnershipTransferAuthority => _ownershipTransferAuthority;
+        public PrefabDestroyAuthority DestroyAuthority => _destroyAuthority;
 
         public event Action<PositronNetworkIdentity> completeInitialize;
         public event Action completeInitWithEmptyCallback;

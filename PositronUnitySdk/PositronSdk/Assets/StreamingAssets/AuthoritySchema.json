@@ -1,0 +1,97 @@
+{
+    "_prefabsAuthoritySchemas": [
+        {
+            "_id": 0,
+            "_spawnAuthority": 0,
+            "_destroyAuthority": 0,
+            "_ownershipAuthority": 2
+        }
+    ],
+    "_netValuesAuthoritySchemas": [
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 0,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 1,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 2,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 3,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 4,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 5,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 6,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 7,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 8,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 9,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 10,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 11,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 12,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 13,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 14,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 15,
+            "_auhority": 0
+        },
+        {
+            "_prefabId": 0,
+            "_valueIdOnObject": 16,
+            "_auhority": 0
+        }
+    ]
+}
