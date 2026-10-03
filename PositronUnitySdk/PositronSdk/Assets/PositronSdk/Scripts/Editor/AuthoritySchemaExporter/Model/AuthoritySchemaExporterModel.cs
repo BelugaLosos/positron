@@ -38,7 +38,7 @@ namespace Positron.Editor.AuthoritySchemaExporter
 
                 for (ushort j = 0; j < netValues.Length; j++)
                 {
-                    schema.Add(new(i, j, NetValueAuthority.Owner));
+                    schema.Add(new(i, j, netValues[j].Authority));
                 }
             }
 

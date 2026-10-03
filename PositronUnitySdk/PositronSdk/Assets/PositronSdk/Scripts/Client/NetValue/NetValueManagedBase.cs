@@ -15,6 +15,7 @@ namespace Positron.Client.NetValues
         protected T _value;
 
         public bool IsFullyInited { get; private set; }
+        public NetValueAuthority Authority { get; private set; }
         public T Value
         {
             get
@@ -24,7 +25,13 @@ namespace Positron.Client.NetValues
 
             set
             {
-                if (!_carrier.IsMine && PositronFacade.World.LocalClientId != PositronFacade.World.HostId && !_predictable)
+                if(Authority == NetValueAuthority.Host && !_predictable && PositronFacade.World.LocalClientId != PositronFacade.World.HostId)
+                {
+                    Debug.LogError("Attempt access non-predictable host value not being a host");
+                    return;
+                }
+
+                if (!_carrier.IsMine && PositronFacade.World.LocalClientId != PositronFacade.World.HostId)
                 {
                     Debug.LogError("Attempt to change non-predictable foreign value not being a host");
                     return;
@@ -45,10 +52,11 @@ namespace Positron.Client.NetValues
             IsFullyInited = true;
         }
 
-        public void BindNetworkObject(PositronNetworkIdentity identity, bool predictable)
+        public void BindNetworkObject(PositronNetworkIdentity identity, bool predictable, NetValueAuthority authority)
         {
             _carrier = identity;
             _predictable = predictable;
+            Authority = authority;
         }
 
         public int SerializeSelfTo(Span<byte> container, IPositronSerializer serializer) => OnSerialize(container, serializer);

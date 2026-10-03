@@ -24,25 +24,25 @@ namespace PositronCodeGen.Generators.NetValues
                 }
 
                 bool hasPredictionFlag = false;
+                byte currentAuthority = 0x0;
 
                 foreach(var argument in field.Attribute.ConstructorArguments)
                 {
                     foreach (var attrParam in field.Attribute.AttributeConstructor.Parameters)
                     {
+                        if(attrParam.Name == ConstantsHolderContainer.NET_VALUES_AUTHORITY_PARAM_NAME && argument.Value is byte authority)
+                        {
+                            currentAuthority = authority;
+                        }
+
                         if (attrParam.Name == ConstantsHolderContainer.NET_VALUE_PREDICTABLE_FLAG_NAME && argument.Value is bool isPredictable && isPredictable) 
                         {
                             hasPredictionFlag = true;
-                            break;
                         }
-                    }
-
-                    if (hasPredictionFlag)
-                    {
-                        break;
                     }
                 }
 
-                sourceBuilder.AppendLine($"        {field.Name}.{ConstantsHolderContainer.NET_VALUE_BIND_NETWORK_OBJECT_METHOD_DEFINITION}(n, {(hasPredictionFlag ? "true" : "false")});");
+                sourceBuilder.AppendLine($"        {field.Name}.{ConstantsHolderContainer.NET_VALUE_BIND_NETWORK_OBJECT_METHOD_DEFINITION}(n, {(hasPredictionFlag ? "true" : "false")}, ({ConstantsHolderContainer.NET_VALUE_AUTHORITY_ENUM_NAME}){currentAuthority});");
                 returnDefSb.Append($"{field.Name}, ");
             }
 

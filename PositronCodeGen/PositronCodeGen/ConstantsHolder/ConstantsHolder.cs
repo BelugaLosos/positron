@@ -25,7 +25,9 @@
         public static readonly string NET_VALUE_CARRIER_GET_VALUES_METHOD_DEFINITION = "GetNetValues";
         public static readonly string NET_VALUE_BIND_NETWORK_OBJECT_METHOD_DEFINITION = "BindNetworkObject";
         public static readonly string NET_VALUE_PREDICTABLE_FLAG_NAME = "isPredicatble";
+        public static readonly string NET_VALUES_AUTHORITY_PARAM_NAME = "authority";
         public static readonly string NET_VALUE_ATTR_NAME = "NetworkedAttribute";
         public static readonly string NET_VALUE_BASR_CLASS_TYPE_NAME = "global::Positron.Client.NetValues.NetValueManagedBase";
+        public static readonly string NET_VALUE_AUTHORITY_ENUM_NAME = "global::Positron.Client.NetValues.NetValueAuthority";
     }
 }
