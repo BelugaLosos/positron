@@ -6,6 +6,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	gameserver "positron/game/gameServer"
+	authorityschemas "positron/internal/authoritySchemas"
 	"positron/internal/marshaller"
 	"positron/internal/transport"
 	"strconv"
@@ -31,6 +32,9 @@ func main() {
 			http.ListenAndServe("localhost:"+strconv.Itoa(*dbgPort), nil)
 		}()
 	}
+
+	authoritySchemasAccesor := authorityschemas.NewAuthoritySchemasAccesor()
+	authoritySchemasAccesor.MustLoad()
 
 	wg := &sync.WaitGroup{}
 	game := gameserver.NewGameServer(*transportAddr+":"+strconv.Itoa(*transportPort), transport.NewWsTransport(), marshaller.NewMessagePackMarshaller(), *version, int(*ticksToRetransmitStaticObjects), int(*ticksToMarkObjectAsStatic), bool(*forceDisableStaticsRetransmit))
