@@ -10,7 +10,7 @@ namespace Positron.Editor.AuthoritySchemaExporter
         public AuthoritySchemaDto ExportObject(PositronNetworkIdentity[] prefabs)
         {
             PrefabAuthoritySchema[] prefabSchemas = ExportPrefabAuthoritySchemas(prefabs);
-            NetValueAuthoritySchema[] netValuesSchemas = ExportNetValuesAuthoritySchemas(prefabs);
+            NetValueAuthorityObjectContainerSchema[] netValuesSchemas = ExportNetValuesAuthoritySchemas(prefabs);
             AuthoritySchemaDto combinedSchema = new(prefabSchemas, netValuesSchemas);
 
             return combinedSchema;
@@ -22,24 +22,27 @@ namespace Positron.Editor.AuthoritySchemaExporter
 
             for (ushort i = 0; i < prefabs.Length; i++) 
             {
-                prefabSchema[i] = new(i, prefabs[i].SpawnAuthority, prefabs[i].DestroyAuthority, prefabs[i].OwnershipTransferAuthority);
+                prefabSchema[i] = new(prefabs[i].SpawnAuthority, prefabs[i].DestroyAuthority, prefabs[i].OwnershipTransferAuthority);
             }
 
             return prefabSchema;
         }
 
-        private NetValueAuthoritySchema[] ExportNetValuesAuthoritySchemas(PositronNetworkIdentity[] prefabs)
+        private NetValueAuthorityObjectContainerSchema[] ExportNetValuesAuthoritySchemas(PositronNetworkIdentity[] prefabs)
         {
-            List<NetValueAuthoritySchema> schema = new();
+            List<NetValueAuthorityObjectContainerSchema> schema = new();
 
             for (ushort i = 0; i < prefabs.Length; i++)
             {
                 INetValueManaged[] netValues = prefabs[i].GetAllNetValues();
+                NetValueAuthoritySchema[] valueSchemas = new NetValueAuthoritySchema[netValues.Length];
 
                 for (ushort j = 0; j < netValues.Length; j++)
                 {
-                    schema.Add(new(i, j, netValues[j].Authority));
+                    valueSchemas[j] = new(netValues[j].Authority);
                 }
+
+                schema.Add(new(valueSchemas));
             }
 
             return schema.ToArray();

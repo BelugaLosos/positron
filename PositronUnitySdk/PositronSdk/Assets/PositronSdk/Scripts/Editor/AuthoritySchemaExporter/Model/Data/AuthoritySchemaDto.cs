@@ -7,9 +7,9 @@ namespace Positron.Editor.AuthoritySchemaExporter.Data
     public struct AuthoritySchemaDto
     {
         [SerializeField] private PrefabAuthoritySchema[] _prefabsAuthoritySchemas;
-        [SerializeField] private NetValueAuthoritySchema[] _netValuesAuthoritySchemas;
+        [SerializeField] private NetValueAuthorityObjectContainerSchema[] _netValuesAuthoritySchemas;
 
-        public AuthoritySchemaDto(PrefabAuthoritySchema[] prefabsAuthoritySchemas, NetValueAuthoritySchema[] netValuesAuthoritySchemas)
+        public AuthoritySchemaDto(PrefabAuthoritySchema[] prefabsAuthoritySchemas, NetValueAuthorityObjectContainerSchema[] netValuesAuthoritySchemas)
         {
             _prefabsAuthoritySchemas = prefabsAuthoritySchemas;
             _netValuesAuthoritySchemas = netValuesAuthoritySchemas;
