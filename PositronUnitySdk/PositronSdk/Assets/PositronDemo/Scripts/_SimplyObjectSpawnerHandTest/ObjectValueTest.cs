@@ -12,7 +12,7 @@ namespace Positron.Extras.HandTests
     {
         [SerializeField] private TextMeshProUGUI _displayText;
 
-        [Networked(NetValueAuthority.Host)] private NetValueComplex<ObjectValueTestData> _someValue = new();
+        [Networked(NetValueAuthority.Owner)] private NetValueComplex<ObjectValueTestData> _someValue = new();
         [Networked(NetValueAuthority.Owner)] private IntNetValue _intV = new();
         [Networked(NetValueAuthority.Owner)] private UintNetValue _uintV = new();
         [Networked(NetValueAuthority.Owner)] private ShortNetValue _shortV = new();
@@ -20,7 +20,7 @@ namespace Positron.Extras.HandTests
         [Networked(NetValueAuthority.Owner)] private UlongNetValue _ulongV = new();
         [Networked(NetValueAuthority.Owner)] private Vector2NetValue _vec2V = new();
         [Networked(NetValueAuthority.Owner)] private Vector3NetValue _vec3V = new();
-        [Networked(NetValueAuthority.Host)] private Vector4NetValue _vec4V = new();
+        [Networked(NetValueAuthority.Owner)] private Vector4NetValue _vec4V = new();
         [Networked(NetValueAuthority.Owner)] private QuaternionNetValue _quatV = new();
         [Networked(NetValueAuthority.Owner)] private Vector2IntNetValue _vec2IntV = new();
         [Networked(NetValueAuthority.Owner)] private Vector3IntNetValue _vec3IntV = new();

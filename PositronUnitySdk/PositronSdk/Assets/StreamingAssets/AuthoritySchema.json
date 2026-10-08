@@ -10,9 +10,6 @@
         {
             "_netValuesOfObject": [
                 {
-                    "_auhority": 1
-                },
-                {
                     "_auhority": 0
                 },
                 {
@@ -34,7 +31,10 @@
                     "_auhority": 0
                 },
                 {
-                    "_auhority": 1
+                    "_auhority": 0
+                },
+                {
+                    "_auhority": 0
                 },
                 {
                     "_auhority": 0
