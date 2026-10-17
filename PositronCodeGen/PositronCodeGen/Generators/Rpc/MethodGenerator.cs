@@ -35,6 +35,8 @@ namespace PositronCodeGen.Generators.Rpc
 
             string methodName = data.MethodSymbol.Name;
             ulong hash = _namesHasher.To64BitHash(methodName);
+            bool hasSpecifiedTargetParam = false;
+            string specifiedTargetParamName = string.Empty;
 
             for (int i = 0; i < data.Args.Length; i++)
             {
@@ -66,6 +68,8 @@ namespace PositronCodeGen.Generators.Rpc
 
                 if (arg.DefinitionString == ConstantsHolderContainer.RPC_SPECIFIED_TARGET_STRUCT_NAME)
                 {
+                    hasSpecifiedTargetParam = true;
+                    specifiedTargetParamName = arg.Name;
                     continue;
                 }
 
@@ -86,7 +90,10 @@ namespace PositronCodeGen.Generators.Rpc
             str.AppendLine("            return;");
             str.AppendLine("        }");
             str.AppendLine();
-            str.AppendLine($"        if(targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL} || targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED})");
+            string specifiedTargetHandleExpr = hasSpecifiedTargetParam ?
+                $" || (targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_RPC_TARGET} && {specifiedTargetParamName}.{ConstantsHolderContainer.RPC_SPECIFIED_TARGET_TARGET_FIELD_NAME} == {ConstantsHolderContainer.LOCAL_CLIENT_ID_GETTING_EXPR})" :
+                "";
+            str.AppendLine($"        if(targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL} || targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED}{specifiedTargetHandleExpr})");
             str.AppendLine("        {");
             str.AppendLine($"            {methodName}({parameterNames});");
             str.AppendLine("        }");

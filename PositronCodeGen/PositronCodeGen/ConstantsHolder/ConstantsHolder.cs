@@ -18,7 +18,11 @@
         public static readonly string RPC_TARGETS_ENUM_DEFINITION = "global::Positron.Client.ConstantHolders.RpcTargets";
         public static readonly string RPC_TARGETS_ENUM_VALUE_RPC_ALL = "RPC_ALL";
         public static readonly string RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED = "RPC_ALL_CACHED";
+        public static readonly string RPC_TARGETS_ENUM_RPC_HOST_COMMAND = "RPC_HOST_COMMAND";
+        public static readonly string RPC_TARGETS_ENUM_RPC_TARGET = "RPC_TARGET";
         public static readonly string RPC_SPECIFIED_TARGET_STRUCT_NAME = "global::Positron.Client.Rpc.RpcPlayerRef";
+        public static readonly string RPC_SPECIFIED_TARGET_TARGET_FIELD_NAME = "TargetClientId";
+        public static readonly string LOCAL_CLIENT_ID_GETTING_EXPR = "global::Positron.PositronFacade.World.LocalClientId";
         public static readonly string POSITRON_NETWORK_IDENTITY_DEFINITION = "global::Positron.Client.Mono.PositronNetworkIdentity";
         public static readonly string NET_VALUE_MANGED_DEFINITION = "global::Positron.Client.NetValues.INetValueManaged";
         public static readonly string NET_VALUE_CARRIER_DEFINITION = "global::Positron.Client.NetValues.INetValueCarrier";

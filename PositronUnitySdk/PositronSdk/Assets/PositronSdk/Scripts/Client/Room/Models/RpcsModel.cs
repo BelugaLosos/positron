@@ -233,7 +233,7 @@ namespace Positron.Client.Room.Models
 
         private void RouteRpcTarget(RpcCall call, bool isHostCommand)
         {
-            if (!isHostCommand && call.TargetClientId != _selfClientId)
+            if (!isHostCommand && call.TargetClientId == _selfClientId)
             {
                 return;
             }

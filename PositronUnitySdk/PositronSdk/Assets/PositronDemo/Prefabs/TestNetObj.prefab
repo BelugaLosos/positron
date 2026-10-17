@@ -46,6 +46,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e6390f8783427e439c0db3e19760bd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: PositronSDK::Positron.Client.Mono.PositronNetworkIdentity
+  _spawbAuthority: 0
+  _ownershipTransferAuthority: 2
+  _destroyAuthority: 0
   _trackedSubObjects: []
   _trackedNetValueCarriersObjects: []
 --- !u!114 &1795357712555423999
@@ -315,6 +318,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e6390f8783427e439c0db3e19760bd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: PositronSDK::Positron.Client.Mono.PositronNetworkIdentity
+  _spawbAuthority: 0
+  _ownershipTransferAuthority: 2
+  _destroyAuthority: 0
   _trackedSubObjects:
   - {fileID: 2716522895302064501}
   _trackedNetValueCarriersObjects: []
@@ -363,6 +369,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e6390f8783427e439c0db3e19760bd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: PositronSDK::Positron.Client.Mono.PositronNetworkIdentity
+  _spawbAuthority: 0
+  _ownershipTransferAuthority: 2
+  _destroyAuthority: 0
   _trackedSubObjects: []
   _trackedNetValueCarriersObjects:
   - {fileID: 5074407420399820349}
@@ -646,6 +655,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e6390f8783427e439c0db3e19760bd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Positron.Client.Mono.PositronNetworkIdentity
+  _spawbAuthority: 0
+  _ownershipTransferAuthority: 2
+  _destroyAuthority: 0
   _trackedSubObjects:
   - {fileID: 7233622195225436279}
   - {fileID: 2716522895302064501}

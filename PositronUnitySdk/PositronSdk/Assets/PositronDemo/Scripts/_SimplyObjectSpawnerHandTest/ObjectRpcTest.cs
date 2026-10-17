@@ -25,12 +25,12 @@ namespace Positron.Extras.HandTests
 
         public void Test()
         {
-            SendRPC_Foo1(RpcTargets.RPC_TARGET, new(GetComponent<PositronNetworkIdentity>().OwnerClientId), "TRG");
-            SendRPC_Bar(RpcTargets.RPC_ALL, "ALL");
-            SendRPC_Bar(RpcTargets.RPC_OTHERS, "OTHERS");
-            SendRPC_Bar(RpcTargets.RPC_ALL_CACHED, "A CACHED");
-            SendRPC_Bar(RpcTargets.RPC_OTHERS_CACHED, "O CACHED");
-            SendRPC_Bar(RpcTargets.RPC_HOST_COMMAND, "HOST CMD");
+            SendRPC_Foo1(RpcTargets.RPC_TARGET, new(GetComponent<PositronNetworkIdentity>().OwnerClientId), "T");
+            SendRPC_Bar(RpcTargets.RPC_ALL, "A");
+            SendRPC_Bar(RpcTargets.RPC_OTHERS, "O");
+            SendRPC_Bar(RpcTargets.RPC_ALL_CACHED, "AC");
+            SendRPC_Bar(RpcTargets.RPC_OTHERS_CACHED, "OC");
+            SendRPC_Bar(RpcTargets.RPC_HOST_COMMAND, "H");
         }
 
         [Rpc]
@@ -43,7 +43,7 @@ namespace Positron.Extras.HandTests
         [Rpc]
         private void Bar(string d)
         {
-            _txt.text += " " + d;
+            _txt.text += d + " ";
         }
     }
 }
