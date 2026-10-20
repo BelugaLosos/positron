@@ -12,6 +12,7 @@ using Positron.Client.Mono;
 using Positron.Client.Handlers;
 using Positron.NetworkIoAPI;
 using Positron.Client.Room.Models.Interfaces;
+using Positron.Client.Room.MonitorData;
 
 namespace Positron.Client.Room
 {
@@ -166,6 +167,9 @@ namespace Positron.Client.Room
         }
 
         public double TickToSeconds(uint tick) => _clock.TickToSeconds(tick);
+
+        public WorldMonitorData CollectMonitorData() => new(_clock.CollectMonitorData(), _gameObjectsModel.CollectMonitorData(), 
+                                                            _valuesModel.CollectMonitorData(), _rpcsModel.CollectMonitorData());
 
         private void Join(JoinRoomResponse dataPacket)
         {

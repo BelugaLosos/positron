@@ -15,6 +15,10 @@ namespace Positron.BytesArena
         /// Get`s all available data
         /// </summary>
         public ReadOnlySpan<byte> Data => _buffer.AsSpan(0, _writePtr);
+        /// <summary>
+        /// Actual size of arena
+        /// </summary>
+        public int EndOffset => _writePtr;
 
         public TransientArena()
         {

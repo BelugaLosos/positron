@@ -4,6 +4,7 @@ using Positron.Client.Interfaces;
 using Positron.Client.Mono;
 using Positron.Client.NetValues;
 using Positron.Client.Room.Models.Interfaces;
+using Positron.Client.Room.MonitorData;
 using Positron.Utility;
 using System;
 using System.Collections.Generic;
@@ -73,6 +74,8 @@ namespace Positron.Client.Room.Models
                 ModValue(value);
             }
         }
+
+        public NetValuesModelData CollectMonitorData() => new(_currentAddDelta.Count, _currentModDelta.Count, _allDeltasRawDataArena.EndOffset, _incomingArena.EndOffset, _valueIdToValuesInterfaceMapping.Count);
 
         private void TryUnsubGameObjectCallbacks()
         {

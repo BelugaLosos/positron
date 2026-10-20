@@ -1,4 +1,5 @@
 using Cysharp.Threading.Tasks;
+using Positron.Client.Room.MonitorData;
 using System;
 using System.Threading;
 using UnityEngine;
@@ -10,6 +11,7 @@ namespace Positron.Client.Room
         private CancellationTokenSource _ctx;
 
         private readonly double _timeOffset;
+        private readonly double _frameOffset;
         private readonly double _tickDuration;
 
         private double _recentServerTime = 0d;
@@ -29,7 +31,8 @@ namespace Positron.Client.Room
 
         public NetworkClock(double offset, int tickrate)
         {
-            _timeOffset = Math.Abs(offset) / ((double)tickrate);
+            _frameOffset = offset;
+            _timeOffset = Math.Abs(_frameOffset) / ((double)tickrate);
             _tickDuration = 1d / (double)tickrate;
             _ctx = new();
         }
@@ -81,6 +84,8 @@ namespace Positron.Client.Room
         }
 
         public double TickToSeconds(uint tick) => ((double)tick) * _tickDuration;
+
+        public NetworkClockData CollectMonitorData() => new(_recentServerTime, _clientTime, _timeScale, _frameOffset);
 
         private async UniTask UpdateLoopHook()
         {

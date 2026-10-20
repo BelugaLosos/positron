@@ -3,6 +3,7 @@ using Positron.Client.ConstantHolders;
 using Positron.Client.GameEntities;
 using Positron.Client.Mono;
 using Positron.Client.Room.Models.Interfaces;
+using Positron.Client.Room.MonitorData;
 using Positron.Client.Rpc;
 using Positron.Client.Settings;
 using Positron.NetworkIoAPI;
@@ -164,6 +165,9 @@ namespace Positron.Client.Room.Models
 
             _currentCallBuffer.Add(rpcCallMeta);
         }
+
+        public RpcsModelData CollectMonitorData() => new(_currentCallBuffer.Count, _dellayedCalls.Count, _rpcToObj.Count, 
+                                                         _outgoingDataArena.EndOffset, _incomingDataArena.EndOffset);
 
         private void TryUnsubGameObjectCallbacks()
         {

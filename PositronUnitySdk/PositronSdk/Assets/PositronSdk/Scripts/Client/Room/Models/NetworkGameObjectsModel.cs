@@ -8,6 +8,7 @@ using Positron.Client.GameEntities.Premitive;
 using Positron.Client.Mono.Syncers;
 using Positron.Utility;
 using Positron.Client.Room.Models.Interfaces;
+using Positron.Client.Room.MonitorData;
 
 namespace Positron.Client.Room.Models
 {
@@ -463,6 +464,10 @@ namespace Positron.Client.Room.Models
 
             return null;
         }
+
+        public GameObjectsModelData CollectMonitorData() => new(_creationDelta.Count, _moveDelta.Count, _destroyDelta.Count, 
+                                                                _requestOwnershipDelta.Count, _localCreationMapping.Count, 
+                                                                _localCreationBlacklist.Count, _currentGameObjectsOnScene.Count);
 
         private void AddTransformDeltaDataToDeltaArray(KeyValuePair<uint, PositronNetworkIdentity> networkObjectPair)
         {
