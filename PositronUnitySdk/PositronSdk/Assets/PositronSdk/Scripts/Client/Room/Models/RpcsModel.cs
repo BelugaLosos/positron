@@ -11,7 +11,6 @@ using Positron.Utility;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Security.Authentication;
 using UnityEngine;
 
 namespace Positron.Client.Room.Models
@@ -24,6 +23,7 @@ namespace Positron.Client.Room.Models
         private readonly Dictionary<PositronNetworkIdentity, DellayedCall> _dellayedCalls = new(24);
 
         private readonly Dictionary<IRpcTarget, PositronNetworkIdentity> _rpcToObj = new(256);
+        private readonly List<IRpcTarget> _dyingObjectsKeysToSanetize = new(256);
         private readonly Dictionary<ulong, ushort> _hashToIdx = new(256);
         private readonly ulong[] _idxToHash;
 
@@ -66,7 +66,8 @@ namespace Positron.Client.Room.Models
             _selfClientId = selfClientId;
             _gameObjectsModel = objectsMode;
 
-            _gameObjectsModel.localObjectGoingRemove += OnObjectRemove;
+            _gameObjectsModel.localObjectGoingRemove += OnObjectRemoveLocal;
+            _gameObjectsModel.networkObjectDestructed += SanetizeDyingObjectsReverseMapping;
             _gameObjectsModel.localObjectRemotelyInitedSuccessfully += OnLocalTargetInitedSuccesfully;
         }
 
@@ -91,6 +92,11 @@ namespace Positron.Client.Room.Models
             {
                 PositronFacade.NetworkIoPool.PutWriter(writer);
                 throw new ArgumentException("Can`t call RPC_TARGET with no specified target argument (declare an argument like 'uint targetClientId')");
+            }
+
+            if (targets == RpcTargets.RPC_TARGET && specifiedTargetClient == _selfClientId)
+            {
+                return;
             }
 
             if ((targets == RpcTargets.RPC_ALL || targets == RpcTargets.RPC_ALL_CACHED ||
@@ -176,11 +182,18 @@ namespace Positron.Client.Room.Models
                 return;
             }
 
-            _gameObjectsModel.localObjectGoingRemove -= OnObjectRemove;
+            _gameObjectsModel.localObjectGoingRemove -= OnObjectRemoveLocal;
+            _gameObjectsModel.networkObjectDestructed -= SanetizeDyingObjectsReverseMapping;
             _gameObjectsModel.localObjectRemotelyInitedSuccessfully -= OnLocalTargetInitedSuccesfully;
         }
 
-        private void OnObjectRemove(PositronNetworkIdentity identity)
+        private void OnObjectRemoveLocal(PositronNetworkIdentity identity)
+        {
+            SanetizeDellayCalls(identity);
+            SanetizeDyingObjectsReverseMapping(identity);
+        }
+
+        private void SanetizeDellayCalls(PositronNetworkIdentity identity)
         {
             if (_dellayedCalls.TryGetValue(identity, out DellayedCall call))
             {
@@ -189,6 +202,39 @@ namespace Positron.Client.Room.Models
 
                 _dellayedCalls.Remove(identity);
             }
+        }
+
+        private void SanetizeDyingObjectsReverseMapping(PositronNetworkIdentity identity)
+        {
+            if (identity == null)
+            {
+                return;
+            }
+
+            _dyingObjectsKeysToSanetize.Clear();
+
+            foreach (KeyValuePair<IRpcTarget, PositronNetworkIdentity> kvp in _rpcToObj)
+            {
+                PositronNetworkIdentity v = kvp.Value;
+
+                if (v == null)
+                {
+                    continue;
+                }
+
+                if ((v.IsFullyInitialized && v.ObjectId == identity.ObjectId && v.CreationId == 0) || 
+                    (!v.IsFullyInitialized && v.CreationId == identity.CreationId && v.CreationId != 0))
+                {
+                    _dyingObjectsKeysToSanetize.Add(kvp.Key);
+                }
+            }
+
+            foreach (IRpcTarget trg in _dyingObjectsKeysToSanetize)
+            {
+                _rpcToObj.Remove(trg);
+            }
+
+            _dyingObjectsKeysToSanetize.Clear();
         }
 
         private void OnLocalTargetInitedSuccesfully(PositronNetworkIdentity creationId)
@@ -237,7 +283,7 @@ namespace Positron.Client.Room.Models
 
         private void RouteRpcTarget(RpcCall call, bool isHostCommand)
         {
-            if (!isHostCommand && call.TargetClientId == _selfClientId)
+            if (!isHostCommand && call.TargetClientId != _selfClientId)
             {
                 return;
             }

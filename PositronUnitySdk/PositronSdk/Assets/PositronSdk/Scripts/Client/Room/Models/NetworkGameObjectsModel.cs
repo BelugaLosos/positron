@@ -36,6 +36,7 @@ namespace Positron.Client.Room.Models
         private uint _recentTick;
 
         public event Action<PositronNetworkIdentity> localObjectGoingRemove;
+        public event Action<PositronNetworkIdentity> networkObjectDestructed;
         public event Action<PositronNetworkIdentity> localObjectRemotelyInitedSuccessfully;
 
         public NetworkGameObjectsModel(NetworkWorld world, PositronSettings settings)
@@ -297,6 +298,7 @@ namespace Positron.Client.Room.Models
         {
             if (_currentGameObjectsOnScene.TryGetValue(obj, out PositronNetworkIdentity localInstance))
             {
+                networkObjectDestructed?.Invoke(localInstance);
                 _currentGameObjectsOnScene.Remove(obj);
 
                 if (localInstance == null)

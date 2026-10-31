@@ -24,7 +24,7 @@ namespace Positron.Client.Room
         public double ClientTimeWithPastOffset => _clientTime;
         public double ClearClientTime => _clientTime + _timeOffset;
 
-        private const double DRIFT_COEF = 0.2d;
+        private const double DRIFT_COEF = 0.1d;
         private const double MIN_TIME_SCALE = 0.9d;
         private const double MAX_TIME_SCALE = 1.1d;
         private const double TIME_TO_HARD_RESET = 1d;
@@ -85,7 +85,7 @@ namespace Positron.Client.Room
 
         public double TickToSeconds(uint tick) => ((double)tick) * _tickDuration;
 
-        public NetworkClockData CollectMonitorData() => new(_recentServerTime, _clientTime, _timeScale, _frameOffset);
+        public NetworkClockData CollectMonitorData() => new(_recentServerTime, ClearClientTime, _timeScale, _frameOffset);
 
         private async UniTask UpdateLoopHook()
         {
@@ -106,7 +106,7 @@ namespace Positron.Client.Room
                 }
                 else
                 {
-                    double targetScale = 1.0d + (diff * DRIFT_COEF);
+                    double targetScale = 1d + (diff * DRIFT_COEF);
                     _timeScale = MoveTowards(_timeScale, targetScale, delta * 0.5d);
                 }
 

@@ -6,6 +6,7 @@ namespace Positron.Client.Room.Models.Interfaces
     public interface IReadOnlyGameObjectsModel
     {
         event Action<PositronNetworkIdentity> localObjectGoingRemove;
+        event Action<PositronNetworkIdentity> networkObjectDestructed;
         event Action<PositronNetworkIdentity> localObjectRemotelyInitedSuccessfully;
 
         bool HasObjectInCreationDeltaNow(ushort creationId);
