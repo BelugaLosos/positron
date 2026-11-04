@@ -101,7 +101,7 @@ func TestRpcDto(t *testing.T) {
 		t.Errorf("corrupting of args %v", gameentities.GetRpcArgs(arena))
 	}
 
-	if has, id, payload := gameentities.DeconstructRpc(arena); has != true || id != 0x1234 || len(payload) != 2 || payload[0] != 0x22 || payload[1] != 0x22 {
+	if has, id, payload, success := gameentities.DeconstructRpc(arena); has != true || id != 0x1234 || len(payload) != 2 || payload[0] != 0x22 || payload[1] != 0x22 || success == false {
 		t.Errorf("Corrupted the creation id %v %v", id, has)
 	}
 
@@ -111,8 +111,8 @@ func TestRpcDto(t *testing.T) {
 		t.Errorf("corrupting of args %v", gameentities.GetRpcArgs(arena))
 	}
 
-	if has, id, payload := gameentities.DeconstructRpc(arena); has != false || id != 0x0 || len(payload) != 2 || payload[0] != 0x22 || payload[1] != 0x22 {
-		t.Errorf("Corrupted the creation id %v %v", id, has)
+	if has, id, payload, success := gameentities.DeconstructRpc(arena); has != false || id != 0x0 || len(payload) != 2 || payload[0] != 0x22 || payload[1] != 0x22 || success == false {
+		t.Errorf("Corrupted the creation id %v %v %v", id, has, payload)
 	}
 }
 
@@ -156,5 +156,67 @@ func TestRpcFromHost(t *testing.T) {
 
 	if len(meta) == 0 || string(arena) != expectedOutputArena {
 		t.Errorf("Error with host call %v", len(meta))
+	}
+}
+
+func TestRpcSanetizeCallBuffer(t *testing.T) {
+	gom := roommodels.NewGameObjectsModel(1, 1, true)
+	gom.AddGameObject(gameentities.NewGameObject(1, 1, 0, 5, gameentities.Vector3{}, gameentities.Vector3{}), 1)
+	model := roommodels.NewRpcsModel(gom)
+	arenaImitation := []byte{0x1, 0x0, 0x5, 0x2, 0x3, 0x4}
+	model.PutTransientDataIncoming(arenaImitation)
+
+	adden, _, _ := gom.GetModification()
+	model.Call(gameentities.NewRpcCall(0, 6, 0, 1, 0, eventtypes.RPC_ALL, 0), adden, 4, 4)
+
+	succes := gom.TryRemoveGameObject(1, 1, 4)
+
+	if !succes {
+		t.Error("deletion err")
+	}
+
+	model.SanetizeCurrentCallBuffer(1)
+
+	calls, resultiveArena := model.GetCurrentCallBuffer()
+
+	if len(calls) != 1 {
+		t.Error("uneffcient call")
+	}
+
+	if calls[0].GetRpcType() != eventtypes.RPC_INVALID {
+		t.Error("Fake invalidisation")
+	}
+
+	if ptr, len := calls[0].GetDescriptors(); ptr != 0 || len != 3 {
+		t.Error("payload corrupt")
+	}
+
+	if calls[0].GetObjectId() != 1 {
+		t.Error("invalid resolving")
+	}
+
+	if calls[0].GetTargetClient() != 1 {
+		t.Error("target client corrupts")
+	}
+
+	if len(resultiveArena) != 3 || resultiveArena[0] != 0x2 || resultiveArena[1] != 0x3 || resultiveArena[2] != 0x4 {
+		t.Error("arena is invalid")
+	}
+}
+
+func TestCallRpcOnNonExistingObject(t *testing.T) {
+	gom := roommodels.NewGameObjectsModel(1, 1, true)
+	model := roommodels.NewRpcsModel(gom)
+	arenaImitation := []byte("helloallgholleh") // hello allgh olleh
+	model.PutTransientDataIncoming(arenaImitation)
+
+	addMod := []gameentities.GameObject{}
+
+	model.Call(gameentities.NewRpcCall(0, 5, 1, 4, 9, eventtypes.RPC_ALL, 5), addMod, 1, 0)
+
+	cb, _ := model.GetCurrentCallBuffer()
+
+	if len(cb) != 0 {
+		t.Error("passed to nil object!")
 	}
 }

@@ -192,6 +192,7 @@ func (r *Room) ProcessTick(packet *datatransferobjects.GameTickPacket, netValues
 		if wasRemoved {
 			r.netValuesModel.RemoveAllValuesFromObject(removingObj)
 			r.rpcsModel.SanetizeBufferedCalls(removingObj)
+			r.rpcsModel.SanetizeCurrentCallBuffer(removingObj)
 		}
 	}
 

@@ -49,7 +49,9 @@ func (r *RpcsModel) PutTransientDataIncoming(data []byte) {
 }
 
 func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameentities.GameObject, attemptorId, actualHost uint32) {
-	if owner, isExists := r.gameObjectsModel.ThreadUnsafeGetObjectOwner(call.GetObjectId()); (owner != attemptorId && actualHost != attemptorId) || !isExists {
+	owner, isExists := r.gameObjectsModel.ThreadUnsafeGetObjectOwner(call.GetObjectId())
+
+	if isExists && (owner != attemptorId && actualHost != attemptorId) {
 		return
 	}
 
@@ -60,7 +62,12 @@ func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameenti
 		return
 	}
 
-	isCallForFreshObject, creationId, payload := gameentities.DeconstructRpc(incomingRawPayload)
+	isCallForFreshObject, creationId, payload, isCanBeRead := gameentities.DeconstructRpc(incomingRawPayload)
+
+	if !isCanBeRead || (!isCallForFreshObject && !isExists) {
+		return
+	}
+
 	incomingDataLen := uint32(len(payload))
 
 	if isCallForFreshObject {
@@ -95,6 +102,17 @@ func (r *RpcsModel) SanetizeBufferedCalls(objId uint32) {
 		if rpc.GetObjectId() == objId {
 			rpc.MarkRpcInvalid()
 			r.cachedRpcs[i] = rpc
+		}
+	}
+}
+
+func (r *RpcsModel) SanetizeCurrentCallBuffer(objId uint32) {
+	for i := range r.callBuffer {
+		rpc := r.callBuffer[i]
+
+		if rpc.GetObjectId() == objId {
+			rpc.MarkRpcInvalid()
+			r.callBuffer[i] = rpc
 		}
 	}
 }

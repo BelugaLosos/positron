@@ -169,11 +169,19 @@ func GetRpcArgs(args []byte) []byte {
 	return args[1:]
 }
 
-func DeconstructRpc(args []byte) (bool, uint16, []byte) {
-	if args[0] == 1 {
-		encoded := args[1:3]
-		return true, binary.BigEndian.Uint16(encoded), args[3:]
+func DeconstructRpc(args []byte) (bool, uint16, []byte, bool) {
+	if len(args) == 0 {
+		return false, 0, nil, false
 	}
 
-	return false, 0, args[1:]
+	if args[0] == 1 {
+		if len(args) < 4 {
+			return false, 0, nil, false
+		}
+
+		encoded := args[1:3]
+		return true, binary.BigEndian.Uint16(encoded), args[3:], true
+	}
+
+	return false, 0, args[1:], true
 }
