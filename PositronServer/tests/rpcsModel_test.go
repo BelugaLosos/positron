@@ -167,7 +167,7 @@ func TestRpcSanetizeCallBuffer(t *testing.T) {
 	model.PutTransientDataIncoming(arenaImitation)
 
 	adden, _, _ := gom.GetModification()
-	model.Call(gameentities.NewRpcCall(0, 6, 0, 1, 0, eventtypes.RPC_ALL, 0), adden, 4, 4)
+	model.Call(gameentities.NewRpcCall(0, 6, 0, 1, 0, eventtypes.RPC_ALL_CACHED, 0), adden, 4, 4)
 
 	succes := gom.TryRemoveGameObject(1, 1, 4)
 
@@ -175,31 +175,52 @@ func TestRpcSanetizeCallBuffer(t *testing.T) {
 		t.Error("deletion err")
 	}
 
-	model.SanetizeCurrentCallBuffer(1)
+	model.SanetizeBufferedCalls(1)
 
-	calls, resultiveArena := model.GetCurrentCallBuffer()
+	bcalls, resultiveArena := model.GetCachedRpcs()
+	ccalls, cra := model.GetCurrentCallBuffer()
 
-	if len(calls) != 1 {
-		t.Error("uneffcient call")
+	if len(ccalls) != 1 {
+		t.Error("uc")
 	}
 
-	if calls[0].GetRpcType() != eventtypes.RPC_INVALID {
+	if len(bcalls) != 1 {
+		t.Error("uneffcient cached call")
+	}
+
+	if bcalls[0].GetRpcType() != eventtypes.RPC_INVALID || ccalls[0].GetRpcType() != eventtypes.RPC_ALL_CACHED {
 		t.Error("Fake invalidisation")
 	}
 
-	if ptr, len := calls[0].GetDescriptors(); ptr != 0 || len != 3 {
+	if ptr, len := bcalls[0].GetDescriptors(); ptr != 0 || len != 3 {
 		t.Error("payload corrupt")
 	}
 
-	if calls[0].GetObjectId() != 1 {
+	if ptr, len := ccalls[0].GetDescriptors(); ptr != 0 || len != 3 {
+		t.Error("payload corrupt")
+	}
+
+	if bcalls[0].GetObjectId() != 1 {
 		t.Error("invalid resolving")
 	}
 
-	if calls[0].GetTargetClient() != 1 {
+	if ccalls[0].GetObjectId() != 1 {
+		t.Error("invalid resolving")
+	}
+
+	if bcalls[0].GetTargetClient() != 1 {
+		t.Error("target client corrupts")
+	}
+
+	if ccalls[0].GetTargetClient() != 1 {
 		t.Error("target client corrupts")
 	}
 
 	if len(resultiveArena) != 3 || resultiveArena[0] != 0x2 || resultiveArena[1] != 0x3 || resultiveArena[2] != 0x4 {
+		t.Error("arena is invalid")
+	}
+
+	if len(cra) != 3 || cra[0] != 0x2 || cra[1] != 0x3 || cra[2] != 0x4 {
 		t.Error("arena is invalid")
 	}
 }
@@ -218,5 +239,22 @@ func TestCallRpcOnNonExistingObject(t *testing.T) {
 
 	if len(cb) != 0 {
 		t.Error("passed to nil object!")
+	}
+}
+
+func TestUnsuccessfullFreshCall(t *testing.T) {
+	gom := roommodels.NewGameObjectsModel(1, 1, true)
+	model := roommodels.NewRpcsModel(gom)
+
+	rpcIncomingArena := []byte{0x1, 0xFF, 0xFF, 0x3, 0x4, 0x5, 0x6}
+	delta := []gameentities.GameObject{gameentities.NewGameObject(10, 1, 1, 1, gameentities.Vector3{}, gameentities.Vector3{})}
+
+	model.PutTransientDataIncoming(rpcIncomingArena)
+	model.Call(gameentities.NewRpcCall(0, 7, 0, 1, 0, eventtypes.RPC_ALL, 0), delta, 2, 2)
+
+	calls, _ := model.GetCurrentCallBuffer()
+
+	if len(calls) != 0 {
+		t.Error("call was deriacted to non-existing obj but somehow got registred")
 	}
 }

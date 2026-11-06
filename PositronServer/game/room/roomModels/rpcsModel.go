@@ -69,15 +69,21 @@ func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameenti
 	}
 
 	incomingDataLen := uint32(len(payload))
+	resolveWasSucceded := false
 
 	if isCallForFreshObject {
 		for i := range gameObjectsAddMod {
 			if gameObjectsAddMod[i].GetCreationId() == creationId {
 				call.SetObjectId(gameObjectsAddMod[i].GetId())
+				resolveWasSucceded = true
 
 				break
 			}
 		}
+	}
+
+	if isCallForFreshObject && !resolveWasSucceded {
+		return
 	}
 
 	deltaPtr := r.callBufferTransientArena.Alloc(payload)
@@ -102,17 +108,6 @@ func (r *RpcsModel) SanetizeBufferedCalls(objId uint32) {
 		if rpc.GetObjectId() == objId {
 			rpc.MarkRpcInvalid()
 			r.cachedRpcs[i] = rpc
-		}
-	}
-}
-
-func (r *RpcsModel) SanetizeCurrentCallBuffer(objId uint32) {
-	for i := range r.callBuffer {
-		rpc := r.callBuffer[i]
-
-		if rpc.GetObjectId() == objId {
-			rpc.MarkRpcInvalid()
-			r.callBuffer[i] = rpc
 		}
 	}
 }
