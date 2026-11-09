@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PositronCodeGen")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0c6ab501159fe44aa8e5bfb21e7080300ef54c42")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+18182aca6d5d33850dfbb7dc13ebbe08a64781c7")]
 [assembly: System.Reflection.AssemblyProductAttribute("PositronCodeGen")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PositronCodeGen")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

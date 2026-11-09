@@ -96,6 +96,7 @@ namespace Positron.Client.Room.Models
 
             if (targets == RpcTargets.RPC_TARGET && specifiedTargetClient == _selfClientId)
             {
+                PositronFacade.NetworkIoPool.PutWriter(writer);
                 return;
             }
 
@@ -114,6 +115,7 @@ namespace Positron.Client.Room.Models
 
             if (!identity.IsMine && _selfClientId != PositronFacade.World.HostId)
             {
+                PositronFacade.NetworkIoPool.PutWriter(writer);
                 throw new UnauthorizedAccessException("Can`t call rpc`s on foreign objects not being a host!");
             }
 

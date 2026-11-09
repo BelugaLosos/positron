@@ -161,7 +161,7 @@ func TestRpcFromHost(t *testing.T) {
 
 func TestRpcSanetizeCallBuffer(t *testing.T) {
 	gom := roommodels.NewGameObjectsModel(1, 1, true)
-	gom.AddGameObject(gameentities.NewGameObject(1, 1, 0, 5, gameentities.Vector3{}, gameentities.Vector3{}), 1)
+	gom.AddGameObject(gameentities.NewGameObject(1, 1, 0, 5, gameentities.Vector3{}, gameentities.Vector3{}), 4)
 	model := roommodels.NewRpcsModel(gom)
 	arenaImitation := []byte{0x1, 0x0, 0x5, 0x2, 0x3, 0x4}
 	model.PutTransientDataIncoming(arenaImitation)
@@ -169,7 +169,7 @@ func TestRpcSanetizeCallBuffer(t *testing.T) {
 	adden, _, _ := gom.GetModification()
 	model.Call(gameentities.NewRpcCall(0, 6, 0, 1, 0, eventtypes.RPC_ALL_CACHED, 0), adden, 4, 4)
 
-	succes := gom.TryRemoveGameObject(1, 1, 4)
+	succes := gom.TryRemoveGameObject(1, 4, 4)
 
 	if !succes {
 		t.Error("deletion err")
@@ -256,5 +256,61 @@ func TestUnsuccessfullFreshCall(t *testing.T) {
 
 	if len(calls) != 0 {
 		t.Error("call was deriacted to non-existing obj but somehow got registred")
+	}
+}
+
+func TestLogicRaceStateBetweenCreationAndHostPreveligies(t *testing.T) {
+	gom := roommodels.NewGameObjectsModel(1, 1, true)
+	model := roommodels.NewRpcsModel(gom)
+
+	gom.AddGameObject(gameentities.NewGameObject(0, 0, 0, 0xFFFF, gameentities.Vector3{}, gameentities.Vector3{}), 124)
+	addMod, _, _ := gom.GetModification()
+
+	rpcIncomingArena := []byte{0x1, 0xFF, 0xFF, 0x3, 0x4, 0x5, 0x6}
+
+	model.PutTransientDataIncoming(rpcIncomingArena)
+	model.Call(gameentities.NewRpcCall(0, 7, 3, 1, 0, eventtypes.RPC_HOST_COMMAND, 0), addMod, 1, 7)
+
+	callBuff, _ := model.GetCurrentCallBuffer()
+
+	if len(callBuff) != 0 {
+		t.Error("Unauthorized execution")
+	}
+}
+
+func TestCreationIdCollisionBetweenDifferentClientsInSameTick(t *testing.T) {
+	gom := roommodels.NewGameObjectsModel(1, 1, true)
+	model := roommodels.NewRpcsModel(gom)
+
+	const sharedCreationId uint16 = 42
+	const firstClientId uint32 = 10
+	const secondClientId uint32 = 20
+	const hostId uint32 = 99
+
+	gom.AddGameObject(gameentities.NewGameObject(0, 0, 0, sharedCreationId, gameentities.Vector3{}, gameentities.Vector3{}), firstClientId)
+	gom.AddGameObject(gameentities.NewGameObject(0, 0, 0, sharedCreationId, gameentities.Vector3{}, gameentities.Vector3{}), secondClientId)
+
+	addMod, _, _ := gom.GetModification()
+	if len(addMod) != 2 {
+		t.Fatalf("expected 2 created objects in delta, got %d", len(addMod))
+	}
+
+	secondClientObjectId := addMod[1].GetId()
+
+	rpcIncomingArena := []byte{0x1, 0x00, 0x2A, 0xAA, 0xBB, 0xCC}
+	model.PutTransientDataIncoming(rpcIncomingArena)
+	model.Call(gameentities.NewRpcCall(0, 6, 0, 1, 0, eventtypes.RPC_ALL, 0), addMod, secondClientId, hostId)
+
+	callBuff, arena := model.GetCurrentCallBuffer()
+	if len(callBuff) != 1 {
+		t.Fatalf("expected second client's RPC to succeed despite CreationId collision, got %d calls", len(callBuff))
+	}
+
+	if callBuff[0].GetObjectId() != secondClientObjectId {
+		t.Errorf("resolved wrong ObjectId: expected %d (second client's object), got %d", secondClientObjectId, callBuff[0].GetObjectId())
+	}
+
+	if len(arena) != 3 || arena[0] != 0xAA || arena[1] != 0xBB || arena[2] != 0xCC {
+		t.Errorf("unexpected payload in arena: %v", arena)
 	}
 }

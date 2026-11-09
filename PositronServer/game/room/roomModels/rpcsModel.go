@@ -69,12 +69,14 @@ func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameenti
 	}
 
 	incomingDataLen := uint32(len(payload))
+	resolvedObjectId := uint32(0)
 	resolveWasSucceded := false
 
 	if isCallForFreshObject {
 		for i := range gameObjectsAddMod {
-			if gameObjectsAddMod[i].GetCreationId() == creationId {
-				call.SetObjectId(gameObjectsAddMod[i].GetId())
+			if gameObjectsAddMod[i].GetCreationId() == creationId && gameObjectsAddMod[i].GetOwnerId() == attemptorId {
+				resolvedObjectId = gameObjectsAddMod[i].GetId()
+				call.SetObjectId(resolvedObjectId)
 				resolveWasSucceded = true
 
 				break
@@ -84,6 +86,14 @@ func (r *RpcsModel) Call(call gameentities.RpcCall, gameObjectsAddMod []gameenti
 
 	if isCallForFreshObject && !resolveWasSucceded {
 		return
+	}
+
+	if isCallForFreshObject {
+		ownerAfterResolve, isExistsAfterResolve := r.gameObjectsModel.ThreadUnsafeGetObjectOwner(resolvedObjectId)
+
+		if !isExistsAfterResolve || (ownerAfterResolve != attemptorId && actualHost != attemptorId) {
+			return
+		}
 	}
 
 	deltaPtr := r.callBufferTransientArena.Alloc(payload)

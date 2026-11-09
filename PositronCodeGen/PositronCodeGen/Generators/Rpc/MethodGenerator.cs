@@ -37,6 +37,7 @@ namespace PositronCodeGen.Generators.Rpc
             ulong hash = _namesHasher.To64BitHash(methodName);
             bool hasSpecifiedTargetParam = false;
             string specifiedTargetParamName = string.Empty;
+            string isHostCommand = $"targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_RPC_HOST_COMMAND} && {ConstantsHolderContainer.LOCAL_CLIENT_ID_GETTING_EXPR} == {ConstantsHolderContainer.HOST_CLIENT_ID_GETTING_EXPR}";   
 
             for (int i = 0; i < data.Args.Length; i++)
             {
@@ -55,8 +56,9 @@ namespace PositronCodeGen.Generators.Rpc
             str.AppendLine($"    {accessModifier} void {ConstantsHolderContainer.RPC_SEND_PREFIX}{methodName}({ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION} targets{parametersDefinition})");
             str.AppendLine("    {");
             str.AppendLine("        bool exceptionRaised = false;");
+            str.AppendLine($"        bool isHostCommandExecutingOhHost = ({isHostCommand});");
             str.AppendLine();
-            str.AppendLine($"        if(!{ConstantsHolderContainer.RPCS_MODEL_DEFINITION}.IsInRollbufferMode)");
+            str.AppendLine($"        if(!{ConstantsHolderContainer.RPCS_MODEL_DEFINITION}.IsInRollbufferMode && !isHostCommandExecutingOhHost)");
             str.AppendLine("        {");
             str.AppendLine("            try");
             str.AppendLine("            {");
@@ -93,7 +95,8 @@ namespace PositronCodeGen.Generators.Rpc
             string specifiedTargetHandleExpr = hasSpecifiedTargetParam ?
                 $" || (targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_RPC_TARGET} && {specifiedTargetParamName}.{ConstantsHolderContainer.RPC_SPECIFIED_TARGET_TARGET_FIELD_NAME} == {ConstantsHolderContainer.LOCAL_CLIENT_ID_GETTING_EXPR})" :
                 "";
-            str.AppendLine($"        if(targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL} || targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED}{specifiedTargetHandleExpr})");
+            string hostRoutingExpr = " || isHostCommandExecutingOhHost";
+            str.AppendLine($"        if(targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL} || targets == {ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{ConstantsHolderContainer.RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED}{specifiedTargetHandleExpr}{hostRoutingExpr})");
             str.AppendLine("        {");
             str.AppendLine($"            {methodName}({parameterNames});");
             str.AppendLine("        }");
