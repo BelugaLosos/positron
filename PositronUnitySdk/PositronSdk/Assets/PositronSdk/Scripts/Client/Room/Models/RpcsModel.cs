@@ -20,7 +20,7 @@ namespace Positron.Client.Room.Models
         private uint _selfClientId;
 
         private readonly PooledDynamicArraySegment<RpcCall> _currentCallBuffer = new(128);
-        private readonly Dictionary<PositronNetworkIdentity, DellayedCall> _dellayedCalls = new(24);
+        private readonly Dictionary<ushort, DellayedCall> _dellayedCalls = new(24);
 
         private readonly Dictionary<IRpcTarget, PositronNetworkIdentity> _rpcToObj = new(256);
         private readonly List<IRpcTarget> _dyingObjectsKeysToSanetize = new(256);
@@ -134,16 +134,16 @@ namespace Positron.Client.Room.Models
 
             if (!identity.IsFullyInitialized)
             {
-                if (_gameObjectsModel.HasObjectInCreationDeltaNow(identity.CreationId))
+                if (_gameObjectsModel.HasObjectInCreationDeltaNow(identity.ConstantCreationId))
                 {
                     needToWriteCreationId = true;
 
                     _flag[0] = 1;
-                    BinaryPrimitives.WriteUInt16BigEndian(_creationIdSection, identity.CreationId);
+                    BinaryPrimitives.WriteUInt16BigEndian(_creationIdSection, identity.ConstantCreationId);
                 }
                 else
                 {
-                    _dellayedCalls.Add(identity, new(obj, bindedGameObject, methodName, specifiedTargetClient, hasSpecifiedTarget, targets, writer));
+                    _dellayedCalls.Add(identity.ConstantCreationId, new(obj, bindedGameObject, methodName, specifiedTargetClient, hasSpecifiedTarget, targets, writer));
                     return;
                 }
             }
@@ -197,12 +197,12 @@ namespace Positron.Client.Room.Models
 
         private void SanetizeDellayCalls(PositronNetworkIdentity identity)
         {
-            if (_dellayedCalls.TryGetValue(identity, out DellayedCall call))
+            if (_dellayedCalls.TryGetValue(identity.ConstantCreationId, out DellayedCall call))
             {
                 PositronNetworkWriter w = call.Writer;
                 PositronFacade.NetworkIoPool.PutWriter(w);
 
-                _dellayedCalls.Remove(identity);
+                _dellayedCalls.Remove(identity.ConstantCreationId);
             }
         }
 
@@ -241,9 +241,9 @@ namespace Positron.Client.Room.Models
 
         private void OnLocalTargetInitedSuccesfully(PositronNetworkIdentity creationId)
         {
-            if (_dellayedCalls.TryGetValue(creationId, out DellayedCall call))
+            if (_dellayedCalls.TryGetValue(creationId.ConstantCreationId, out DellayedCall call))
             {
-                _dellayedCalls.Remove(creationId);
+                _dellayedCalls.Remove(creationId.ConstantCreationId);
                 SendRpcToServer(call.Obj, call.BindedGameObject, call.MethodName, call.SpecifiedTargetClient, call.HasSpecifiedTarget, call.Targets, call.Writer);
             }
         }

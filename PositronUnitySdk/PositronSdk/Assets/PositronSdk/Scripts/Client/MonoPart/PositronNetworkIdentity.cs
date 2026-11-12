@@ -32,6 +32,7 @@ namespace Positron.Client.Mono
         private bool _activityStateInited;
 
         public ushort CreationId { get; private set; }
+        public ushort ConstantCreationId { get; private set; } // like CreationID but it is permanent and don`t sets to 0 when itits globally
         public uint ObjectId { get; private set; }
         public ushort SubObjectId { get; private set; }
         public uint OwnerClientId { get; private set; }
@@ -199,6 +200,7 @@ namespace Positron.Client.Mono
         private void InitLocally(ushort creationId, uint owner)
         {
             CreationId = creationId;
+            ConstantCreationId = creationId;
             OwnerClientId = owner;
 
             _isLocallyInited = true;

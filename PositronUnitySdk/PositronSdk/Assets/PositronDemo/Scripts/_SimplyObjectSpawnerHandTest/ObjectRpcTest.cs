@@ -15,7 +15,14 @@ namespace Positron.Extras.HandTests
 
         public void OnNetworkAwake()
         {
+            SendRPC_BarAwaken1(RpcTargets.RPC_ALL, Random.Range(1, 100));
+            Invoke(nameof(Dellayed), 1f/33f + Time.fixedDeltaTime);
             Debug.Log("text woken");
+        }
+
+        private void Dellayed()
+        {
+            SendRPC_BarAwaken2(RpcTargets.RPC_ALL, Random.Range(1, 100));
         }
 
         public void OnNetworkDestroy()
@@ -44,6 +51,18 @@ namespace Positron.Extras.HandTests
         private void Bar(string d)
         {
             _txt.text += d + " ";
+        }
+
+        [Rpc]
+        private void BarAwaken1(int rv)
+        {
+            _txt.text += " BA1 " + rv.ToString();
+        }
+
+        [Rpc]
+        private void BarAwaken2(int rv)
+        {
+            _txt.text += " BA2 " + rv.ToString();
         }
     }
 }
