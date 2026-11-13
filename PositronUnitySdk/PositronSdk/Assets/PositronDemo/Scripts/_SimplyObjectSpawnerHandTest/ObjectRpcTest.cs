@@ -33,33 +33,61 @@ namespace Positron.Extras.HandTests
         public void Test()
         {
             SendRPC_Foo1(RpcTargets.RPC_TARGET, new(GetComponent<PositronNetworkIdentity>().OwnerClientId), "T");
-            SendRPC_Bar(RpcTargets.RPC_ALL, "A");
-            SendRPC_Bar(RpcTargets.RPC_OTHERS, "O");
-            SendRPC_Bar(RpcTargets.RPC_ALL_CACHED, "AC");
-            SendRPC_Bar(RpcTargets.RPC_OTHERS_CACHED, "OC");
-            SendRPC_Bar(RpcTargets.RPC_HOST_COMMAND, "H");
+            SendRPC_BarAll(RpcTargets.RPC_ALL, "A");
+            SendRPC_BarOthers(RpcTargets.RPC_OTHERS, "O");
+            SendRPC_BarAllCached(RpcTargets.RPC_ALL_CACHED, "AC");
+            SendRPC_BarOthersCached(RpcTargets.RPC_OTHERS_CACHED, "OC");
+            SendRPC_BarHostCommand(RpcTargets.RPC_HOST_COMMAND, "H");
         }
 
-        [Rpc]
+        [Rpc(RpcTargets.RPC_TARGET)]
         private void Foo1(RpcPlayerRef palyer, string s)
         {
             _num++;
             _txt.text += "1" + s + _num.ToString() + "; ";
         }
 
-        [Rpc]
-        private void Bar(string d)
+
+
+        [Rpc(RpcTargets.RPC_ALL)]
+        private void BarAll(string d)
         {
             _txt.text += d + " ";
         }
 
-        [Rpc]
+        [Rpc(RpcTargets.RPC_OTHERS)]
+        private void BarOthers(string d)
+        {
+            _txt.text += d + " ";
+        }
+
+        [Rpc(RpcTargets.RPC_ALL_CACHED)]
+        private void BarAllCached(string d)
+        {
+            _txt.text += d + " ";
+        }
+
+        [Rpc(RpcTargets.RPC_OTHERS_CACHED)]
+        private void BarOthersCached(string d)
+        {
+            _txt.text += d + " ";
+        }
+
+        [Rpc(RpcTargets.RPC_HOST_COMMAND)]
+        private void BarHostCommand(string d)
+        {
+            _txt.text += d + " ";
+        }
+
+
+
+        [Rpc(RpcTargets.RPC_ALL)]
         private void BarAwaken1(int rv)
         {
             _txt.text += " BA1 " + rv.ToString();
         }
 
-        [Rpc]
+        [Rpc(RpcTargets.RPC_ALL)]
         private void BarAwaken2(int rv)
         {
             _txt.text += " BA2 " + rv.ToString();

@@ -25,7 +25,7 @@ namespace Positron.Extras.HandTests
             SendRPC_ChangeColorRpc(RpcTargets.RPC_TARGET, new(GetComponent<PositronNetworkIdentity>().OwnerClientId), Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
         }
 
-        [Rpc]
+        [Rpc(RpcTargets.RPC_TARGET)]
         private void ChangeColorRpc(RpcPlayerRef player, float r, float g, float b)
         {
             _renderer.material.color = new(r, g, b);
