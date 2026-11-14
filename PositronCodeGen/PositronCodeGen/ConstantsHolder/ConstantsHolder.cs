@@ -34,5 +34,7 @@
         public static readonly string NET_VALUE_ATTR_NAME = "NetworkedAttribute";
         public static readonly string NET_VALUE_BASR_CLASS_TYPE_NAME = "global::Positron.Client.NetValues.NetValueManagedBase";
         public static readonly string NET_VALUE_AUTHORITY_ENUM_NAME = "global::Positron.Client.NetValues.NetValueAuthority";
+        public static readonly string NETWORK_IDENTITY_IS_MINE_FIELD = "IsMine";
+        public static readonly string NETWORK_IDENTITY_IS_HOST_FIELD = "IsHost";
     }
 }

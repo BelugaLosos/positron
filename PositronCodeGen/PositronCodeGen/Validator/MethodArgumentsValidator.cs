@@ -36,7 +36,7 @@ namespace PositronCodeGen.Validator
                     return false;
                 }
 
-                if (tk != TypeKind.Array && tk != TypeKind.Struct && tk != TypeKind.Structure && tk != TypeKind.Array && tk != TypeKind.Class)
+                if (tk != TypeKind.Array && tk != TypeKind.Struct && tk != TypeKind.Structure && tk != TypeKind.Class)
                 {
                     context.ReportDiagnostic(DiagnosticsReportGenerator.GeneratReport(
                             owner,

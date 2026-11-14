@@ -16,8 +16,9 @@ namespace PositronCodeGen.Processors
     {
         private readonly MethodsExtractor _methodsExtractor;
         private readonly ClassDeclarationValidator _partialsValidator;
-        private readonly MethodValidator _methodValidator;
+        private readonly MethodModificatorsValidator _methodModificatorsValidator;
         private readonly MethodArgumentsValidator _methodArgumentsValidator;
+        private readonly RpcArgumentsToSourceValidatorCopatebility _arguemntsToTargetsCopatebilityValidator;
         private readonly ClassGenerator _classGenerator;
         private readonly MethodGenerator _methodGenerator;
         private readonly ServiceInterfaceImplementationGenerator _serviceCodeGenerator;
@@ -26,7 +27,7 @@ namespace PositronCodeGen.Processors
         {
             _methodsExtractor = new MethodsExtractor();
             _partialsValidator = new ClassDeclarationValidator();
-            _methodValidator = new MethodValidator();
+            _methodModificatorsValidator = new MethodModificatorsValidator();
             _methodArgumentsValidator = new MethodArgumentsValidator();
             _classGenerator = new ClassGenerator();
             _methodGenerator = new MethodGenerator();
@@ -50,10 +51,10 @@ namespace PositronCodeGen.Processors
 
             foreach (ParsedMethodData method in methods)
             {
-                if (!_methodValidator.IsMethodValid(method.MethodSymbol, out string message))
+                if (!_methodModificatorsValidator.IsMethodValid(method.MethodSymbol, out string message))
                 {
                     Diagnostic diagnosticsReport = Diagnostic.Create(
-                           _methodValidator.GenerateDiagnosticsDescriptor(),
+                           _methodModificatorsValidator.GenerateDiagnosticsDescriptor(),
                            method.MethodSymbol.Locations.FirstOrDefault() ?? Location.None,
                            message
                     );
@@ -66,6 +67,11 @@ namespace PositronCodeGen.Processors
                 {
                     return;
                 }
+
+                if (!_arguemntsToTargetsCopatebilityValidator.IsValid(type.Type, (byte)method.RpcAttr.ConstructorArguments[0].Value, method, context))
+                {
+                    return;
+                }
             }
 
             _classGenerator.AppendInitial(sourceBuilder, type, "RPCs", ConstantsHolderContainer.RPC_TARGETS_INTERFACE_DEFINITION);
@@ -74,7 +80,7 @@ namespace PositronCodeGen.Processors
 
             foreach (ParsedMethodData method in methods)
             {
-                _methodGenerator.GenerateMethodWithClosure(sourceBuilder, method);
+                _methodGenerator.GenerateRWMethodsWithClosure(sourceBuilder, method);
             }
 
             _classGenerator.AppendClosure(sourceBuilder, type);

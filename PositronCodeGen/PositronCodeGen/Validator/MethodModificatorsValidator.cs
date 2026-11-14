@@ -4,11 +4,11 @@ using System.Collections.Generic;
 
 namespace PositronCodeGen.Validator
 {
-    internal class MethodValidator
+    internal class MethodModificatorsValidator
     {
-        private readonly List<Accessibility> _allowedAccesebilities = new List<Accessibility>();
+        private readonly List<Accessibility> _allowedAccesebilities = new List<Accessibility>(3);
 
-        public MethodValidator() 
+        public MethodModificatorsValidator() 
         {
             _allowedAccesebilities.Add(Accessibility.Private);
             _allowedAccesebilities.Add(Accessibility.Protected);
