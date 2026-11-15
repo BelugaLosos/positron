@@ -373,8 +373,7 @@ MonoBehaviour:
   _ownershipTransferAuthority: 2
   _destroyAuthority: 0
   _trackedSubObjects: []
-  _trackedNetValueCarriersObjects:
-  - {fileID: 5074407420399820349}
+  _trackedNetValueCarriersObjects: []
 --- !u!114 &5074407420399820349
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -662,8 +661,7 @@ MonoBehaviour:
   - {fileID: 7233622195225436279}
   - {fileID: 2716522895302064501}
   - {fileID: 6369247608296819493}
-  _trackedNetValueCarriersObjects:
-  - {fileID: 5074407420399820349}
+  _trackedNetValueCarriersObjects: []
 --- !u!114 &-5932626248168418175
 MonoBehaviour:
   m_ObjectHideFlags: 0

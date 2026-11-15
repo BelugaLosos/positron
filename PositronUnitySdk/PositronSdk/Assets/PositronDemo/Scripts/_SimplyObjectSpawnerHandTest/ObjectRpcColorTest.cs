@@ -22,7 +22,7 @@ namespace Positron.Extras.HandTests
 
         public void CallColorTransfer()
         {
-            SendRPC_ChangeColorRpc(RpcTargets.RPC_TARGET, new(GetComponent<PositronNetworkIdentity>().OwnerClientId), Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
+            SendRPC_ChangeColorRpc(new(GetComponent<PositronNetworkIdentity>().OwnerClientId), Random.Range(0f, 1f), Random.Range(0f, 1f), Random.Range(0f, 1f));
         }
 
         [Rpc(RpcTargets.RPC_TARGET)]

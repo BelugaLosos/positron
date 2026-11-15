@@ -19,6 +19,7 @@ namespace PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Common
         {
             _namesHasher = new NamesHasher();
             _typesNamesConverter = typesNameConverter;
+            _checkGenerator = new RpcEditorRuntimeCheckForOriginRulesGenerator();
         }
 
         public void Generate(StringBuilder str, ParsedMethodData data, ExtractedParametersDefinitionsAsStrings paramsData, byte target)

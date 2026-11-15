@@ -15,14 +15,14 @@ namespace Positron.Extras.HandTests
 
         public void OnNetworkAwake()
         {
-            SendRPC_BarAwaken1(RpcTargets.RPC_ALL, Random.Range(1, 100));
+            SendRPC_BarAwaken1(Random.Range(1, 100));
             Invoke(nameof(Dellayed), 1f/33f + Time.fixedDeltaTime);
             Debug.Log("text woken");
         }
 
         private void Dellayed()
         {
-            SendRPC_BarAwaken2(RpcTargets.RPC_ALL, Random.Range(1, 100));
+            SendRPC_BarAwaken2(Random.Range(1, 100));
         }
 
         public void OnNetworkDestroy()
@@ -32,12 +32,12 @@ namespace Positron.Extras.HandTests
 
         public void Test()
         {
-            SendRPC_Foo1(RpcTargets.RPC_TARGET, new(GetComponent<PositronNetworkIdentity>().OwnerClientId), "T");
-            SendRPC_BarAll(RpcTargets.RPC_ALL, "A");
-            SendRPC_BarOthers(RpcTargets.RPC_OTHERS, "O");
-            SendRPC_BarAllCached(RpcTargets.RPC_ALL_CACHED, "AC");
-            SendRPC_BarOthersCached(RpcTargets.RPC_OTHERS_CACHED, "OC");
-            SendRPC_BarHostCommand(RpcTargets.RPC_HOST_COMMAND, "H");
+            SendRPC_Foo1(new(GetComponent<PositronNetworkIdentity>().OwnerClientId), "T");
+            SendRPC_BarAll("A");
+            SendRPC_BarOthers("O");
+            SendRPC_BarAllCached("AC");
+            SendRPC_BarOthersCached("OC");
+            SendRPC_BarHostCommand("H");
         }
 
         [Rpc(RpcTargets.RPC_TARGET)]

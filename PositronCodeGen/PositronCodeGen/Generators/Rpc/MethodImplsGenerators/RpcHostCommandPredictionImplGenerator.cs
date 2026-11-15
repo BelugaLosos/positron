@@ -11,7 +11,7 @@ namespace PositronCodeGen.Generators.Rpc.MethodImplsGenerators
 
         public void GenerateMethodImpl(StringBuilder str, ParsedMethodData data, RpcParamsDefinitionHelper.ExtractedParametersDefinitionsAsStrings paramsData)
         {
-            str.AppendLine($"       if(isCurrentlyHost) {data.MethodSymbol.Name}({paramsData.ParameterNames});");
+            str.AppendLine($"        if(isCurrentlyHost) {data.MethodSymbol.Name}({paramsData.ParameterNames});");
         }
     }
 }

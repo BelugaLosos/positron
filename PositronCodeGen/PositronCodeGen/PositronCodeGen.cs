@@ -6,12 +6,15 @@ using PositronCodeGen.Generators;
 using PositronCodeGen.Processors;
 using PositronCodeGen.Processors.Interface;
 using System.Text;
+using System.IO;
 
 namespace PositronCodeGen
 {
     [Generator]
     public class PositronCodeGen : ISourceGenerator
     {
+        private const bool DO_DBG_LISTING = false;
+
         public void Execute(GeneratorExecutionContext context)
         {
             Compilation compiler = context.Compilation;
@@ -36,6 +39,7 @@ namespace PositronCodeGen
                 }
             }
 
+            if(DO_DBG_LISTING) File.WriteAllText(@"C:/GenDBG/dbg.txt", sourceBuilder.ToString());
             context.AddSource("RpcLowLevelInteractors.gen.cs", SourceText.From(sourceBuilder.ToString(), Encoding.UTF8));
         }
 

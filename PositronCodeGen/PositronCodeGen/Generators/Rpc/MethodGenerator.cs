@@ -12,7 +12,7 @@ namespace PositronCodeGen.Generators.Rpc
 {
     internal class MethodGenerator
     {
-        private readonly TypeDefinitionToIoMethodNameConverter _methodNamesConverter = new TypeDefinitionToIoMethodNameConverter();
+        private readonly TypeDefinitionToIoMethodNameConverter _methodNamesConverter;
         private readonly RpcWritePartGenerator _writePartGenerator;
         private readonly RpcParamsDefinitionHelper _paramsDefinitionHelper;
         private readonly IRpcPreditionPartTargetDependentGenerator[] _predictionPartsGenerators = new IRpcPreditionPartTargetDependentGenerator[]
@@ -24,6 +24,7 @@ namespace PositronCodeGen.Generators.Rpc
 
         public MethodGenerator()
         {
+            _methodNamesConverter = new TypeDefinitionToIoMethodNameConverter();
             _writePartGenerator = new RpcWritePartGenerator(_methodNamesConverter);
             _paramsDefinitionHelper = new RpcParamsDefinitionHelper();
         }
@@ -31,7 +32,7 @@ namespace PositronCodeGen.Generators.Rpc
         public void GenerateRWMethodsWithClosure(StringBuilder str, ParsedMethodData data)
         {
             ExtractedParametersDefinitionsAsStrings extractedParameters = _paramsDefinitionHelper.ExtractParamsDefinitionsAsStrings(data);
-
+            
             GenerateWriteMethod(str, data, extractedParameters);
             GenerateReadMethod(str, data);
         }

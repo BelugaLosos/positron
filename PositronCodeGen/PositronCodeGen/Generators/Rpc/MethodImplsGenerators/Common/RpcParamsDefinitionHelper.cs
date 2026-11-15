@@ -27,9 +27,9 @@ namespace PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Common
                 if (i != 0)
                 {
                     parameterNames.Append(", ");
+                    parametersDefinition.Append(", ");
                 }
 
-                parametersDefinition.Append(", ");
                 parametersDefinition.Append(data.Args[i].DefinitionString);
                 parametersDefinition.Append(" ");
                 parametersDefinition.Append(data.Args[i].Name);

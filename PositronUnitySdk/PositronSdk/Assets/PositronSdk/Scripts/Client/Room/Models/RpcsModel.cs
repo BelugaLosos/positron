@@ -88,20 +88,20 @@ namespace Positron.Client.Room.Models
 
         public void SendRpcToServer(IRpcTarget obj, GameObject bindedGameObject, ulong methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer)
         {
-            if (targets == RpcTargets.RPC_TARGET && !hasSpecifiedTarget)
+            if (targets == RpcTargets.RPC_TARGET && !hasSpecifiedTarget) // probaly deprecated due to AOT
             {
                 PositronFacade.NetworkIoPool.PutWriter(writer);
                 throw new ArgumentException("Can`t call RPC_TARGET with no specified target argument (declare an argument like 'uint targetClientId')");
             }
 
-            if (targets == RpcTargets.RPC_TARGET && specifiedTargetClient == _selfClientId)
+            if (targets == RpcTargets.RPC_TARGET && specifiedTargetClient == _selfClientId) // can`t be handled AOT
             {
                 PositronFacade.NetworkIoPool.PutWriter(writer);
                 return;
             }
 
             if ((targets == RpcTargets.RPC_ALL || targets == RpcTargets.RPC_ALL_CACHED ||
-                targets == RpcTargets.RPC_OTHERS || targets == RpcTargets.RPC_OTHERS_CACHED) && hasSpecifiedTarget)
+                targets == RpcTargets.RPC_OTHERS || targets == RpcTargets.RPC_OTHERS_CACHED) && hasSpecifiedTarget) // can`t be handled AOT
             {
                 PositronFacade.NetworkIoPool.PutWriter(writer);
                 throw new ArgumentException($"Can call targeted rpc (declared with {typeof(RpcPlayerRef)}) only as RPC_TARGET or RPC_TARGET_CACHED");

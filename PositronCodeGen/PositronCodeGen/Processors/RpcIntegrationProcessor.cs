@@ -32,6 +32,7 @@ namespace PositronCodeGen.Processors
             _classGenerator = new ClassGenerator();
             _methodGenerator = new MethodGenerator();
             _serviceCodeGenerator = new ServiceInterfaceImplementationGenerator();
+            _arguemntsToTargetsCopatebilityValidator = new RpcArgumentsToSourceValidatorCopatebility();
         }
 
         public void Process(ParsedTypeData type, GeneratorExecutionContext context, StringBuilder sourceBuilder)
