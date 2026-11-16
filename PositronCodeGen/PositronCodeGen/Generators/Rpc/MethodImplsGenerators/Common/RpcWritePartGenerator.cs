@@ -1,4 +1,5 @@
-﻿using PositronCodeGen.ConstantsHolder;
+﻿using PositronCodeGen._Shared;
+using PositronCodeGen.ConstantsHolder;
 using PositronCodeGen.Extractors.Data;
 using PositronCodeGen.Util;
 using System.Linq;
@@ -13,8 +14,6 @@ namespace PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Common
         private readonly TypeDefinitionToIoMethodNameConverter _typesNamesConverter;
         private readonly RpcEditorRuntimeCheckForOriginRulesGenerator _checkGenerator;
 
-        private const byte RPC_HOST_COMMAND = 0x6;
-
         public RpcWritePartGenerator(TypeDefinitionToIoMethodNameConverter typesNameConverter)
         {
             _namesHasher = new NamesHasher();
@@ -22,10 +21,11 @@ namespace PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Common
             _checkGenerator = new RpcEditorRuntimeCheckForOriginRulesGenerator();
         }
 
-        public void Generate(StringBuilder str, ParsedMethodData data, ExtractedParametersDefinitionsAsStrings paramsData, byte target)
+        public void Generate(StringBuilder str, ParsedMethodData data, ExtractedParametersDefinitionsAsStrings paramsData, RpcTargets target)
         {
             string methodName = data.MethodSymbol.Name;
             ulong hash = _namesHasher.To64BitHash(methodName);
+            int specifiedTargetParamIdx = FindSpecifiedTargetArg(data, out string specifiedTargetParamName);
 
             GenerateMethodSignatureAndBeginning(str, data, paramsData.ParamsDefinition, methodName);
             str.AppendLine("    {");
@@ -36,13 +36,17 @@ namespace PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Common
 
             AddSpace(str);
 
-            ConditionalGerateIfStatementOfWritePart(str, target);
+            ConditionalGerateIfStatementOfWritePart(str, target, specifiedTargetParamName);
 
             str.AppendLine("        {");
+            str.AppendLine($"            {ConstantsHolderContainer.NETWORK_WRITER_DEFINITION} w = {ConstantsHolderContainer.NETWORK_IO_POOL_DEFINITION}.{ConstantsHolderContainer.NETWORK_IO_POOL_GET_WRITTER_METHOD}();");
+            
+            AddSpace(str);
+
             str.AppendLine("            try");
             str.AppendLine("            {");
 
-            GenerateWritePart(str, data);
+            GenerateWritePart(str, data, specifiedTargetParamIdx);
             AddSpace(str);
             GenerateInternalsCall(str, data, hash, target);
 
@@ -52,11 +56,12 @@ namespace PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Common
             str.AppendLine("                exceptionRaised = true;");
             str.AppendLine("                Debug.LogException(e);");
             str.AppendLine("            }");
-            str.AppendLine("        }");
             AddSpace(str);
-            str.AppendLine("        if(exceptionRaised)");
-            str.AppendLine("        {");
-            str.AppendLine("            return;");
+            str.AppendLine("            if(exceptionRaised)");
+            str.AppendLine("            {");
+            str.AppendLine($"                {ConstantsHolderContainer.NETWORK_IO_POOL_PUT_WRITER_METHOD_CALL}(w);");
+            str.AppendLine("                return;");
+            str.AppendLine("            }");
             str.AppendLine("        }");
             AddSpace(str);
         }
@@ -69,35 +74,58 @@ namespace PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Common
             str.AppendLine($"    {accessModifier} void {ConstantsHolderContainer.RPC_SEND_PREFIX}{methodName}({paramsDefinition})");
         }
 
-        private void ConditionalGenerateHostCommandLogicExpr(StringBuilder str, byte target)
+        private void ConditionalGenerateHostCommandLogicExpr(StringBuilder str, RpcTargets target)
         {
-            if (target == RPC_HOST_COMMAND)
+            if (target == RpcTargets.RPC_HOST_COMMAND)
             {
                 str.AppendLine($"        bool isCurrentlyHost = {ConstantsHolderContainer.LOCAL_CLIENT_ID_GETTING_EXPR} == {ConstantsHolderContainer.HOST_CLIENT_ID_GETTING_EXPR};");
             }
         }
 
-        private void ConditionalGerateIfStatementOfWritePart(StringBuilder str, byte target)
+        private void ConditionalGerateIfStatementOfWritePart(StringBuilder str, RpcTargets target, string specifiedParamName)
         {
-            if (target == RPC_HOST_COMMAND)
+            string notInRollBufferModeExpr = $"!{ConstantsHolderContainer.RPCS_MODEL_DEFINITION}.IsInRollbufferMode";
+
+            if (target == RpcTargets.RPC_HOST_COMMAND)
             {
-                str.AppendLine($"        if(!{ConstantsHolderContainer.RPCS_MODEL_DEFINITION}.IsInRollbufferMode && !isCurrentlyHost)");
+                str.AppendLine($"        if({notInRollBufferModeExpr} && !isCurrentlyHost)");
+            }
+            else if (target == RpcTargets.RPC_TARGET)
+            {
+                str.AppendLine($"        if({notInRollBufferModeExpr} && " +
+                    $"{specifiedParamName}.{ConstantsHolderContainer.RPC_SPECIFIED_TARGET_TARGET_FIELD_NAME} != " +
+                    $"{ConstantsHolderContainer.LOCAL_CLIENT_ID_GETTING_EXPR})");
             }
             else
             {
-                str.AppendLine($"        if(!{ConstantsHolderContainer.RPCS_MODEL_DEFINITION}.IsInRollbufferMode)");
+                str.AppendLine($"        if({notInRollBufferModeExpr})");
             }
         }
 
-        private void GenerateWritePart(StringBuilder str, ParsedMethodData data)
+        private int FindSpecifiedTargetArg(ParsedMethodData data, out string name)
         {
-            str.AppendLine($"                {ConstantsHolderContainer.NETWORK_WRITER_DEFINITION} w = {ConstantsHolderContainer.NETWORK_IO_POOL_DEFINITION}.{ConstantsHolderContainer.NETWORK_IO_POOL_GET_WRITTER_METHOD}();");
-            str.AppendLine();
             for (int i = 0; i < data.Args.Length; i++)
             {
                 ParsedMethodArgData arg = data.Args[i];
 
                 if (arg.DefinitionString == ConstantsHolderContainer.RPC_SPECIFIED_TARGET_STRUCT_NAME)
+                {
+                    name = arg.Name;
+                    return i;
+                }
+            }
+
+            name = string.Empty;
+            return -1;
+        }
+
+        private void GenerateWritePart(StringBuilder str, ParsedMethodData data, int specifiedTargetArgIndex)
+        {
+            for (int i = 0; i < data.Args.Length; i++)
+            {
+                ParsedMethodArgData arg = data.Args[i];
+
+                if (specifiedTargetArgIndex == i)
                 {
                     continue;
                 }
@@ -106,14 +134,14 @@ namespace PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Common
             }
         }
 
-        private void GenerateInternalsCall(StringBuilder str, ParsedMethodData data, ulong methodNameHash, byte target) =>
+        private void GenerateInternalsCall(StringBuilder str, ParsedMethodData data, ulong methodNameHash, RpcTargets target) =>
             str.AppendLine($"                " +
                 $"{ConstantsHolderContainer.NETWORK_RPCS_MODEL_SEND_TO_SERVER_METHOD}(" +
                 $"this, " +
                 $"gameObject, " +
                 $"{methodNameHash}, " +
                 $"{GenerateTargetClientSpecifiedParams(data)}, " +
-                $"({ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}){target}, w);");
+                $"{ConstantsHolderContainer.RPC_TARGETS_ENUM_DEFINITION}.{target}, w);");
 
         private string GenerateTargetClientSpecifiedParams(ParsedMethodData data) => data.Args.
                 Where(a => a.DefinitionString == ConstantsHolderContainer.RPC_SPECIFIED_TARGET_STRUCT_NAME).Any() ?

@@ -1,4 +1,5 @@
-﻿using PositronCodeGen.ConstantsHolder;
+﻿using PositronCodeGen._Shared;
+using PositronCodeGen.ConstantsHolder;
 using PositronCodeGen.Extractors.Data;
 using PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Common;
 using PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Interfaces;
@@ -8,7 +9,7 @@ namespace PositronCodeGen.Generators.Rpc.MethodImplsGenerators
 {
     internal class RpcSpecifiedTargetPreditionImplGeneration : IRpcPreditionPartTargetDependentGenerator
     {
-        public byte[] Targets => new byte[] { 0x2 }; // RPC_TARGET
+        public RpcTargets[] Targets => new RpcTargets[] { RpcTargets.RPC_TARGET };
 
         public void GenerateMethodImpl(StringBuilder str, ParsedMethodData data, RpcParamsDefinitionHelper.ExtractedParametersDefinitionsAsStrings paramsData)
         {

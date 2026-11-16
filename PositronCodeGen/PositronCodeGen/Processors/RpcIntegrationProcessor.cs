@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using PositronCodeGen._Shared;
 using PositronCodeGen.ConstantsHolder;
 using PositronCodeGen.Extractors;
 using PositronCodeGen.Extractors.Data;
@@ -15,22 +16,22 @@ namespace PositronCodeGen.Processors
     internal sealed class RpcIntegrationProcessor : ITypeProcessor
     {
         private readonly MethodsExtractor _methodsExtractor;
-        private readonly ClassDeclarationValidator _partialsValidator;
+        private readonly ClassDeclarationValidator _classValidator;
         private readonly MethodModificatorsValidator _methodModificatorsValidator;
         private readonly MethodArgumentsValidator _methodArgumentsValidator;
         private readonly RpcArgumentsToSourceValidatorCopatebility _arguemntsToTargetsCopatebilityValidator;
         private readonly ClassGenerator _classGenerator;
-        private readonly MethodGenerator _methodGenerator;
+        private readonly RpcMethodsGenerator _methodGenerator;
         private readonly ServiceInterfaceImplementationGenerator _serviceCodeGenerator;
 
         public RpcIntegrationProcessor()
         {
             _methodsExtractor = new MethodsExtractor();
-            _partialsValidator = new ClassDeclarationValidator();
+            _classValidator = new ClassDeclarationValidator();
             _methodModificatorsValidator = new MethodModificatorsValidator();
             _methodArgumentsValidator = new MethodArgumentsValidator();
             _classGenerator = new ClassGenerator();
-            _methodGenerator = new MethodGenerator();
+            _methodGenerator = new RpcMethodsGenerator();
             _serviceCodeGenerator = new ServiceInterfaceImplementationGenerator();
             _arguemntsToTargetsCopatebilityValidator = new RpcArgumentsToSourceValidatorCopatebility();
         }
@@ -39,9 +40,9 @@ namespace PositronCodeGen.Processors
         {
             List<ParsedMethodData> methods = _methodsExtractor.ExtractMethodsFromType(type.Type, ConstantsHolderContainer.RPC_ATTR_NAME);
 
-            if (!_partialsValidator.ClassIsDeclaredCorrectly(type.Type) && methods.Count > 0)
+            if (!_classValidator.ClassIsDeclaredCorrectly(type.Type) && methods.Count > 0)
             {
-                _partialsValidator.ReportDiagnosticClassDeclaration(context, type.Type);
+                _classValidator.ReportDiagnosticClassDeclaration(context, type.Type);
                 return;
             }
 
@@ -69,7 +70,7 @@ namespace PositronCodeGen.Processors
                     return;
                 }
 
-                if (!_arguemntsToTargetsCopatebilityValidator.IsValid(type.Type, (byte)method.RpcAttr.ConstructorArguments[0].Value, method, context))
+                if (!_arguemntsToTargetsCopatebilityValidator.IsValid(type.Type, (RpcTargets)method.RpcAttr.ConstructorArguments[0].Value, method, context))
                 {
                     return;
                 }

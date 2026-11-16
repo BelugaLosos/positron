@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Positron.Extras.HandTests
 {
-    public partial class ObjectRpcColorTest : MonoBehaviour, INetworkAwakeble, INetworkDestructable
+    public sealed partial class ObjectRpcColorTest : MonoBehaviour, INetworkAwakeble, INetworkDestructable
     {
         [SerializeField] private MeshRenderer _renderer;
 

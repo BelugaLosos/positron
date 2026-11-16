@@ -8,7 +8,7 @@ using UnityEngine;
 
 namespace Positron.Extras.HandTests
 {
-    public partial class ObjectValueTest : MonoBehaviour, INetworkAwakeble, INetworkDestructable
+    public sealed partial class ObjectValueTest : MonoBehaviour, INetworkAwakeble, INetworkDestructable
     {
         [SerializeField] private TextMeshProUGUI _displayText;
 

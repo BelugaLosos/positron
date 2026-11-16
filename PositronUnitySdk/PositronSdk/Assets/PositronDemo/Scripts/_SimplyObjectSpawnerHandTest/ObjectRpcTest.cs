@@ -7,11 +7,12 @@ using UnityEngine;
 
 namespace Positron.Extras.HandTests
 {
-    public partial class ObjectRpcTest : MonoBehaviour, INetworkAwakeble, INetworkDestructable
+    public sealed partial class ObjectRpcTest : MonoBehaviour, INetworkAwakeble, INetworkDestructable
     {
         [SerializeField] private TextMeshProUGUI _txt;
         
         private int _num;
+
 
         public void OnNetworkAwake()
         {

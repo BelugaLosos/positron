@@ -1,8 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using PositronCodeGen.ConstantsHolder;
 using PositronCodeGen.Util;
-using System;
 using System.Linq;
 
 namespace PositronCodeGen.Validator
@@ -25,7 +23,8 @@ namespace PositronCodeGen.Validator
                         return false;
                     }
 
-                    if (classDeclaraction.Modifiers.Where(m => m.ValueText == "partial").Any())
+                    if (classDeclaraction.Modifiers.Where(m => m.ValueText == "partial").Any() && 
+                        classDeclaraction.Modifiers.Where(n => n.ValueText == "sealed").Any())
                     {
                         return true;
                     }
@@ -44,7 +43,7 @@ namespace PositronCodeGen.Validator
         public void ReportDiagnosticClassDeclaration(GeneratorExecutionContext context, INamedTypeSymbol type) => 
             context.ReportDiagnostic(DiagnosticsReportGenerator.GeneratReport(
                     type,
-                    "Class (only Classes supported) with RPCs or NetValues (Networked attr) must be declared as PARTIAL, not STATIC and not ABSTRACT !!!",
+                    "Class (only Classes supported) with RPCs or NetValues (Networked attr) must be declared as PARTIAL and SEALED, not STATIC and not ABSTRACT !!!",
                     "Mapped code {0} must be declared as PARTIAL, not STATIC and not ABSTRACT class!!!"
         ));
 

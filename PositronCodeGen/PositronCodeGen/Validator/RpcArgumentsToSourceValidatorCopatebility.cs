@@ -3,6 +3,7 @@ using PositronCodeGen.ConstantsHolder;
 using PositronCodeGen.Extractors.Data;
 using PositronCodeGen.Util;
 using System.Linq;
+using PositronCodeGen._Shared;
 
 namespace PositronCodeGen.Validator
 {
@@ -11,9 +12,9 @@ namespace PositronCodeGen.Validator
     /// </summary>
     internal class RpcArgumentsToSourceValidatorCopatebility
     {
-        public bool IsValid(INamedTypeSymbol owner, byte target, ParsedMethodData data, GeneratorExecutionContext ctx)
+        public bool IsValid(INamedTypeSymbol owner, RpcTargets target, ParsedMethodData data, GeneratorExecutionContext ctx)
         {
-            if (target != 0x2)
+            if (target != RpcTargets.RPC_TARGET)
             {
                 return true;
             }

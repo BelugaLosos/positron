@@ -1,4 +1,5 @@
-﻿using PositronCodeGen.ConstantsHolder;
+﻿using PositronCodeGen._Shared;
+using PositronCodeGen.ConstantsHolder;
 using PositronCodeGen.Extractors.Data;
 using PositronCodeGen.Generators.Rpc.MethodImplsGenerators;
 using PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Common;
@@ -10,7 +11,7 @@ using static PositronCodeGen.Generators.Rpc.MethodImplsGenerators.Common.RpcPara
 
 namespace PositronCodeGen.Generators.Rpc
 {
-    internal class MethodGenerator
+    internal class RpcMethodsGenerator
     {
         private readonly TypeDefinitionToIoMethodNameConverter _methodNamesConverter;
         private readonly RpcWritePartGenerator _writePartGenerator;
@@ -22,7 +23,7 @@ namespace PositronCodeGen.Generators.Rpc
             new RpcSpecifiedTargetPreditionImplGeneration()
         };
 
-        public MethodGenerator()
+        public RpcMethodsGenerator()
         {
             _methodNamesConverter = new TypeDefinitionToIoMethodNameConverter();
             _writePartGenerator = new RpcWritePartGenerator(_methodNamesConverter);
@@ -39,7 +40,7 @@ namespace PositronCodeGen.Generators.Rpc
 
         private void GenerateWriteMethod(StringBuilder str, ParsedMethodData data, ExtractedParametersDefinitionsAsStrings extractedParameters)
         {
-            byte target = (byte)data.RpcAttr.ConstructorArguments[0].Value;
+            RpcTargets target = (RpcTargets)data.RpcAttr.ConstructorArguments[0].Value;
 
             _writePartGenerator.Generate(str, data, extractedParameters, target);
             GeneratePredictionPart(str, data, extractedParameters, target);
@@ -48,7 +49,7 @@ namespace PositronCodeGen.Generators.Rpc
             str.AppendLine();
         }
 
-        private void GeneratePredictionPart(StringBuilder str, ParsedMethodData data, ExtractedParametersDefinitionsAsStrings extractedParams, byte target)
+        private void GeneratePredictionPart(StringBuilder str, ParsedMethodData data, ExtractedParametersDefinitionsAsStrings extractedParams, RpcTargets target)
         {
             foreach (IRpcPreditionPartTargetDependentGenerator generator in _predictionPartsGenerators)
             {
@@ -66,17 +67,19 @@ namespace PositronCodeGen.Generators.Rpc
 
             str.AppendLine($"    private void {ConstantsHolderContainer.RPC_READ_PREFIX}{data.MethodSymbol.Name}({ConstantsHolderContainer.NETWORK_READER_DEFINITION} reader)");
             str.AppendLine("    {");
+            str.AppendLine("        try");
+            str.AppendLine("        {");
             for (int i = 0; i < data.Args.Length; i++)
             {
                 ParsedMethodArgData arg = data.Args[i];
 
                 if (arg.DefinitionString == ConstantsHolderContainer.RPC_SPECIFIED_TARGET_STRUCT_NAME)
                 {
-                    str.AppendLine($"        {ConstantsHolderContainer.RPC_SPECIFIED_TARGET_STRUCT_NAME} p{i} = new(0);");
+                    str.AppendLine($"           {ConstantsHolderContainer.RPC_SPECIFIED_TARGET_STRUCT_NAME} p{i} = new(0);");
                 }
                 else
                 {
-                    str.AppendLine($"        {arg.DefinitionString} p{i} = reader.{_methodNamesConverter.ToReaderMethods(arg.DefinitionString)}();");
+                    str.AppendLine($"           {arg.DefinitionString} p{i} = reader.{_methodNamesConverter.ToReaderMethods(arg.DefinitionString)}();");
                 }
 
                 if (i == 0)
@@ -89,8 +92,16 @@ namespace PositronCodeGen.Generators.Rpc
                 }
             }
             str.AppendLine();
-            str.AppendLine($"        {data.MethodSymbol.Name}({serviceReadCallParametersDefinition});");
-            str.AppendLine($"        {ConstantsHolderContainer.NETWORK_IO_POOL_DEFINITION}.{ConstantsHolderContainer.NETWORK_IO_POOL_PUT_READER_METHOD}(reader);");
+            str.AppendLine($"           {data.MethodSymbol.Name}({serviceReadCallParametersDefinition});");
+            str.AppendLine("        }");
+            str.AppendLine("        catch(global::System.Exception e)");
+            str.AppendLine("        {");
+            str.AppendLine("            Debug.LogException(e);");
+            str.AppendLine("        }");
+            str.AppendLine("        finally");
+            str.AppendLine("        {");
+            str.AppendLine($"           {ConstantsHolderContainer.NETWORK_IO_POOL_DEFINITION}.{ConstantsHolderContainer.NETWORK_IO_POOL_PUT_READER_METHOD}(reader);");
+            str.AppendLine("        }");
             str.AppendLine("    }");
 
             str.AppendLine();

@@ -88,18 +88,6 @@ namespace Positron.Client.Room.Models
 
         public void SendRpcToServer(IRpcTarget obj, GameObject bindedGameObject, ulong methodName, uint specifiedTargetClient, bool hasSpecifiedTarget, RpcTargets targets, PositronNetworkWriter writer)
         {
-            if (targets == RpcTargets.RPC_TARGET && !hasSpecifiedTarget) // probaly deprecated due to AOT
-            {
-                PositronFacade.NetworkIoPool.PutWriter(writer);
-                throw new ArgumentException("Can`t call RPC_TARGET with no specified target argument (declare an argument like 'uint targetClientId')");
-            }
-
-            if (targets == RpcTargets.RPC_TARGET && specifiedTargetClient == _selfClientId) // can`t be handled AOT
-            {
-                PositronFacade.NetworkIoPool.PutWriter(writer);
-                return;
-            }
-
             if ((targets == RpcTargets.RPC_ALL || targets == RpcTargets.RPC_ALL_CACHED ||
                 targets == RpcTargets.RPC_OTHERS || targets == RpcTargets.RPC_OTHERS_CACHED) && hasSpecifiedTarget) // can`t be handled AOT
             {
@@ -113,7 +101,7 @@ namespace Positron.Client.Room.Models
                 _rpcToObj.Add(obj, identity);
             }
 
-            if (!identity.IsMine && _selfClientId != PositronFacade.World.HostId)
+            if (!identity.IsMine && _selfClientId != PositronFacade.World.HostId) // this would be deprecated while integrating schemas !
             {
                 PositronFacade.NetworkIoPool.PutWriter(writer);
                 throw new UnauthorizedAccessException("Can`t call rpc`s on foreign objects not being a host!");

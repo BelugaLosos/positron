@@ -57,6 +57,11 @@ namespace Positron.NetworkIoAPI
 
         public void PutWriter(PositronNetworkWriter writer)
         {
+            if (_writersPool.Contains(writer)) // for pool size 64 might be OK. as a fallback solution I can make a bool flag inside of IO actor
+            {
+                return;
+            }
+
             _writersPutted++;
 
             writer.Clear(true);
@@ -65,6 +70,11 @@ namespace Positron.NetworkIoAPI
 
         public void PutReader(PositronNetworkReader reader)
         {
+            if (_readersPool.Contains(reader)) // for pool size 64 might be OK. as a fallback solution I can make a bool flag inside of IO actor
+            {
+                return;
+            }
+
             _readersPutted++;
 
             reader.FreeAll();
