@@ -13,7 +13,6 @@ namespace Positron.Extras.HandTests
         
         private int _num;
 
-
         public void OnNetworkAwake()
         {
             SendRPC_BarAwaken1(Random.Range(1, 100));

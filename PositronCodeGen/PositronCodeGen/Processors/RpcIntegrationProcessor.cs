@@ -20,6 +20,7 @@ namespace PositronCodeGen.Processors
         private readonly MethodModificatorsValidator _methodModificatorsValidator;
         private readonly MethodArgumentsValidator _methodArgumentsValidator;
         private readonly RpcArgumentsToSourceValidatorCopatebility _arguemntsToTargetsCopatebilityValidator;
+        private readonly RpcTargetSpecArgToNonTargetTargetSpecifierValidator _specArgumentToOtherTargetsValidator;
         private readonly ClassGenerator _classGenerator;
         private readonly RpcMethodsGenerator _methodGenerator;
         private readonly ServiceInterfaceImplementationGenerator _serviceCodeGenerator;
@@ -34,6 +35,7 @@ namespace PositronCodeGen.Processors
             _methodGenerator = new RpcMethodsGenerator();
             _serviceCodeGenerator = new ServiceInterfaceImplementationGenerator();
             _arguemntsToTargetsCopatebilityValidator = new RpcArgumentsToSourceValidatorCopatebility();
+            _specArgumentToOtherTargetsValidator = new RpcTargetSpecArgToNonTargetTargetSpecifierValidator();
         }
 
         public void Process(ParsedTypeData type, GeneratorExecutionContext context, StringBuilder sourceBuilder)
@@ -70,7 +72,14 @@ namespace PositronCodeGen.Processors
                     return;
                 }
 
-                if (!_arguemntsToTargetsCopatebilityValidator.IsValid(type.Type, (RpcTargets)method.RpcAttr.ConstructorArguments[0].Value, method, context))
+                RpcTargets rpcTarget = (RpcTargets)method.RpcAttr.ConstructorArguments[0].Value;
+
+                if (!_arguemntsToTargetsCopatebilityValidator.IsValid(type.Type, rpcTarget, method, context))
+                {
+                    return;
+                }
+
+                if (!_specArgumentToOtherTargetsValidator.IsValid(type.Type, rpcTarget, method, context))
                 {
                     return;
                 }

@@ -35,6 +35,6 @@ namespace PositronCodeGen.Validator
                 ));
 
             return false;
-        } 
+        }
     }
 }
