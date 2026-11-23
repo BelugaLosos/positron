@@ -40,8 +40,8 @@ namespace Positron.Extras.HandTests
             SendRPC_BarHostCommand("H");
         }
 
-        [Rpc(RpcTargets.RPC_TARGET)]
-        private void Foo1(RpcPlayerRef palyer, string s)
+        [Rpc(RpcTargets.RPC_TARGET, RpcSources.Host)]
+        private void Foo1(RpcPlayerRef player, string s)
         {
             _num++;
             _txt.text += "1" + s + _num.ToString() + "; ";

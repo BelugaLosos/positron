@@ -37,5 +37,6 @@
         public static readonly string NET_VALUE_AUTHORITY_ENUM_NAME = "global::Positron.Client.NetValues.NetValueAuthority";
         public static readonly string NETWORK_IDENTITY_IS_MINE_FIELD = "IsMine";
         public static readonly string NETWORK_IDENTITY_IS_HOST_FIELD = "IsHost";
+        public static readonly string UNITY_MONO_BEHAVIOUR_DEF_STRING = "global::UnityEngine.MonoBehaviour";
     }
 }

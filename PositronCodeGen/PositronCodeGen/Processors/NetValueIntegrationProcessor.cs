@@ -14,6 +14,7 @@ namespace PositronCodeGen.Processors
     internal sealed class NetValueIntegrationProcessor : ITypeProcessor
     {
         private readonly ClassDeclarationValidator _classValidator;
+        private readonly ClassInheritanceToMonoBehaviourValidator _classInheritanceToMonoBehaviourValidator;
         private readonly NetworkedFieldsValidator _netValuesFieldsValidator;
         private readonly FieldsExtractor _fieldsExtractor;
         private readonly InitializationInterfaceImplementation _impelementGenerator;
@@ -22,6 +23,7 @@ namespace PositronCodeGen.Processors
         public NetValueIntegrationProcessor()
         {
             _classValidator = new ClassDeclarationValidator();
+            _classInheritanceToMonoBehaviourValidator = new ClassInheritanceToMonoBehaviourValidator();
             _netValuesFieldsValidator = new NetworkedFieldsValidator();
             _fieldsExtractor = new FieldsExtractor();
             _impelementGenerator = new InitializationInterfaceImplementation();
@@ -40,6 +42,11 @@ namespace PositronCodeGen.Processors
             if (!_classValidator.ClassIsDeclaredCorrectly(type.Type))
             {
                 _classValidator.ReportDiagnosticClassDeclaration(context, type.Type);
+                return;
+            }
+
+            if (!_classInheritanceToMonoBehaviourValidator.IsValid(type.Type, context))
+            {
                 return;
             }
 

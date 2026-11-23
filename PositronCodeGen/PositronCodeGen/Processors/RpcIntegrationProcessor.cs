@@ -17,6 +17,7 @@ namespace PositronCodeGen.Processors
     {
         private readonly MethodsExtractor _methodsExtractor;
         private readonly ClassDeclarationValidator _classValidator;
+        private readonly ClassInheritanceToMonoBehaviourValidator _monoBehvaiourInheritanceValidator;
         private readonly MethodModificatorsValidator _methodModificatorsValidator;
         private readonly MethodArgumentsValidator _methodArgumentsValidator;
         private readonly RpcArgumentsToSourceValidatorCopatebility _arguemntsToTargetsCopatebilityValidator;
@@ -29,6 +30,7 @@ namespace PositronCodeGen.Processors
         {
             _methodsExtractor = new MethodsExtractor();
             _classValidator = new ClassDeclarationValidator();
+            _monoBehvaiourInheritanceValidator = new ClassInheritanceToMonoBehaviourValidator();
             _methodModificatorsValidator = new MethodModificatorsValidator();
             _methodArgumentsValidator = new MethodArgumentsValidator();
             _classGenerator = new ClassGenerator();
@@ -42,13 +44,18 @@ namespace PositronCodeGen.Processors
         {
             List<ParsedMethodData> methods = _methodsExtractor.ExtractMethodsFromType(type.Type, ConstantsHolderContainer.RPC_ATTR_NAME);
 
-            if (!_classValidator.ClassIsDeclaredCorrectly(type.Type) && methods.Count > 0)
+            if (methods.Count == 0)
+            {
+                return;
+            }
+
+            if (!_classValidator.ClassIsDeclaredCorrectly(type.Type))
             {
                 _classValidator.ReportDiagnosticClassDeclaration(context, type.Type);
                 return;
             }
 
-            if (methods.Count == 0)
+            if (!_monoBehvaiourInheritanceValidator.IsValid(type.Type, context))
             {
                 return;
             }
