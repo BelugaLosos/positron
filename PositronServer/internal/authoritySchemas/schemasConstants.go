@@ -16,4 +16,5 @@ const (
 
 	NET_VALUE_OWNER = 0x0
 	NET_VALUE_HOST  = 0x1
+	NET_VALUE_ANY   = 0x2
 )

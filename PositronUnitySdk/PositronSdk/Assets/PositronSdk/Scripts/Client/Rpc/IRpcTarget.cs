@@ -6,5 +6,8 @@ namespace Positron.Client.Rpc
     {
         bool IsSuitableTargetFor(ulong name);
         void Call(ulong name, PositronNetworkReader reader);
+#if UNITY_EDITOR
+        RpcCallExportData[] ExportRpcRawAuthoritySchema();
+#endif
     }
 }

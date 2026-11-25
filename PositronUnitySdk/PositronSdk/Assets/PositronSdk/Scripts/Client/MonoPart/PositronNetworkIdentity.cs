@@ -197,6 +197,10 @@ namespace Positron.Client.Mono
             return _observedRpcTargets;
         }
 
+#if UNITY_EDITOR
+        public IRpcTarget[] GetObservedRpcTargetsEditorOnlyNoSideEffects() => GetComponentsInChildren<IRpcTarget>();
+#endif
+
         private void InitLocally(ushort creationId, uint owner)
         {
             CreationId = creationId;

@@ -8,11 +8,16 @@ namespace Positron.Editor.AuthoritySchemaExporter.Data
     {
         [SerializeField] private PrefabAuthoritySchema[] _prefabsAuthoritySchemas;
         [SerializeField] private NetValueAuthorityObjectContainerSchema[] _netValuesAuthoritySchemas;
+        [SerializeField] private RpcAuthoritySchema[] _rpcAuthoritySchema;
 
-        public AuthoritySchemaDto(PrefabAuthoritySchema[] prefabsAuthoritySchemas, NetValueAuthorityObjectContainerSchema[] netValuesAuthoritySchemas)
+        public AuthoritySchemaDto(
+            PrefabAuthoritySchema[] prefabsAuthoritySchemas, 
+            NetValueAuthorityObjectContainerSchema[] netValuesAuthoritySchemas,
+            RpcAuthoritySchema[] rcpAuthoritySchema)
         {
             _prefabsAuthoritySchemas = prefabsAuthoritySchemas;
             _netValuesAuthoritySchemas = netValuesAuthoritySchemas;
+            _rpcAuthoritySchema = rcpAuthoritySchema;
         }
     }
 }

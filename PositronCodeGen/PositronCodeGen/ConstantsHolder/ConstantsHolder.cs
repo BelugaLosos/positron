@@ -17,6 +17,7 @@
         public static readonly string RPC_READ_PREFIX = "CODEGEN_SERVICE_METHOD_ReadRPC_";
         public static readonly string RPC_SEND_PREFIX = "SendRPC_";
         public static readonly string RPC_TARGETS_ENUM_DEFINITION = "global::Positron.Client.ConstantHolders.RpcTargets";
+        public static readonly string RPC_SOURCES_ENUM_DEFINITION = "global::Positron.Client.ConstantHolders.RpcSources";
         public static readonly string RPC_TARGETS_ENUM_VALUE_RPC_ALL = "RPC_ALL";
         public static readonly string RPC_TARGETS_ENUM_VALUE_RPC_ALL_CACHED = "RPC_ALL_CACHED";
         public static readonly string RPC_TARGETS_ENUM_RPC_HOST_COMMAND = "RPC_HOST_COMMAND";
@@ -38,5 +39,7 @@
         public static readonly string NETWORK_IDENTITY_IS_MINE_FIELD = "IsMine";
         public static readonly string NETWORK_IDENTITY_IS_HOST_FIELD = "IsHost";
         public static readonly string UNITY_MONO_BEHAVIOUR_DEF_STRING = "global::UnityEngine.MonoBehaviour";
+        public static readonly string RPC_RAW_AUTHORITY_SCHEMA_EXPORT_DATA = "global::Positron.Client.Rpc.RpcCallExportData";
+        public static readonly string RPC_RAW_AUTHORITY_SCHEMA_EXPORT_METHOD_NAME = "ExportRpcRawAuthoritySchema";
     }
 }

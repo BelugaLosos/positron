@@ -62,5 +62,52 @@
                 }
             ]
         }
+    ],
+    "_rpcAuthoritySchema": [
+        {
+            "_isUsed": true,
+            "_rpcTarget": 2,
+            "_rpcSource": 1
+        },
+        {
+            "_isUsed": true,
+            "_rpcTarget": 2,
+            "_rpcSource": 2
+        },
+        {
+            "_isUsed": true,
+            "_rpcTarget": 0,
+            "_rpcSource": 1
+        },
+        {
+            "_isUsed": true,
+            "_rpcTarget": 1,
+            "_rpcSource": 1
+        },
+        {
+            "_isUsed": true,
+            "_rpcTarget": 3,
+            "_rpcSource": 1
+        },
+        {
+            "_isUsed": true,
+            "_rpcTarget": 4,
+            "_rpcSource": 1
+        },
+        {
+            "_isUsed": true,
+            "_rpcTarget": 6,
+            "_rpcSource": 1
+        },
+        {
+            "_isUsed": true,
+            "_rpcTarget": 0,
+            "_rpcSource": 1
+        },
+        {
+            "_isUsed": true,
+            "_rpcTarget": 0,
+            "_rpcSource": 1
+        }
     ]
 }

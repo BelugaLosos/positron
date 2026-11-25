@@ -24,7 +24,7 @@ namespace PositronCodeGen.Processors
         private readonly RpcTargetSpecArgToNonTargetTargetSpecifierValidator _specArgumentToOtherTargetsValidator;
         private readonly ClassGenerator _classGenerator;
         private readonly RpcMethodsGenerator _methodGenerator;
-        private readonly ServiceInterfaceImplementationGenerator _serviceCodeGenerator;
+        private readonly RpcServiceInterfaceImplementationGenerator _serviceCodeGenerator;
 
         public RpcIntegrationProcessor()
         {
@@ -35,7 +35,7 @@ namespace PositronCodeGen.Processors
             _methodArgumentsValidator = new MethodArgumentsValidator();
             _classGenerator = new ClassGenerator();
             _methodGenerator = new RpcMethodsGenerator();
-            _serviceCodeGenerator = new ServiceInterfaceImplementationGenerator();
+            _serviceCodeGenerator = new RpcServiceInterfaceImplementationGenerator();
             _arguemntsToTargetsCopatebilityValidator = new RpcArgumentsToSourceValidatorCopatebility();
             _specArgumentToOtherTargetsValidator = new RpcTargetSpecArgToNonTargetTargetSpecifierValidator();
         }

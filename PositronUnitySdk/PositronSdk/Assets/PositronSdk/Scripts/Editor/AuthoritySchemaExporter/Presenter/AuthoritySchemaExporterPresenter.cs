@@ -19,7 +19,7 @@ namespace Positron.Editor.AuthoritySchemaExporter
         public void ExportSchemasToStreamingAssets()
         {
             PositronSettings settings = Resources.Load<PositronSettings>(PositronSettings.RESOURCES_PATH);
-            string json = JsonUtility.ToJson(_model.ExportObject(settings.SpawnableObjects), true);
+            string json = JsonUtility.ToJson(_model.ExportObject(settings.SpawnableObjects, settings.RpcMethodsNames, settings.RpcSourceNames), true);
             string path = Path.Combine(Application.streamingAssetsPath, EXPORTED_FILE_NAME);
 
             if (!Directory.Exists(Application.streamingAssetsPath))

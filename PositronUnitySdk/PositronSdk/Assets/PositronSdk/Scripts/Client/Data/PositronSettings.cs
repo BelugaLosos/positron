@@ -28,6 +28,9 @@ namespace Positron.Client.Settings
         [field: SerializeField] public uint MaximalObjectsCountForRetransmitPerPacket = 50;
         [field: SerializeField] public PositronNetworkIdentity[] SpawnableObjects { get; private set; }
         [field: SerializeField] public ulong[] RpcMethodsNames { get; private set; }
+#if UNITY_EDITOR
+        [field: SerializeField] public string[] RpcSourceNames { get; private set; }
+#endif
 
         public int Tickrate => _tickrate;
 
@@ -78,6 +81,7 @@ namespace Positron.Client.Settings
             }
 
             RpcMethodsNames = hashes;
+            RpcSourceNames = names;
             EditorUtility.SetDirty(this);
         }
 #endif
