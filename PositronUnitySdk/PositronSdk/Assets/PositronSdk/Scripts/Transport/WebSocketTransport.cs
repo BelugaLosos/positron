@@ -145,6 +145,7 @@ namespace Positron.Transport
 
         private async UniTask DispathLoop()
         {
+            await UniTask.SwitchToMainThread();
             await UniTask.WaitWhile(() => _webSokcet == null);
 
             while (!_dispatchCancellationToken.IsCancellationRequested)

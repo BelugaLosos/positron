@@ -119,6 +119,7 @@ namespace Positron.Client.Room
             _clock.StopTime();
             _gameObjectsModel.ClearWorld();
             _valuesModel.ClearWorld();
+            _rpcsModel.SanetizeMappingOnLeaveRoom();
 
             InRoom = false;
             _ctx.Cancel();

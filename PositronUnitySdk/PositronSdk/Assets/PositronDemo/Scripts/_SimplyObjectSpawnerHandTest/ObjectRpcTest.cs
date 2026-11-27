@@ -15,6 +15,11 @@ namespace Positron.Extras.HandTests
 
         public void OnNetworkAwake()
         {
+            if (!GetComponent<PositronNetworkIdentity>().IsMine)
+            {
+                return;
+            }
+
             SendRPC_BarAwaken1(Random.Range(1, 100));
             Invoke(nameof(Dellayed), 1f/33f + Time.fixedDeltaTime);
             Debug.Log("text woken");

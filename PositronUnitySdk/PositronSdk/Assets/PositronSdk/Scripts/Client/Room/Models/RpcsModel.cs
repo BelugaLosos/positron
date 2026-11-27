@@ -27,12 +27,13 @@ namespace Positron.Client.Room.Models
         private readonly Dictionary<ulong, ushort> _hashToIdx = new(256);
         private readonly ulong[] _idxToHash;
 
-        private IReadOnlyGameObjectsModel _gameObjectsModel;
-        private TransientArena _incomingDataArena = new();
-        private TransientArena _outgoingDataArena = new();
+        private readonly TransientArena _incomingDataArena = new();
+        private readonly TransientArena _outgoingDataArena = new();
 
         private readonly byte[] _flag = new byte[1];
         private readonly byte[] _creationIdSection = new byte[2];
+
+        private IReadOnlyGameObjectsModel _gameObjectsModel;
 
         private const byte INVALID_RPC_CODE = 0xFF;
 
@@ -153,6 +154,16 @@ namespace Positron.Client.Room.Models
             rpcCallMeta.Type = (byte)targets;
 
             _currentCallBuffer.Add(rpcCallMeta);
+        }
+
+        public void SanetizeMappingOnLeaveRoom()
+        {
+            _dyingObjectsKeysToSanetize.Clear();
+            _rpcToObj.Clear();
+            _dellayedCalls.Clear();
+            _currentCallBuffer.Clear();
+
+            ClearDelta();
         }
 
         public RpcsModelData CollectMonitorData() => new(_currentCallBuffer.Count, _dellayedCalls.Count, _rpcToObj.Count, 

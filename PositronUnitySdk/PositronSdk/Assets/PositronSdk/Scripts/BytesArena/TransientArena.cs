@@ -58,13 +58,13 @@ namespace Positron.BytesArena
         /// </summary>
         /// <param name="ptr">offset (pointer) at buffer</param>
         /// <param name="len">lengths to read</param>
-        /// <returns>Link to internals data (NOT A COPY!)</returns>
+        /// <returns>Link to internals data (NOT A COPY!) as memory technically this data can live untill rewrite but after Flush() reading this segment is UB</returns>
         /// <exception cref="IndexOutOfRangeException">Throwed when you try to read outside of physically allocated buffer</exception>
         public Span<byte> Read(uint ptr, uint len)
         {
-            if ((ptr + len) > _buffer.Length)
+            if (((ulong)ptr + len) > (ulong)_writePtr)
             {
-                throw new IndexOutOfRangeException($"Unable to read memory at {ptr} {len} {_buffer.Length}");
+                throw new IndexOutOfRangeException($"Unable to read memory at {ptr} {len} {_writePtr}");
             }
 
             return _buffer.AsSpan((int)ptr, (int)len);
@@ -75,33 +75,33 @@ namespace Positron.BytesArena
         /// </summary>
         /// <param name="ptr">offset (pointer) at buffer</param>
         /// <param name="len">lengths to read</param>
-        /// <returns>Link to internals data (NOT A COPY!) as memory</returns>
+        /// <returns>Link to internals data (NOT A COPY!) as memory technically this data can live untill rewrite but after Flush() reading this segment is UB</returns>
         /// <exception cref="IndexOutOfRangeException">Throwed when you try to read outside of physically allocated buffer</exception>
-        public Memory<byte> ReadAsMem(uint ptr, uint len)
+        public ReadOnlyMemory<byte> ReadAsMem(uint ptr, uint len)
         {
-            if ((ptr + len) > _buffer.Length)
+            if (((ulong)ptr + len) > (ulong)_writePtr)
             {
-                throw new IndexOutOfRangeException($"Unable to read memory at {ptr} {len} {_buffer.Length}");
+                throw new IndexOutOfRangeException($"Unable to read memory at {ptr} {len} {_writePtr}");
             }
 
             return _buffer.AsMemory((int)ptr, (int)len);
         }
 
         /// <summary>
-        /// All data GONE after that operation
+        /// All data GONE (virtualy, technically they stay there forever untill rewriting) after that operation
         /// </summary>
         public void Flush() 
         {
-            _buffer.AsSpan().Clear();
             _writePtr = 0;
         }
 
         private void CheckSizeAndGrow(int size)
         {
-            if ((_writePtr + size) >= _buffer.Length)
+            int required = _writePtr + size;
+            if (required > _buffer.Length)
             {
-                byte[] doubled = new byte[_writePtr + (size * 2)];
-                _buffer.AsSpan().CopyTo(doubled.AsSpan());
+                byte[] doubled = new byte[Math.Max(_buffer.Length * 2, required)];
+                _buffer.AsSpan(0, _writePtr).CopyTo(doubled);
                 _buffer = doubled;
             }
         }

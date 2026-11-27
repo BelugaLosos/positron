@@ -126,7 +126,7 @@ namespace Positron.Client.Room.Models
                 return;
             }
 
-            Memory<byte> payload = _incomingArena.ReadAsMem(value.ArenaPtr, value.ArenaLen);
+            ReadOnlyMemory<byte> payload = _incomingArena.ReadAsMem(value.ArenaPtr, value.ArenaLen);
             managedValue.DeserializeSelfFrom(payload, _positronSerializer);
         }
 
@@ -151,7 +151,7 @@ namespace Positron.Client.Room.Models
                 return;
             }
 
-            Memory<byte> payload = _incomingArena.ReadAsMem(value.ArenaPtr, value.ArenaLen);
+            ReadOnlyMemory<byte> payload = _incomingArena.ReadAsMem(value.ArenaPtr, value.ArenaLen);
             managedValue.DeserializeSelfFrom(payload, _positronSerializer);
         }
 
