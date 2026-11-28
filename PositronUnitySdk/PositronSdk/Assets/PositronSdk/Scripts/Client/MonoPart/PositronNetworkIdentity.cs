@@ -12,6 +12,7 @@ using UnityEngine;
 
 namespace Positron.Client.Mono
 {
+    [DisallowMultipleComponent]
     public sealed class PositronNetworkIdentity : MonoBehaviour
     {
         [SerializeField] private PrefabSpawnAuthority _spawbAuthority;

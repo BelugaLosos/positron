@@ -244,6 +244,7 @@ namespace Positron.Client.Room
                 await UniTask.Delay(tickInterval, delayType: DelayType.Realtime, delayTiming: PlayerLoopTiming.EarlyUpdate, cancellationToken: _ctx.Token);
 
                 GameTickPacket tickPacket = new();
+                tickPacket.Tick = _clock.RecentServerReliableTick;
                 tickPacket.Host = HostId;
                 tickPacket.Client = LocalClientId;
 
@@ -265,6 +266,7 @@ namespace Positron.Client.Room
 
 
                 GameUnreliableTick unreliableTick = new();
+                unreliableTick.Tick = _clock.RecentServerReliableTick;
                 unreliableTick.ClientId = LocalClientId;
 
                 _gameObjectsModel.CollectCurrentObjectsMoveDeltas();

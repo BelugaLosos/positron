@@ -6,6 +6,7 @@ using UnityEngine;
 namespace Positron.Client.Mono.Syncers
 {
     [RequireComponent(typeof(PositronNetworkIdentity))]
+    [DisallowMultipleComponent]
     public class PositronTransformSync : MonoBehaviour, IPositronSyncer
     {
         private PositronNetworkIdentity _identity;

@@ -26,7 +26,8 @@ namespace PositronCodeGen.Generators
                 str.AppendLine("{");
             }
 
-            str.AppendLine($"[RequireComponent(typeof({ConstantsHolderContainer.POSITRON_NETWORK_IDENTITY_DEFINITION}))]");
+            str.AppendLine($"[global::UnityEngine.RequireComponent(typeof({ConstantsHolderContainer.POSITRON_NETWORK_IDENTITY_DEFINITION}))]");
+            str.AppendLine("[global::UnityEngine.DisallowMultipleComponent]");
             str.AppendLine($"{accessModifierString}{sealedMod}partial class {type.Type.Name} : {implenetationDefinitionString}");
             str.AppendLine("{");
         }

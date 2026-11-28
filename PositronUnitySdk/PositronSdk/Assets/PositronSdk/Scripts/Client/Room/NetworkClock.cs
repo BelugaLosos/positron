@@ -23,6 +23,7 @@ namespace Positron.Client.Room
 
         public double ClientTimeWithPastOffset => _clientTime;
         public double ClearClientTime => _clientTime + _timeOffset;
+        public uint RecentServerReliableTick { get; private set; }
 
         private const double DRIFT_COEF = 0.1d;
         private const double MIN_TIME_SCALE = 0.9d;
@@ -78,9 +79,14 @@ namespace Positron.Client.Room
             Debug.Log("Network clock stopped");
         }
 
+        /// <summary>
+        /// ONLY FOR RELIABLE CHANNEL!
+        /// </summary>
+        /// <param name="tick"></param>
         public void UpdateServerTime(uint tick)
         {
             _recentServerTime = TickToSeconds(tick);
+            RecentServerReliableTick = tick;
         }
 
         public double TickToSeconds(uint tick) => ((double)tick) * _tickDuration;
